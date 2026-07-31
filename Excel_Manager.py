@@ -11,164 +11,94 @@ class ExcelManager:
         if not self.file_path.exists():
             raise FileNotFoundError(f"Could not find spreadsheet at: {self.file_path}")
 
-    def clean_identity_search(self, user_input: str) -> str:
-        """Converts a simple letter like 'g' into the format '{G}' used in Excel."""
-        clean_input = user_input.strip().upper()
-    
-        # If they just typed 'G', wrap it in curly braces
-        if len(clean_input) == 1 and clean_input in "WUBRG":
-            return f"{{{clean_input}}}"
-        
-        return clean_input
-
     def find_cards_by_value(self, column_name: str, target_value) -> list:
-        """
-        Searches the Excel file by loading the sheet and scanning matching rows.
-        Automatically checks both Class 1 and Class 2 if a 'class' search is requested.
-        """
         matched_cards = []
-        
-        # 1. Read the full spreadsheet safely
         df = pd.read_excel(self.file_path, engine="openpyxl")
-        
-        # 2. Clean column headers to prevent spacing bugs
         df.columns = df.columns.str.strip()
-        
-        # 3. Check if we need a dual-class search
-        clean_col = column_name.strip().lower()
-        clean_val = str(target_value).strip().lower()
-        
-        if clean_col in ["class", "class 1", "class 2"]:
-            match_condition_1 = df["Class 1"].astype(str).str.strip().str.lower() == clean_val
-            match_condition_2 = df["Class 2"].astype(str).str.strip().str.lower() == clean_val
-            matches = df[match_condition_1 | match_condition_2]
-        elif isinstance(target_value, (int, float)):
-            matches = df[df[column_name] >= target_value]
-        else:
-            matches = df[df[column_name].astype(str).str.strip().str.lower() == clean_val]
+        matches = df[df[column_name].astype(str).str.strip().str.lower() == str(target_value).strip().lower()]
             
-        # 4. Stream your custom row matches into Card objects
         for idx, row in matches.iterrows():
-            excel_row_num = int(idx) + 2
-            
             card = Card(
-                name=row.get("Name"),
-                identity=row.get("Idenity"),      
-                mana_cost=row.get("Mana Cost"),
-                price=row.get("Price"),
-                
-                ranking_1=row.get("Ranking 1"),     
-                ranking_2=row.get("Ranking 2"),     
-                
-                card_class_1=row.get("Class 1"),    
-                card_class_2=row.get("Class 2"),    
-                
+                name=row.get("Name"), identity=row.get("Idenity"),      
+                mana_cost=row.get("Mana Cost"), price=row.get("Price"),
+                ranking_1=row.get("Ranking 1"), ranking_2=row.get("Ranking 2"),     
+                card_class_1=row.get("Class 1"), card_class_2=row.get("Class 2"),    
                 rarity=row.get("Rarity")
             )
-            card.excel_row_num = excel_row_num
+            card.excel_row_num = int(idx) + 2
             matched_cards.append(card)
-            
         return matched_cards
 
-    def edit_card_value(self, excel_row_num: int, column_letter: str, new_value) -> bool:
-        """Edits a specific single cell using its exact row number."""
-        try:
-            wb = openpyxl.load_workbook(self.filename)
-            sheet = wb.active
-            sheet[f"{column_letter}{excel_row_num}"].value = new_value
-            wb.save(self.filename)
-            return True
-        except Exception as e:
-            print(f"Error saving to Excel: {e}")
-            return False
-
     def sync_sheet_with_api(self) -> bool:
-        """
-        Reads the spreadsheet, fetches live set names and USD prices 
-        from the Scryfall API based on card names, and updates columns B, E, and K.
-        Handles double-faced split cards and skips rows that are already updated.
-        """
+        """Fetches live set names and USD prices via official Scryfall Fuzzy API."""
         import requests
         import time
         from datetime import datetime
-
         try:
-            wb = openpyxl.load_workbook(self.filename)
-            sheet = wb.active
-            
-            # Layout Mapping
-            SET_COL = "B"        # Set Name Column
-            PRICE_COL = "E"      # Price Column
-            TIMESTAMP_COL = "K"  # Timestamp Column
-            
-            # Write a header for the timestamp column if it doesn't exist
-            if sheet[f"{TIMESTAMP_COL}1"].value is None:
-                sheet[f"{TIMESTAMP_COL}1"].value = "Last Updated"
+            print("Safely reading spreadsheet data...")
+            df = pd.read_excel(self.file_path, engine="openpyxl")
+            df.columns = df.columns.str.strip()
             
             headers = {
-                "User-Agent": "CheepCardApp/1.0 (Contact: local_dev)",
-                "Accept": "application/json"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
-            
-            print("Starting live API synchronization with Scryfall...")
+            print("Starting live database synchronization...")
+            updated_any = False
 
-            for row in range(2, sheet.max_row + 1):
-                raw_card_name = sheet[f"A{row}"].value
-                existing_timestamp = sheet[f"{TIMESTAMP_COL}{row}"].value
+            for idx, row_data in df.iterrows():
+                excel_row = int(idx) + 2
+                raw_card_name = row_data.get("Name")
+                existing_set = row_data.get("Set Name") if "Set Name" in df.columns else row_data.get("Set")
+                existing_price = row_data.get("Price")
                 
-                # OPTIMIZATION: Skip rows that already successfully updated on your last run
-                if existing_timestamp is not None:
+                has_valid_set = pd.notna(existing_set) and str(existing_set).strip() != ""
+                has_valid_price = pd.notna(existing_price) and existing_price != 0 and existing_price != 0.0
+                
+                # If BOTH the price and set are already filled, skip this row instantly
+                if has_valid_set and has_valid_price:
                     continue
                 
-                if not raw_card_name:
+                if pd.isna(raw_card_name) or not str(raw_card_name).strip():
                     continue
                 
-                # FIX: Extract just the front face name for double-faced/split cards
+                # --- FIXED STRING HANDLING ---
                 raw_string = str(raw_card_name).strip()
                 if " // " in raw_string:
                     clean_name = raw_string.split(" // ")[0].strip()
                 else:
                     clean_name = raw_string
                 
-                url = "https://scryfall.com"
-                params = {"exact": clean_name}
-                
+                url = "https://api.scryfall.com/cards/named"
+                params = {"fuzzy": clean_name}
                 try:
-                    response = requests.get(url, headers=headers, params=params)
-                    
+                    time.sleep(0.25) 
+                    response = requests.get(url, headers=headers, params=params, timeout=5)
                     if response.status_code == 200:
                         data = response.json()
                         live_set_name = data.get("set_name")
                         live_price = data.get("prices", {}).get("usd")
                         
-                        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-                        
-                        if live_set_name:
-                            sheet[f"{SET_COL}{row}"].value = live_set_name
-                            
-                        if live_price:
-                            sheet[f"{PRICE_COL}{row}"].value = float(live_price)
-                            
-                        sheet[f"{TIMESTAMP_COL}{row}"].value = current_time
-                            
-                        print(f"Row {row}: Fixed & Updated '{clean_name}' -> Set: {live_set_name}, Price: ${live_price}")
+                        if live_set_name: 
+                            df.at[idx, "Set Name" if "Set Name" in df.columns else "Set"] = str(live_set_name)
+                        if live_price: 
+                            df.at[idx, "Price"] = float(live_price)
+                            print(f"Row {excel_row}: Successfully Recovered '{clean_name}' -> Set: {live_set_name}, Price: ${live_price}")
+                        else:
+                            print(f"Row {excel_row}: Found '{clean_name}', but no USD price available.")
+                        updated_any = True
                     else:
-                        try:
-                            err_details = response.json().get("details", "No detailed error message.")
-                        except:
-                            err_details = response.text
-                        print(f"Row {row}: Failed for '{clean_name}' | Status {response.status_code} | Details: {err_details}")
-                        
-                except Exception as api_err:
-                    print(f"Row {row}: Network connection error for '{clean_name}': {api_err}")
+                        print(f"Row {excel_row}: API returned status {response.status_code} for '{clean_name}'")
+                except Exception as row_err:
+                    print(f"Error on row {excel_row} for '{clean_name}': {row_err}")
                 
-                time.sleep(0.1)
+                if updated_any and excel_row % 50 == 0:
+                    df.to_excel(self.file_path, index=False)
 
-            wb.save(self.filename)
-            print("Spreadsheet successfully cleaned and fully updated!")
+            if updated_any:
+                df.to_excel(self.file_path, index=False)
+                print("\n--- [SUCCESS] DATABASE SYNCHRONIZATION COMPLETED ---")
             return True
-            
-        except Exception as e:
-            print(f"Error executing API update: {e}")
+        except Exception as main_err:
+            print(f"Critical execution error: {main_err}")
             return False
 
