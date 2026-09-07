@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mana Mash-up - CheepCards Arcade</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --box-bg: #1e1e24;
+            --text-color: #ecf0f1;
+            --title-color: #f1c40f;
+            --border-color: #333;
+            --slot-bg: rgba(255,255,255,0.04);
+            --hand-bg: rgba(255,255,255,0.03);
+            --grid-color: rgba(241, 196, 15, 0.03);
+        }
+
+        /* Explicit Light Mode Selector Match */
+        body.light-mode, body.light {
+            --bg-color: #f5f6fa;
+            --box-bg: #ffffff;
+            --text-color: #2c3e50;
+            --title-color: #2980b9;
+            --border-color: #dcdde1;
+            --slot-bg: rgba(0,0,0,0.04);
+            --hand-bg: rgba(0,0,0,0.03);
+            --grid-color: rgba(41, 128, 185, 0.05);
+        }
+
+        body.dark-mode {
+            --bg-color: #121214;
+            --box-bg: #1e1e24;
+            --text-color: #ecf0f1;
+            --title-color: #f1c40f;
+            --border-color: #333;
+            --slot-bg: rgba(255,255,255,0.04);
+            --hand-bg: rgba(255,255,255,0.03);
+            --grid-color: rgba(241, 196, 15, 0.03);
+        }
+
+        body.onyx-theme {
+            --bg-color: #060608;
+            --box-bg: #0f0f14;
+            --text-color: #e2e8f0;
+            --title-color: #38bdf8;
+            --border-color: #1e293b;
+            --slot-bg: rgba(255,255,255,0.03);
+            --hand-bg: rgba(255,255,255,0.02);
+            --grid-color: rgba(56, 189, 248, 0.03);
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            letter-spacing: 0.3px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.onyx-theme .panel-box,
+        body.onyx-theme .arcade-header,
+        body.onyx-theme .header-box {
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.08);
+            border: 1px solid #1e293b;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .arcade-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--box-bg); border: 1px solid var(--border-color);
+            padding: 15px 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .panel-box {
+            background: var(--box-bg); border: 1px solid var(--border-color);
+            padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 { color: var(--title-color); margin-top: 0; }
+
+        .card-hand {
+            display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; min-height: 120px;
+            background: var(--hand-bg); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color);
+        }
+
+        .arcade-card-tile {
+            background: var(--box-bg); border: 2px solid var(--border-color);
+            border-radius: 8px; padding: 6px; text-align: center; cursor: pointer;
+            width: 110px; position: relative; 
+            transition: transform 0.1s ease-out, border-color 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
+        .arcade-card-tile:hover {
+            transform: translateY(-12px) scale(1.75);
+            border-color: var(--title-color);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            z-index: 100;
+            transition-delay: 0s;
+        }
+
+        .arcade-card-tile img { width: 100%; border-radius: 5px; }
+
+        .sequence-slots {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .slot {
+            background: var(--slot-bg); border: 2px dashed var(--border-color);
+            border-radius: 8px; min-height: 160px; padding: 8px; text-align: center;
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+
+        .slot::before {
+            content: attr(data-step); display: block; font-weight: bold;
+            color: var(--title-color); margin-bottom: 6px; font-size: 13px;
+        }
+
+        .slot .arcade-card-tile { width: 100%; margin: 0; }
+
+        .cta-btn {
+            background: #2980b9; color: white; padding: 10px 20px;
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;
+        }
+        .cta-btn:hover { background: #3498db; }
+        .cta-btn:disabled { background: #95a5a6; cursor: not-allowed; }
+
+        #feedback-box {
+            display: none; padding: 12px 18px; border-radius: 6px; font-weight: bold; margin-bottom: 15px; text-align: center;
+        }
+
+        #celebration-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;
+            cursor: pointer;
+        }
+        .modal-content {
+            background: var(--box-bg); border: 2px solid #27ae60; padding: 30px; border-radius: 12px;
+            text-align: center; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: popUp 0.3s ease-in-out;
+        }
+        @media (max-width: 1024px) {
+            .sequence-slots {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sequence-slots {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @keyframes popUp {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% elif session.get('default_theme') %}{{ session.get('default_theme') }}{% else %}dark-mode{% endif %}">
+
+    <!-- Celebration Pop-up Modal -->
+    <div id="celebration-modal">
+        <div class="modal-content">
+            <span style="font-size: 3rem;" id="modal-emoji">🎉</span>
+            <h2 id="modal-title" style="color: #27ae60; margin: 10px 0; font-size: 1.8rem;">Optimal Sequence Achieved!</h2>
+            <p id="modal-message" style="color: var(--text-color); margin: 15px 0; font-size: 1.1rem;">Maximum storm count reached and triggers aligned correctly.</p>
+            
+            <div id="modal-buttons" style="display: flex; gap: 15px; justify-content: center; margin-top: 25px;">
+                <button id="home-btn" class="cta-btn" style="background-color: #7f8c8d; cursor: pointer;" onclick="returnHome()">🏠 Home Menu</button>
+                <button id="next-level-btn" class="cta-btn" style="background-color: #27ae60; cursor: pointer;" onclick="advanceToNextLevel()">Next Level &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+    <!-- Arcade Header -->
+    <div class="arcade-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h1 style="margin: 0; color: var(--title-color); font-size: clamp(1.2rem, 2.5vw, 1.8rem);">🎮 Mana Mash-up Level {{ current_level }}</h1>
+            <p style="margin: 5px 0 0 0; color: var(--text-color); opacity: 0.8; font-size: 0.9rem;">{{ puzzle.title }} | Attempts Left: <span id="attempts-left" style="color: #e74c3c; font-weight: bold;">3</span> / 3</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('arcade_reset') }}" class="cta-btn" style="background-color: #e74c3c; padding: 8px 14px; font-size: 12px; text-decoration: none;" onclick="return confirm('Are you sure you want to restart your arcade run from Level 1?');">🔄 Restart Run</a>
+            <a href="{{ url_for('home') }}" class="cta-btn" style="background-color: #7f8c8d; padding: 8px 14px; font-size: 12px; text-decoration: none;">← Home</a>
+        </div>
+    </div>
+
+    <!-- Feedback Box -->
+    <div id="feedback-box"></div>
+
+    <!-- Puzzle Briefing Panel -->
+    <div class="panel-box">
+        <h2 id="scenario-objective" style="font-size: 1.15rem;">📜 Scenario Objective: {{ puzzle.title }}</h2>
+        <p style="line-height: 1.5; font-size: 0.95rem;">{{ puzzle.description }}</p>
+        <p style="font-size: 12px; font-style: italic; opacity: 0.8;">Hover over cards to magnify them. Click a card in your hand to place it into a slot, and click a card inside a slot to return it to your hand.</p>
+    </div>
+
+    <!-- Sequencing Slots Board -->
+    <div class="panel-box">
+        <h2 style="font-size: 1.15rem;">🎯 Play Order Slots (1 to 7)</h2>
+        <div class="sequence-slots" id="slots-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 8px;">
+            {% for i in range(1, 8) %}
+            <div class="slot" data-step="{{ i }}" style="min-height: 140px;">
+                <span style="font-size: 11px; color: #888; pointer-events: none;" class="slot-placeholder">Slot {{ i }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <button class="cta-btn" style="background-color: #e74c3c; padding: 8px 14px; font-size: 13px;" onclick="resetBoard()">🔄 Reset Board</button>
+            </div>
+            <button class="cta-btn" id="eval-btn" style="background-color: #27ae60; padding: 8px 16px; font-size: 13px;" onclick="submitSequence()">🚀 Evaluate Sequence</button>
+        </div>
+    </div>
+
+    <!-- Player Hand Panel -->
+    <div class="panel-box">
+        <h2 style="font-size: 1.15rem;">🎒 Cards in Hand</h2>
+        <div class="card-hand" id="hand-container" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start;">
+            {% for card in puzzle.hand %}
+            <div class="arcade-card-tile" data-name="{{ card.name }}" onclick="selectCardFromHand(this)">
+                <img src="{{ card.image_url }}" alt="{{ card.name }}">
+                <div style="font-size: 10px; font-weight: bold; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ card.name }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+    <script>
+        let attempts = 3;
+        const currentLevel = "{{ current_level }}";
+
+        // Web Audio API Sound Effects Generator
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playUltimateBonusFanfare() {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00]; 
+            
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const startTime = now + (index * 0.10);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, startTime);
+                
+                gain.gain.setValueAtTime(0.3, startTime);
+                gain.gain.linearRampToValueAtTime(0.01, startTime + 0.5);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.5);
+            });
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'pop') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'buzz') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(110, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'ding') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        }
+
+        // Click-to-assign logic from hand to slots
+        function selectCardFromHand(cardElement) {
+            if (attempts <= 0) return;
+            const slots = document.querySelectorAll('.slot');
+            for (let slot of slots) {
+                if (!slot.querySelector('.arcade-card-tile')) {
+                    playSound('pop');
+                    cardElement.setAttribute('onclick', 'returnToHand(this)');
+                    slot.appendChild(cardElement);
+                    slot.querySelector('.slot-placeholder').style.display = 'none';
+                    break;
+                }
+            }
+        }
+
+        // Click slot card to return it back to hand container
+        function returnToHand(cardElement) {
+            if (attempts <= 0) return;
+            const slot = cardElement.closest('.slot');
+            if (slot) {
+                playSound('pop');
+                cardElement.setAttribute('onclick', 'selectCardFromHand(this)');
+                document.getElementById('hand-container').appendChild(cardElement);
+                slot.querySelector('.slot-placeholder').style.display = 'block';
+            }
+        }
+
+        // Reset Board
+        function resetBoard() {
+            if (attempts <= 0) return;
+            playSound('pop');
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach(slot => {
+                const card = slot.querySelector('.arcade-card-tile');
+                if (card) {
+                    card.setAttribute('onclick', 'selectCardFromHand(this)');
+                    document.getElementById('hand-container').appendChild(card);
+                    slot.querySelector('.slot-placeholder').style.display = 'block';
+                }
+            });
+            const box = document.getElementById('feedback-box');
+            box.style.display = 'none';
+        }
+
+        async function submitSequence() {
+            if (attempts <= 0) return;
+
+            const slots = document.querySelectorAll('.slot');
+            let sequence = [];
+            
+            slots.forEach(slot => {
+                const card = slot.querySelector('.arcade-card-tile');
+                if (card) {
+                    sequence.push(card.getAttribute('data-name'));
+                }
+            });
+
+            if (sequence.length < 7) {
+                playSound('buzz');
+                showFeedback("Please fill all 7 slots before evaluating!", "orange");
+                return;
+            }
+
+            try {
+                const response = await fetch('/arcade/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sequence: sequence })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    const modal = document.getElementById('celebration-modal');
+                    const modalTitle = document.getElementById('modal-title');
+                    const modalMessage = document.getElementById('modal-message');
+                    const nextBtn = document.getElementById('next-level-btn');
+                    const homeBtn = document.getElementById('home-btn');
+
+                    document.getElementById('eval-btn').disabled = true;
+
+                if (result.bonus_complete) {
+                        playUltimateBonusFanfare();
+                        document.getElementById('modal-emoji').innerText = "🌟";
+                        modalTitle.innerText = "🌟 LEGENDARY SPEEDRUNNER!";
+                        modalMessage.innerText = "Incredible! You cracked the Hermit's Oracle bonus trial under pressure.";
+                        
+                        if (nextBtn) nextBtn.style.display = 'none';
+                        if (homeBtn) {
+                            homeBtn.style.width = '100%';
+                            homeBtn.onclick = () => window.location.href = result.redirect_url;
+                        }
+                    } else if (result.campaign_complete) {
+                        playVictoryFanfare();
+                        document.getElementById('modal-emoji').innerText = "🏆";
+                        modalTitle.innerText = "🏆 CAMPAIGN CONQUERED!";
+                        
+                        if (result.bonus_unlocked) {
+                            window.bonusUnlocked = true;
+                            modalMessage.innerText = "Absolute mastery! You cleared all 12 levels AND beat the 5-minute speedrun clock! 🌟 The Secret Bonus Level is now unlocked!";
+                            if (nextBtn) {
+                                nextBtn.style.display = 'inline-block';
+                                nextBtn.style.backgroundColor = '#d69e2e';
+                                nextBtn.innerText = "Play Bonus Level 🌟";
+                                nextBtn.onclick = () => window.location.href = "{{ url_for('arcade_bonus') }}";
+                            }
+                        } else {
+                            window.bonusUnlocked = false;
+                            modalMessage.innerText = "Absolute mastery! You have successfully cleared all 12 levels of Mana Mash-up and proved your combo sequencing brilliance.";
+                            if (nextBtn) nextBtn.style.display = 'none';
+                        }
+                        
+                        if (homeBtn) {
+                            homeBtn.style.width = nextBtn && result.bonus_unlocked ? '48%' : '100%';
+                        }
+                    } else {
+                        // STANDARD LEVEL CLEAR (1 THROUGH 11)
+                        playSound('ding');
+                        modalTitle.innerText = `🎉 Level ${result.next_level - 1} Complete!`;
+                        modalMessage.innerText = `Optimal sequence achieved! Ready to push forward to Level ${result.next_level}?`;
+                        
+                        if (nextBtn) nextBtn.style.display = 'inline-block';
+                        if (homeBtn) homeBtn.style.width = 'auto';
+                    }
+
+                    modal.style.display = 'flex';
+                } else {
+                    playSound('buzz');
+                    attempts--;
+                    document.getElementById('attempts-left').innerText = attempts;
+                    if (attempts <= 0) {
+                        showFeedback(`❌ Game Over! ${result.message}`, "red");
+                        document.getElementById('eval-btn').disabled = true;
+                    } else {
+                        showFeedback(`⚠️ ${result.message} (${attempts} attempts remaining)`, "red");
+                    }
+                }
+            } catch (err) {
+                playSound('buzz');
+                showFeedback("Error evaluating sequence. Try again.", "red");
+            }
+        }
+
+        function playVictoryFanfare() {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
+            
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const startTime = now + (index * 0.12);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, startTime);
+                
+                gain.gain.setValueAtTime(0.25, startTime);
+                gain.gain.linearRampToValueAtTime(0.01, startTime + 0.4);
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.4);
+            });
+        }
+
+        function advanceToNextLevel() {
+            if (currentLevel === "Bonus") {
+                window.location.href = "{{ url_for('home') }}";
+            } else if (window.bonusUnlocked) {
+                window.location.href = "{{ url_for('arcade', level='Bonus') }}";
+            } else {
+                location.reload();
+            }
+        }
+
+        function returnHome() {
+            window.location.href = "{{ url_for('level_select') }}";
+        }
+
+        function showFeedback(message, color) {
+            const box = document.getElementById('feedback-box');
+            box.style.display = 'block';
+            box.innerText = message;
+            box.style.backgroundColor = color === 'green' ? 'rgba(39, 174, 96, 0.2)' : color === 'orange' ? 'rgba(243, 156, 18, 0.2)' : 'rgba(231, 76, 60, 0.2)';
+            box.style.color = color === 'green' ? '#27ae60' : color === 'orange' ? '#f39c12' : '#e74c3c';
+            box.style.border = `1px solid ${color === 'green' ? '#27ae60' : color === 'orange' ? '#f39c12' : '#e74c3c'}`;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings - CheepCards</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9; 
+            --box-bg: white; 
+            --text-color: #333;
+            --title-color: #2c3e50;
+            --border-color: #bdc3c7;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --title-color: #f1c40f;
+            --border-color: #444;
+        }
+
+        /* 🏷️ Independent Name Tag Styles (Works across any background theme) */
+        .user-tag {
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+        
+        .theme-btn.user-tag.tag-blue {
+            background-color: #3498db !important;
+            color: #d4f1f9 !important;
+            font-weight: 600 !important;
+            border: none !important;
+        }
+
+        .theme-btn.user-tag.tag-green {
+            background-color: #27ae60 !important;
+            color: #e8f8f5 !important;
+            font-weight: 600 !important;
+            border: none !important;
+        }
+
+        .theme-btn.user-tag.tag-red {
+            background-color: #e74c3c !important;
+            color: #fadbd8 !important;
+            font-weight: 600 !important;
+            border: none !important;
+        }
+
+        /* Epic Foil & Metallic Textures for Special Tags */
+        .theme-btn.user-tag.tag-gold {
+            background: linear-gradient(135deg, #fff3b0 0%, #f39c12 35%, #d4ac0d 70%, #ffdf00 100%) !important;
+            color: #2c1800 !important;
+            font-weight: 800 !important;
+            border: 1.5px solid #fff5cc !important;
+            box-shadow: 0 0 14px rgba(243, 156, 18, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .theme-btn.user-tag.tag-copper {
+            background: linear-gradient(135deg, #f5b041 0%, #d35400 35%, #873600 70%, #b9770e 100%) !important;
+            color: #fef9e7 !important;
+            font-weight: 800 !important;
+            border: 1.5px solid #f8c471 !important;
+            box-shadow: 0 0 14px rgba(211, 84, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .theme-btn.user-tag.tag-onyx {
+            background: linear-gradient(135deg, #424949 0%, #212f3d 40%, #17202a 80%, #0b0f19 100%) !important;
+            color: #aed6f1 !important;
+            font-weight: 800 !important;
+            border: 1.5px solid #5dade2 !important;
+            box-shadow: 0 0 14px rgba(93, 173, 226, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.25) !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+            letter-spacing: 0.5px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+        }
+
+        .account-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .account-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .panel-box {
+            background: var(--box-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            box-sizing: border-box;
+        }
+
+        h2 { color: var(--title-color); margin-top: 0; font-size: 20px; }
+
+        label { display: block; font-weight: bold; margin-bottom: 6px; font-size: 13px; color: var(--title-color); }
+        
+        input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 2px solid var(--border-color); 
+            border-radius: 6px; 
+            background-color: var(--box-bg); 
+            color: var(--text-color); 
+            box-sizing: border-box; 
+            margin-bottom: 15px; 
+            font-size: 14px;
+        }
+
+        button { 
+            background-color: #3498db; 
+            color: white; 
+            padding: 10px 16px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: bold; 
+            width: 100%; 
+            transition: 0.2s;
+        }
+
+        button:hover { background-color: #2980b9; }
+
+        .deck-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .flash-message {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .theme-toggle-btn {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .badge-verified { background-color: #27ae60; color: white; }
+        .badge-pro { background-color: #f39c12; color: #2c1800; }
+        .badge-free { background-color: #7f8c8d; color: white; }
+
+        /* Background pattern decoration */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 8px; height: 8px;
+            z-index: -1;
+            background: #f1c40f;
+            box-shadow: 
+                80px 60px 0 #f1c40f, 250px 40px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #f1c40f, 1780px 50px 0 #3498db,
+                30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #f1c40f;
+            opacity: 0.75;
+        }
+    </style>
+</head>
+<body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
+    <div class="header-container">
+            <h1 style="margin: 0; color: var(--title-color);">👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span></h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
+                    <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
+                </a>
+                <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
+                <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
+                    <button style="background-color: #7f8c8d; width: auto;">← Dashboard</button>
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="account-grid">
+            <!-- Left Panel: Account Settings -->
+            <div class="panel-box">
+                <h2>⚙️ Settings & Security</h2>
+                
+                <!-- Account Status Badges & Stripe Upgrade -->
+                <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--border-color); margin-bottom: 4px; text-transform: uppercase; font-weight: bold;">Membership</div>
+                        {% if current_user.role == 'pro' %}
+                            <span class="status-badge badge-pro" style="margin-bottom: 0;">⭐ Pro Subscriber</span>
+                        {% else %}
+                            <span class="status-badge badge-free" style="margin-bottom: 0;">Free Tier</span>
+                        {% endif %}
+                    </div>
+                    {% if current_user.role != 'pro' %}
+                    <form action="/create-checkout-session" method="POST" style="margin: 0;">
+                        <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px;">⭐ Upgrade to Pro</button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <form method="POST" action="{{ url_for('account') }}">
+                    <label>Email Address (For Password Recovery)</label>
+                    <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
+
+                    <label>Verified Phone Number</label>
+                    <input type="tel" name="phone_number" value="{{ current_user.phone_number or '' }}" placeholder="+15555555555" readonly style="background-color: var(--border-color); opacity: 0.8; cursor: not-allowed;" title="Phone number is locked after verification.">
+
+                    <label>Background Theme Preference</label>
+                    <select name="default_theme">
+                        <option value="light" {% if current_user.default_theme == 'light' %}selected{% endif %}>Light Mode</option>
+                        <option value="dark-mode" {% if current_user.default_theme == 'dark-mode' or not current_user.default_theme %}selected{% endif %}>Dark Mode</option>
+                    </select>
+
+                    <label>Name Tag Style</label>
+                    <select name="name_tag_color">
+                        <option value="blue" {% if current_user.name_tag_color == 'blue' or not current_user.name_tag_color %}selected{% endif %}>Blue</option>
+                        <option value="green" {% if current_user.name_tag_color == 'green' %}selected{% endif %}>Green</option>
+                        <option value="red" {% if current_user.name_tag_color == 'red' %}selected{% endif %}>Red</option>
+                        
+                        {% if current_user.copper_completed %}
+                        <option value="copper" {% if current_user.name_tag_color == 'copper' %}selected{% endif %}>🥉 Brushed Copper (Found a Penny)</option>
+                        {% endif %}
+                        
+                        {% if current_user.gold_completed %}
+                        <option value="gold" {% if current_user.name_tag_color == 'gold' %}selected{% endif %}>✨ 24K Sovereign Gold (Found the Ultimate Card)</option>
+                        {% endif %}
+
+                        {% if current_user.bonus_completed %}
+                        <option value="onyx" {% if current_user.name_tag_color == 'onyx' %}selected{% endif %}>🖤 Onyx Shadow (Speedrun Reward)</option>
+                        {% endif %}
+                    </select>
+
+                    <label>New Password (Leave blank to keep current)</label>
+                    <input type="password" name="new_password" placeholder="Enter new password">
+
+                    <button type="submit" style="background-color: #27ae60; margin-top: 10px;">💾 Save Changes</button>
+                </form>
+            </div>
+
+            <!-- Right Panel: Saved Decks -->
+            <div class="panel-box">
+                <h2>🎒 Saved Decks</h2>
+                {% if current_user.decks %}
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for deck in current_user.decks %}
+                        <div class="deck-item">
+                            <div>
+                                <strong>{{ deck.name }}</strong>
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <button type="button" class="load-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data }}" style="padding: 4px 8px; font-size: 11px; background-color: #3498db; width: auto; cursor: pointer;">Edit</button>
+                                <button type="button" class="copy-deck-btn" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #007bff; width: auto; cursor: pointer;">Copy</button>
+                                <button type="button" class="export-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #27ae60; width: auto; cursor: pointer;">Export</button>
+                                <form action="{{ url_for('delete_deck', deck_id=deck.id) }}" method="POST" style="margin: 0;">
+                                    <button type="submit" style="padding: 4px 8px; font-size: 11px; background-color: #e74c3c; width: auto; cursor: pointer;">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-color); font-size: 13px; text-align: center; margin-top: 40px;">You haven't saved any decks to your account yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            const themeChoice = isDark ? 'dark-mode' : 'light';
+            localStorage.setItem('theme', themeChoice);
+            
+            const themeSelect = document.querySelector('select[name="default_theme"]');
+            if (themeSelect) {
+                themeSelect.value = themeChoice;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
+            const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark-mode';
+
+            if (savedTheme === 'light') {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark-mode');
+            }
+
+            const themeSelect = document.querySelector('select[name="default_theme"]');
+            if (themeSelect && serverTheme) {
+                themeSelect.value = serverTheme;
+            }
+
+            document.querySelectorAll('.load-deck-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const deckName = btn.getAttribute('data-name');
+                    const cardTextData = btn.getAttribute('data-deck');
+                    
+                    localStorage.setItem('pendingLoadDeckName', deckName);
+                    localStorage.setItem('pendingLoadDeck', cardTextData);
+                    window.location.href = "{{ url_for('home') }}";
+                });
+            });
+
+            document.querySelectorAll('.copy-deck-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    let cardTextData = btn.getAttribute('data-deck');
+                    try {
+                        if (cardTextData.startsWith('"') && cardTextData.endsWith('"')) {
+                            cardTextData = JSON.parse(cardTextData); 
+                        }
+                    } catch (e) {}
+                    
+                    navigator.clipboard.writeText(cardTextData).then(() => {
+                        alert('Decklist copied to clipboard!');
+                    });
+                });
+            });
+
+            document.querySelectorAll('.export-deck-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const deckName = btn.getAttribute('data-name');
+                    let cardTextData = btn.getAttribute('data-deck');
+                    try {
+                        if (cardTextData.startsWith('"') && cardTextData.endsWith('"')) {
+                            cardTextData = JSON.parse(cardTextData); 
+                        }
+                    } catch (e) {}
+                    
+                    const blob = new Blob([cardTextData], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${deckName.replace(/\s+/g, '_')}_deck.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

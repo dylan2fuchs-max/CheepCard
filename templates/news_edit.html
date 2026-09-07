@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Update Log</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container" style="max-width: 800px; margin-top: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1>✏️ Edit Update Log</h1>
+            <a href="{{ url_for('news.admin_news') }}" class="cta-btn" style="background-color: #7f8c8d; padding: 8px 14px; text-decoration: none;">← Back to Admin Panel</a>
+        </div>
+
+        <div class="panel-box" style="margin-bottom: 30px;">
+            <form method="POST">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Post Title</label>
+                    <input type="text" name="title" value="{{ post.title }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: rgba(0,0,0,0.2); color: inherit;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Content / Update Details</label>
+                    <textarea name="content" rows="6" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: rgba(0,0,0,0.2); color: inherit;">{{ post.content }}</textarea>
+                </div>
+                <button type="submit" class="cta-btn" style="background-color: #27ae60; padding: 10px 20px;">💾 Save Changes</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 import re
 from collections import Counter
-from auto_filler_words import AUTO_FILLER_WORDS 
+from auto_filler_words import AUTO_FILLER_WORDS
 
 # STRICTLY READ-ONLY REFERENCE PATH
 EXCEL_PATH = Path.cwd() / "Magic Card Data Base Current View.xlsx"
@@ -43,7 +43,10 @@ PROTECTED_TYPES = {
     'gnoll', 'mole', 'mongoose', 'otter', 'raccoon', 'sheep', 'starfish',
     'autobot', 'bureaucrat', 'cow', 'flagbearer', 'gith', 'lamia', 'lammasu',
     'lobster', 'nautilus', 'pest', 'phelddagrif', 'scientist', 'sponge',
-    'townsfolk', 'wombat'
+    'townsfolk', 'wombat', 'vehicles', 'defender', 'hero', 'spacecraft',
+    'necron', 'mounts', 'daleks', 'Time Lord', 'Astarte', 'Cybermen',
+    'Symbiote', 
+
 }
 
 def run_synergy_analysis(deck_list: list) -> dict:
@@ -87,6 +90,10 @@ def run_synergy_analysis(deck_list: list) -> dict:
         "Ramp & Land Velocity": {"keywords": ["ramp", "add one mana", "additional land", "basic land card, put it onto the battlefield", "put land", "add {w}", "add {g}", "add {r}", "add {u}", "add {b}", "add {c}"], "exclude_type": "land", "cards": set()},
     }
 
+    from theme_engine import ThemeEngine
+    theme_engine = ThemeEngine()
+    theme_card_pools = {theme: set() for theme in theme_engine.theme_rules.keys()}
+
     raw_theme_pool = []
     card_assignments = {card.strip(): [] for card in deck_list if card.strip()}
     
@@ -117,13 +124,15 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if not rules_text:
             continue
 
-        # 1. PROCESS CORE THEMES
+        # 1. PROCESS CORE THEMES (Upgraded with regex word boundaries)
         for cat_name, tracking in core_categories.items():
             exclude_param = tracking.get("exclude_type")
             if exclude_param and exclude_param in current_card_type:
                 continue
             for kw in tracking.get("keywords", []):
-                if kw in rules_text:
+                # Use regex word boundaries to prevent substring false positives
+                pattern = r'\b' + re.escape(kw) + r'\b'
+                if bool(re.search(pattern, rules_text, re.IGNORECASE)):
                     tracking["cards"].add(actual_name_in_excel)
 
         # 2. READ CREATURE TYPE SUBTYPES DIRECTLY FROM SPREADSHEET TYPE COLUMN
@@ -138,6 +147,10 @@ def run_synergy_analysis(deck_list: list) -> dict:
         clean_text = re.sub(r'[^\w\s{}]', ' ', rules_text)
         words = [w for w in clean_text.split() if len(w) > 2]
 
+        for theme in theme_card_pools.keys():
+            if theme_engine.evaluate_card_for_theme(theme, rules_text, current_card_type):
+                theme_card_pools[theme].add(actual_name_in_excel)
+
         for word in set(words):
             if word not in filler_words and word not in PROTECTED_TYPES:
                 raw_theme_pool.append(word)
@@ -148,7 +161,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
     
     theme_counts = Counter(raw_theme_pool)
     valid_themes = {theme: count for theme, count in theme_counts.items() if count >= MIN_MATCHES}
-    
+   
     creature_type_counts = Counter(creature_type_pool)
     valid_creature_types = {type_name: count for type_name, count in creature_type_counts.items() if count >= MIN_MATCHES}
 
@@ -181,9 +194,28 @@ def run_synergy_analysis(deck_list: list) -> dict:
             "cards": ", ".join(matching_cards)
         })
 
-    # 3. Append the secondary organic word topics underneath
+   # 3. Append the major rule-based structural themes with a custom visual anchor
+    major_themes_formatted = []
+    for theme, cards_set in theme_card_pools.items():
+        count = len(cards_set)
+        if count >= 8:
+            percentage = round((count / deck_size) * 100, 2)
+            matching_cards = sorted(list(cards_set))
+            
+            major_themes_formatted.append({
+                "theme": f"🔮 {theme}",
+                "count": count,
+                "percentage": f"{percentage}%",
+                "cards": ", ".join(matching_cards)
+            })
+            
+    # Sort major playstyles by highest count and append them cleanly
+    for theme_data in sorted(major_themes_formatted, key=lambda x: x["count"], reverse=True):
+        output.append(theme_data)
+
+    # 4. Append the secondary organic word topics underneath
     for theme, count in sorted(valid_themes.items(), key=lambda item: item, reverse=True):
-        if theme in ["draw", "life", "land", "lands"]:
+        if theme in ["draw", "land", "lands"]:
             continue
             
         percentage = round((count / deck_size) * 100, 2)

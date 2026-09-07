@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CheepCards — Admin News Creator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body.dark-mode {
+            background-color: #121418;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .admin-wrapper {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .admin-card, .panel-box {
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #cbd5e0;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            background: #121418;
+            border: 1px solid #4a5568;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-control:focus {
+            border-color: #3182ce;
+            outline: none;
+        }
+        textarea.form-control {
+            resize: vertical;
+            height: 120px;
+        }
+        .btn-primary {
+            background-color: #2b6cb0;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background-color: #2c5282; }
+        .flash-msg {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="admin-wrapper">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1 style="margin: 0; color: #fff; font-size: 1.8rem;">🛠️ Admin News & Poll Creator</h1>
+            <a href="{{ url_for('news.public_news') }}" class="cta-btn" style="background-color: #4a5568; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">← View Public Feed</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'success' %}{% set bg = '#27ae60' %}
+                    {% elif category == 'warning' %}{% set bg = '#d69e2e' %}
+                    {% else %}{% set bg = '#e53e3e' %}{% endif %}
+                    <div class="flash-msg" style="background: {{ bg }};">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Creation Form Card -->
+        <div class="admin-card">
+            <h2 style="margin-top: 0; color: #fff; font-size: 1.3rem; margin-bottom: 20px;">✍️ Create New Post</h2>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="title">Post Title</label>
+                    <input type="text" id="title" name="title" class="form-control" required placeholder="e.g., Version 1.2 Patch Notes">
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Post Content / Update Log</label>
+                    <textarea id="content" name="content" class="form-control" required placeholder="Write your patch notes or announcement details here..."></textarea>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid #2d3748; margin: 25px 0;">
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="has_poll" name="has_poll" value="yes" style="width: 18px; height: 18px; accent-color: #3182ce;">
+                    <label for="has_poll" style="margin-bottom: 0; cursor: pointer; color: #fff;">Attach a Community Poll to this post</label>
+                </div>
+
+                <div id="poll-section" style="margin-top: 20px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid #4a5568;">
+                    <div class="form-group">
+                        <label for="poll_question">Poll Question</label>
+                        <input type="text" id="poll_question" name="poll_question" class="form-control" placeholder="e.g., Which feature should we prioritize next?">
+                    </div>
+                    <div class="form-group">
+                        <label for="opt1">Option 1</label>
+                        <input type="text" id="opt1" name="opt1" class="form-control" placeholder="e.g., Deck Analytics">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="opt2">Option 2</label>
+                        <input type="text" id="opt2" name="opt2" class="form-control" placeholder="e.g., Puzzle Ladder">
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button type="submit" class="btn-primary">Publish Update Log</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Manage Existing Posts Card (Separate from Creation Form) -->
+        <div class="panel-box">
+            <h2 style="margin-top: 0; color: #fff; font-size: 1.3rem;">📊 Manage Existing Posts & Poll Results</h2>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+            
+            {% if posts %}
+                {% for post in posts %}
+                <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div>
+                            <strong style="color: #f1c40f; font-size: 1.1rem;">{{ post.title }}</strong>
+                            <span style="font-size: 12px; opacity: 0.6; margin-left: 10px;">({{ post.date }})</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{{ url_for('news.edit_news', post_id=post.id) }}" style="background-color: #f39c12; color: white; padding: 6px 12px; font-size: 12px; text-decoration: none; border-radius: 4px; font-weight: 600;">✏️ Edit</a>
+                            
+                            <form id="delete-form-{{ post.id }}" action="{{ url_for('news.delete_news', post_id=post.id) }}" method="POST" style="margin: 0;">
+                                <button type="button" onclick="doubleConfirmDelete({{ post.id }}, '{{ post.title | escape }}')" style="background-color: #e53e3e; color: white; border: none; padding: 6px 12px; font-size: 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">🗑️ Delete</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 13px; opacity: 0.8; margin: 5px 0 10px 0;">{{ post.content[:120] }}{% if post.content | length > 120 %}...{% endif %}</p>
+
+                    {% if post.poll %}
+                        <div style="background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 6px; margin-top: 8px; font-size: 13px;">
+                            <strong style="color: #3182ce;">Poll: {{ post.poll.question }}</strong>
+                            <ul style="margin: 5px 0 0 20px; padding: 0; opacity: 0.9;">
+                                {% set total_votes = post.poll.options.values() | sum %}
+                                {% for opt, count in post.poll.options.items() %}
+                                    {% set pct = (count / total_votes * 100) | round(1) if total_votes > 0 else 0 %}
+                                    <li>{{ opt }}: <strong>{{ count }} votes</strong> ({{ pct }}%)</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="opacity: 0.7;">No posts available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+    function doubleConfirmDelete(postId, postTitle) {
+        if (confirm("⚠️ Are you sure you want to delete '" + postTitle + "'?")) {
+            let confirmationInput = prompt("🚨 FINAL WARNING: Type 'DELETE' in all caps to confirm removal:");
+            if (confirmationInput === "DELETE") {
+                document.getElementById('delete-form-' + postId).submit();
+            } else {
+                alert("Deletion cancelled. Confirmation text did not match.");
+            }
+        }
+    }
+    </script>
+</body>
+</html>

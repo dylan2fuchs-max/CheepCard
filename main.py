@@ -91,6 +91,12 @@ def run_qa_search_engine(manager):
             
         filtered_list.append(card)
 
+        
+    # 🌟 PASTE THIS EXACT LINE RIGHT ABOVE YOUR DIAGNOSTIC PRINT BLOCK:
+    print(f"\n🔍 DEBUG VALUE: target_color is currently equal to: '{target_color}' (Type: {type(target_color)})")
+
+    print(f"\n[Diagnostic Report]:")
+    print(f"-> Total raw cards pulled from Excel: {len(unique_cards)}")
 
     # 🌟 PASTE THE DIAGNOSTIC REPORT RIGHT HERE:
     print(f"\n[Diagnostic Report]:")

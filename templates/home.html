@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheepCards - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Pixel-feel Backdrop & Retro Styling */
+        body {
+            background-color: #121214;
+            background-image: 
+                linear-gradient(rgba(241, 196, 15, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(241, 196, 15, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #ecf0f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Light Mode Dynamic Overrides */
+        body:not(.dark-mode) {
+            background-color: #f5f6fa !important;
+            color: #2c3e50 !important;
+            background-image: 
+                linear-gradient(rgba(41, 128, 185, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(41, 128, 185, 0.05) 1px, transparent 1px) !important;
+        }
+
+        body:not(.dark-mode) .content-card,
+        body:not(.dark-mode) .home-header,
+        body:not(.dark-mode) .home-footer {
+            background: #ffffff !important;
+            border-color: #dcdde1 !important;
+            color: #2c3e50 !important;
+        }
+
+        body:not(.dark-mode) .content-card h2,
+        body:not(.dark-mode) .hero-section h1,
+        body:not(.dark-mode) .budget-display h3 {
+            color: #2980b9 !important;
+        }
+
+        body.onyx-theme {
+            --bg-color: #060608;
+            --box-bg: #0f0f14;
+            --text-color: #e2e8f0;
+            --title-color: #38bdf8;
+            --border-color: #1e293b;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            letter-spacing: 0.3px;
+        }
+
+        body.onyx-theme .panel-box,
+        body.onyx-theme .arcade-header,
+        body.onyx-theme .header-box {
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.08);
+            border: 1px solid #1e293b;
+        }
+
+        .home-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #1e1e24;
+            border-bottom: 2px solid #f1c40f;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, rgba(30, 30, 36, 0.9), rgba(41, 128, 185, 0.15));
+            border-bottom: 1px dashed rgba(241, 196, 15, 0.4);
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            color: #f1c40f;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #000;
+        }
+
+        .hero-section p {
+            font-size: 1.1rem;
+            color: #bdc3c7;
+            max-width: 600px;
+            margin: 0 auto 20px auto;
+        }
+
+        .cta-btn {
+            background: #2980b9;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: 2px solid #f1c40f;
+            border-radius: 6px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .cta-btn:hover {
+            background: #3498db;
+            transform: translateY(-2px);
+        }
+
+        /* 3-Column Layout */
+        .main-container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 25px;
+            flex: 1;
+        }
+
+        @media (max-width: 1100px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .content-card {
+            background: #1e1e24;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .content-card h2 {
+            margin-top: 0;
+            color: #f1c40f;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .budget-display {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .budget-display img {
+            max-width: 140px;
+            border-radius: 8px;
+            border: 2px solid #f1c40f;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
+        /* Snappy instant zoom matching arcade cards */
+        .budget-display img:hover {
+            transform: translateY(-8px) scale(1.6);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            transition-delay: 0s;
+        }
+
+        /* Footer Styling */
+        .home-footer {
+            background: #1e1e24;
+            border-top: 1px solid #333;
+            padding: 20px 30px;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-links a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
+
+    <!-- Header / Navbar -->
+    <header class="home-header">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 15px; text-decoration: none;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 40px; width: auto;">
+                <h2 style="margin: 0; color: #f1c40f; text-shadow: 1px 1px 2px black; font-size: 1.2rem;">CheepCards</h2>
+            </a>
+        </div>
+        <div class="header-right">
+            <a href="{{ url_for('dashboard') }}" class="cta-btn" style="padding: 6px 12px; font-size: 0.9rem;">Workspace</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('account') }}" class="cta-btn" style="background: #27ae60; padding: 6px 12px; font-size: 0.9rem;">Profile</a>
+                <a href="{{ url_for('logout') }}" class="cta-btn" style="background: #e74c3c; padding: 6px 12px; font-size: 0.9rem;">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="cta-btn" style="background: #27ae60; padding: 6px 12px; font-size: 0.9rem;">Login</a>
+            {% endif %}
+            <!-- Dark/Light Mode toggle placeholder if used -->
+            <button type="button" id="themeToggle" class="cta-btn" style="background: #7f8c8d; padding: 6px 10px; font-size: 0.9rem;" onclick="toggleTheme()">☀️ Light Mode</button>
+        </div>
+    </header>
+    <script>
+        window.userRole = "{{ current_user.role if current_user.is_authenticated else 'free' }}";
+
+        // Set initial theme on page load based on database or localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
+            const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark';
+            
+            if (savedTheme === 'light') {
+                document.body.classList.remove('dark-mode');
+                const btn = document.getElementById('themeToggle');
+                if (btn) btn.innerText = '🌓 Dark Mode';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.add('dark-mode');
+                const btn = document.getElementById('themeToggle');
+                if (btn) btn.innerText = '☀️ Light Mode';
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            const btn = document.getElementById('themeToggle');
+            if (isDark) {
+                if (btn) btn.innerText = '☀️ Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                if (btn) btn.innerText = '🌓 Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+</script>
+
+    <!-- Hero Banner -->
+    <section class="hero-section">
+        <h1>Welcome to CheepCards</h1>
+        <p>Your ultimate MTG budget deck-building companion, tier-ranking system, and card search engine.</p>
+        <a href="{{ url_for('dashboard') }}" class="cta-btn">🚀 Launch Card Workspace</a>
+    </section>
+
+    <!-- Main Content 3-Column Grid -->
+    <div class="main-container">
+        
+        <!-- Column 1: Budget Card of the Day -->
+        <div class="content-card" style="border: 1px solid #f1c40f;">
+            <div>
+                <h2>🌟 Budget Card of the Day</h2>
+                {% if budget_card %}
+                <div class="budget-display" style="margin-top: 15px;">
+                    {% if budget_card.image_url %}
+                    <img src="{{ budget_card.image_url }}" alt="{{ budget_card.name }}" class="budget-card-img">
+                    {% endif %}
+                    <div>
+                        <h3 style="color: #f1c40f; margin-top: 0; font-size: 1.1rem;">{{ budget_card.name }}</h3>
+                        <p style="margin: 4px 0;"><strong>Cost:</strong> {{ budget_card.mana_cost if budget_card.mana_cost else 'N/A' }}</p>
+                        <p style="margin: 4px 0;"><strong>Price:</strong> ${{ "%.2f"|format(budget_card.price) if budget_card.price is defined and budget_card.price else '0.00' }}</p>
+                        <p style="margin: 4px 0;">
+                            <strong>Tier:</strong> 
+                            {{ (budget_card.active_rank_word or budget_card.tier or budget_card.rank or 'Budget Sifter') | capitalize }}
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <p style="color: #f1c40f;">No budget card available for today.</p>
+                {% endif %}
+            </div>
+            <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <a href="{{ url_for('dashboard') }}" style="color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9rem;">Explore More in Workspace &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Column 2: Community News & Updates -->
+        <div class="content-card" style="border: 1px solid #f1c40f;">
+            <div>
+                <h2>📢 Community News</h2>
+                <p style="color: #f1c40f; font-style: italic; font-size: 0.85rem; margin-bottom: 10px;">Latest patch notes and announcements.</p>
+                
+                <div style="background: rgba(41, 128, 185, 0.1); border-left: 4px solid #2980b9; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                    <h4 style="margin: 0 0 4px 0; color: #f1c40f; font-size: 0.95rem;">Step 6 Live: News & Polls</h4>
+                    <p style="margin: 0; font-size: 0.85rem; color: #dcdde1;">Community updates and interactive feedback polls are now online.</p>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #333; padding-top: 10px;">
+                <a href="{{ url_for('news.public_news') }}" style="color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9rem;">View All News & Updates &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Column 3: Mini-Game Hub -->
+        <div class="content-card" style="border: 1px solid #f1c40f;">
+            <div>
+                <h2>🎮 Arcade Mini-Game</h2>
+                <p style="color: var(--card-text); font-size: 0.9rem; margin-top: 10px;">Test your MTG sequencing and combo puzzle skills!</p>
+                <div style="background: rgba(241, 196, 15, 0.05); padding: 20px; text-align: center; border-radius: 6px; margin-top: 15px;">
+                    <span style="font-size: 2rem;">🎲</span>
+                    <p style="color: #f1c40f; font-weight: bold; margin: 10px 0 0 0;">Mana Mash-up is Live!</p>
+                    <p style="color: var(--card-text); font-size: 0.8rem; margin: 5px 0 15px 0;">Solve today's 7-card puzzle sequence.</p>
+                    <a href="{{ url_for('arcade') }}" class="cta-btn" style="padding: 6px 14px; font-size: 0.85rem;">Play Now &rarr;</a>
+                </div>
+            </div>
+            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 15px;">
+                <a href="{{ url_for('arcade') }}" style="color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9rem;">Launch Arcade Hub &rarr;</a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="home-footer">
+        <div>
+            &copy; 2026 CheepCards. All rights reserved. Built for MTG Deck Builders.
+        </div>
+        <div class="footer-links">
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('dashboard') }}">Workspace</a>
+            <a href="{{ url_for('about') }}">About Us</a>
+            <a href="{{ url_for('privacy') }}">Privacy Policy</a>
+            <a href="{{ url_for('terms') }}">Terms of Service</a>
+        </div>
+    </footer>
+
+</body>
+</html>

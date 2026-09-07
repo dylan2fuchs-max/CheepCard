@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CheepCards — Official News & Patch Notes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body.dark-mode {
+            background-color: #121418;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .news-wrapper {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #2d3748;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .news-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 30px;
+        }
+        @media (max-width: 850px) {
+            .news-layout { grid-template-columns: 1fr; }
+        }
+        .sidebar-card, .post-card {
+            background: #1a202c;
+            border: 1px solid #2d3748;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .sidebar-card {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #121418;
+            border: 1px solid #4a5568;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        .search-input:focus {
+            border-color: #3182ce;
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #2b6cb0;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background-color: #2c5282; }
+        .archive-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+        }
+        .archive-list li {
+            margin-bottom: 8px;
+        }
+        .archive-list a {
+            color: #90cdf4;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .archive-list a:hover { text-decoration: underline; }
+        .post-card {
+            margin-bottom: 25px;
+        }
+        .post-title {
+            color: #ecc94b;
+            margin-top: 0;
+            font-size: 1.35rem;
+        }
+        .post-meta {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-bottom: 15px;
+        }
+        .poll-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid #4a5568;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .flash-msg {
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="news-wrapper">
+        <!-- Top Navigation Header -->
+        <div class="news-header">
+            <div>
+                <h1 style="margin: 0; color: #fff; font-size: 1.8rem;">📢 CheepCards Developer Log & News</h1>
+                <p style="margin: 5px 0 0 0; color: #a0aec0; font-size: 0.9rem;">Official patch notes, ecosystem updates, and community feedback pipelines.</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="{{ url_for('feedback') }}" class="cta-btn" style="background-color: #27ae60; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">📬 Feedback</a>
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                    <a href="{{ url_for('news.admin_news') }}" class="cta-btn" style="background-color: #d69e2e; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">🛠️ Admin Panel</a>
+                {% endif %}
+                <a href="{{ url_for('home') }}" class="cta-btn" style="background-color: #4a5568; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">← Back to Hub</a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'success' %}{% set bg = '#27ae60' %}
+                    {% elif category == 'warning' %}{% set bg = '#d69e2e' %}
+                    {% else %}{% set bg = '#e53e3e' %}{% endif %}
+                    <div class="flash-msg" style="background: {{ bg }};">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Two-Column Layout Grid -->
+        <div class="news-layout">
+            <!-- Sidebar: Search & Archives -->
+            <aside>
+                <div class="sidebar-card">
+                    <h3 style="margin-top: 0; color: #fff; font-size: 1.1rem; border-bottom: 1px solid #2d3748; padding-bottom: 10px;">🔍 Search Archive</h3>
+                    <form method="GET" action="{{ url_for('news.public_news') }}">
+                        <input type="text" name="q" class="search-input" placeholder="Keyword (e.g., Mana, Arcades)..." value="{{ search_query }}">
+                        <button type="submit" class="btn-primary" style="margin-bottom: 10px;">Filter Posts</button>
+                        {% if search_query %}
+                            <a href="{{ url_for('news.public_news') }}" style="display: block; text-align: center; font-size: 13px; color: #cbd5e0; text-decoration: none; margin-top: 5px;">Clear Filter</a>
+                        {% endif %}
+                    </form>
+
+                    <h4 style="color: #cbd5e0; font-size: 0.95rem; margin-top: 25px; margin-bottom: 10px;">📁 Quick Filters</h4>
+                    <ul class="archive-list">
+                        <li><a href="{{ url_for('news.public_news') }}">All Update Logs</a></li>
+                        <li><a href="{{ url_for('news.public_news', q='Mana') }}">Mana Mash-up Engine</a></li>
+                        <li><a href="{{ url_for('news.public_news', q='Arcades') }}">Arcade Launches</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Feed Column -->
+            <main>
+                {% if posts %}
+                    {% for post in posts %}
+                    <div class="post-card">
+                        <h2 class="post-title">{{ post.title }}</h2>
+                        <div class="post-meta">Published by <strong>{{ post.author }}</strong> on {{ post.date }}</div>
+                        <hr style="border: 0; border-top: 1px solid #2d3748; margin: 12px 0;">
+                        <p style="line-height: 1.6; color: #cbd5e0;">{{ post.content }}</p>
+
+                        {% if post.poll %}
+                        <div class="poll-box">
+                            <h4 style="margin: 0 0 12px 0; color: #63b3ed;">📊 Community Poll: {{ post.poll.question }}</h4>
+                            <form action="{{ url_for('news.vote_poll', poll_id=post.poll.id) }}" method="POST">
+                                {% set total_votes = post.poll.options.values() | list | sum %}
+                                {% for option, count in post.poll.options.items() %}
+                                    <div style="margin-bottom: 10px;">
+                                        {% if not post.poll.voted %}
+                                        <label style="cursor: pointer; color: #fff; font-size: 14px;">
+                                            <input type="radio" name="option" value="{{ option }}" required style="margin-right: 8px;"> {{ option }}
+                                        </label>
+                                        {% else %}
+                                        <div style="display: flex; justify-content: space-between; font-size: 14px; color: #fff; margin-bottom: 4px;">
+                                            <span>{{ option }}</span>
+                                            <span style="font-weight: bold; color: #ecc94b;">{{ count }} votes ({% if total_votes > 0 %}{{ ((count / total_votes) * 100) | round(1) }}{% else %}0{% endif %}%)</span>
+                                        </div>
+                                        <div style="background: #2d3748; height: 8px; border-radius: 4px; overflow: hidden;">
+                                            <div style="background: #3182ce; height: 100%; width: {% if total_votes > 0 %}{{ (count / total_votes) * 100 }}{% else %}0{% endif %}%;"></div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                                
+                                {% if not post.poll.voted %}
+                                <button type="submit" class="btn-primary" style="margin-top: 10px; width: auto; padding: 6px 14px; font-size: 13px;">Submit Vote</button>
+                                {% else %}
+                                <p style="font-size: 12px; font-style: italic; color: #a0aec0; margin-top: 10px;">Total system votes: {{ total_votes }} — Recorded securely.</p>
+                                {% endif %}
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="post-card" style="text-align: center; padding: 40px;">
+                        <h3 style="color: #a0aec0; margin-top: 0;">No logs found</h3>
+                        <p style="color: #718096; font-size: 14px;">No posts matched your search criteria "{{ search_query }}". Try searching for another keyword.</p>
+                        <a href="{{ url_for('news.public_news') }}" class="btn-primary" style="display: inline-block; width: auto; text-decoration: none; margin-top: 10px;">View All Posts</a>
+                    </div>
+                {% endif %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>

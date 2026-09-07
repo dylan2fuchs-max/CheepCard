@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CheepCards Workspace Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg-color: #f5f6fa; 
+            --box-bg: #ffffff;
+            --text-color: #2c3e50;
+            --title-color: #2980b9; 
+            --border-color: #dcdde1;
+            --th-bg: #f1f2f6; 
+            --row-border: #dcdde1; 
+            --card-text: #34495e;
+        }
+
+        /* Dark Mode Theme Variables */
+        body.dark-mode {
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --title-color: #f1c40f;
+            --border-color: #444;
+            --th-bg: #2a2a2a;
+            --row-border: #333;
+            --card-text: #aaa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(41, 128, 185, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(41, 128, 185, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* If body is in dark mode, switch back to the pixel-feel dark grid */
+        body.dark-mode {
+            background-image: 
+                linear-gradient(rgba(241, 196, 15, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(241, 196, 15, 0.03) 1px, transparent 1px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            max-width: 1200px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            box-sizing: border-box;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .header-container button, .header-container .theme-btn {
+            width: auto !important; 
+            min-width: 110px !important;
+            height: 38px !important;
+            display: inline-flex !important; 
+            align-items: center !important;
+            justify-content: center !important; 
+            padding: 0 14px !important; 
+            border-radius: 20px !important;
+            font-size: 13px !important; 
+            cursor: pointer !important; 
+            font-weight: bold !important;
+            border: none !important; 
+            color: white !important; 
+            box-sizing: border-box !important;
+        }
+
+        /* 🏷️ Independent Name Tag Styles (Works across any background theme) */
+        .user-tag {
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+        
+        /* Unique text colors and solid bold styling for each user tag */
+        .theme-btn.user-tag.tag-blue {
+            background-color: #3498db !important;
+            color: #d4f1f9 !important; /* Soft ice blue text */
+            font-weight: 600 !important;
+            border: none !important;
+        }
+
+        .theme-btn.user-tag.tag-green {
+            background-color: #0b6430 !important;
+            color: #e8f8f5 !important; /* Minty light text */
+            font-weight: 600 !important;
+            border: none !important;
+        }
+
+        .theme-btn.user-tag.tag-red {
+            background-color: #70170d !important;
+            color: #fadbd8 !important; /* Soft rose text */
+            font-weight: 600 !important;
+            border: none !important;
+        }
+
+        /* Epic Foil & Metallic Textures for Special Tags */
+        .theme-btn.user-tag.tag-gold {
+            background: linear-gradient(135deg, #fff3b0 0%, #f39c12 35%, #d4ac0d 70%, #ffdf00 100%) !important;
+            color: #2c1800 !important;
+            font-weight: 800 !important;
+            border: 1.5px solid #fff5cc !important;
+            box-shadow: 0 0 14px rgba(243, 156, 18, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.9) !important;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .theme-btn.user-tag.tag-copper {
+            background: linear-gradient(135deg, #f5b041 0%, #d35400 35%, #873600 70%, #b9770e 100%) !important;
+            color: #fef9e7 !important;
+            font-weight: 800 !important;
+            border: 1.5px solid #f8c471 !important;
+            box-shadow: 0 0 14px rgba(211, 84, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+            letter-spacing: 0.5px;
+        }
+
+        .theme-btn.user-tag.tag-onyx {
+            background: linear-gradient(135deg, #424949 0%, #212f3d 40%, #17202a 80%, #0b0f19 100%) !important;
+            color: #aed6f1 !important;
+            font-weight: 800 !important;
+            border: 1.5px solid #5dade2 !important;
+            box-shadow: 0 0 14px rgba(93, 173, 226, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.25) !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+            letter-spacing: 0.5px;
+        }
+
+        /* Dynamic Hover & Pulsing Effects for Special Tags */
+        .theme-btn.user-tag.tag-gold,
+        .theme-btn.user-tag.tag-copper,
+        .theme-btn.user-tag.tag-onyx {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .theme-btn.user-tag.tag-gold:hover,
+        .theme-btn.user-tag.tag-copper:hover,
+        .theme-btn.user-tag.tag-onyx:hover {
+            transform: translateY(-2px) scale(1.03);
+            filter: brightness(1.15);
+        }
+
+        /* Living Foil Pulse for Gold Tag */
+        @keyframes goldPulse {
+            0% { box-shadow: 0 0 10px rgba(243, 156, 18, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.9); }
+            50% { box-shadow: 0 0 22px rgba(255, 223, 0, 0.85), inset 0 1px 2px rgba(255, 255, 255, 0.9); }
+            100% { box-shadow: 0 0 10px rgba(243, 156, 18, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.9); }
+        }
+
+        .theme-btn.user-tag.tag-gold {
+            animation: goldPulse 3.5s infinite ease-in-out;
+        }
+
+        .flash-banner {
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        .flash-success { background-color: #2ecc71; }
+        .flash-error { background-color: #e74c3c; }
+
+        .workspace-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .workspace-grid { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .header-actions {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+                justify-content: flex-end !important;
+                gap: 6px;
+            }
+            .header-container button, .header-container .theme-btn {
+                min-width: 85px !important;
+                height: 32px !important;
+                padding: 0 8px !important;
+                font-size: 11px !important;
+            }
+            .workspace-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+            }
+            .result-box {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            table {
+                table-layout: auto !important;
+                font-size: 11px !important;
+            }
+            th, td {
+                padding: 6px 4px !important;
+            }
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; table-layout: fixed; }
+        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--row-border); vertical-align: middle; }
+        th { background-color: var(--th-bg); color: var(--title-color); }
+        .scrollable-table { overflow-x: auto; width: 100%; }
+
+        th:nth-child(1), td:nth-child(1) { width: 24%; }
+        th:nth-child(2), td:nth-child(2) { width: 10%; }
+        th:nth-child(3), td:nth-child(3) { width: 18%; }
+        th:nth-child(4), td:nth-child(4) { width: 10%; }
+        th:nth-child(5), td:nth-child(5) { width: 14%; }
+        th:nth-child(6), td:nth-child(6) { width: 10%; }
+        th:nth-child(7), td:nth-child(7) { width: 14%; }
+
+        .card-tile { background: var(--box-bg, #2c3e50); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--row-border, #444); transition: transform 0.2s, border-color 0.2s; box-sizing: border-box; }
+        .card-tile:hover { transform: translateY(-5px); border-color: #f1c40f; }
+        
+        .result-box { background: var(--box-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); box-sizing: border-box; }
+        textarea { width: 100%; height: 160px; padding: 12px; border: 2px solid var(--border-color); border-radius: 6px; background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box; }
+        
+        .filter-section-title { font-weight: bold; margin: 12px 0 6px 0; color: var(--title-color); font-size: 14px; }
+        .btn-cluster { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        
+        .filter-label { padding: 8px 14px; border: 2px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s; background-color: var(--box-bg); color: var(--text-color); user-select: none; }
+        .filter-input { display: none; }
+        .filter-input:checked + .filter-label { background-color: #9b59b6; color: white; border-color: #8e44ad; }
+        .color-cluster .filter-input:checked + .filter-label { background-color: #f1c40f; color: #333; border-color: #f39c12; }
+        .class-cluster .filter-input:checked + .filter-label { background-color: #2ecc71; color: white; border-color: #27ae60; }
+        
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box; margin-bottom: 10px; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { background-color: #3498db; color: white; padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; }
+        button:hover { background-color: #2980b9; }
+        .clear-btn { background-color: #e74c3c; width: auto; padding: 12px 20px; }
+        .clear-btn:hover { background-color: #c0392b; }
+        
+        .swap-btn { background-color: #f39c12; color: white; padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; width: auto !important; transition: 0.2s; }
+        .swap-btn:hover { background-color: #e67e22; }
+        .swap-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .archetype-banner { background-color: #2ecc71; color: white; padding: 15px; border-radius: 6px; font-weight: bold; text-align: center; margin-bottom: 15px; }
+        .card-name-hover { color: #3498db; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+
+        .sidebar { display: none; position: fixed; top: 0; right: 0; width: 300px; height: 100vh; background: var(--box-bg, #1a1a1a); color: var(--text-color, white); padding: 20px; box-shadow: -4px 0 10px rgba(0,0,0,0.5); overflow-y: auto; z-index: 1000; box-sizing: border-box; }
+        .sidebar.open { display: block; }
+
+        /* Extra Dense Right-Side Background Squares */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            z-index: -1;
+            background: #f1c40f;
+            box-shadow: 
+                80px 60px 0 #f1c40f, 250px 40px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #3498db, 1780px 50px 0 #3498db, 2050px 70px 0 #3498db, 2300px 40px 0 #3498db, 2550px 90px 0 #3498db,
+                30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #3498db, 1980px 250px 0 #3498db, 2250px 210px 0 #3498db, 2480px 260px 0 #f1c40f, 2720px 230px 0 #3498db,
+                150px 480px 0 #f1c40f, 420px 450px 0 #3498db, 780px 420px 0 #f1c40f, 1050px 490px 0 #3498db, 1320px 440px 0 #3498db, 1600px 470px 0 #3498db, 1850px 410px 0 #f1c40f, 2100px 460px 0 #3498db, 2350px 430px 0 #3498db, 2600px 450px 0 #f1c40f, 2750px 470px 0 #3498db,
+                70px 680px 0 #3498db, 350px 640px 0 #f1c40f, 600px 690px 0 #3498db, 880px 650px 0 #f1c40f, 1120px 670px 0 #3498db, 1400px 630px 0 #3498db, 1720px 660px 0 #f1c40f, 1950px 610px 0 #f1c40f, 2220px 650px 0 #3498db, 2520px 680px 0 #3498db, 2740px 630px 0 #3498db,
+                200px 880px 0 #f1c40f, 500px 850px 0 #3498db, 820px 890px 0 #f1c40f, 1180px 840px 0 #3498db, 1450px 870px 0 #f1c40f, 1750px 820px 0 #3498db, 2020px 860px 0 #3498db, 2290px 810px 0 #3498db, 2580px 850px 0 #f1c40f, 2780px 880px 0 #3498db,
+                1650px 150px 0 #3498db, 1920px 180px 0 #f1c40f, 2200px 130px 0 #3498db, 2480px 170px 0 #f1c40f, 2750px 140px 0 #3498db,
+                1750px 330px 0 #3498db, 2040px 300px 0 #f1c40f, 2320px 350px 0 #3498db, 2640px 310px 0 #f1c40f,
+                1630px 550px 0 #3498db, 1910px 520px 0 #f1c40f, 2260px 580px 0 #3498db, 2540px 530px 0 #f1c40f, 2760px 560px 0 #3498db,
+                1790px 750px 0 #3498db, 2120px 710px 0 #f1c40f, 2410px 770px 0 #3498db, 2610px 740px 0 #f1c40f, 2790px 720px 0 #3498db,
+                100px 1020px 0 #3498db, 400px 1050px 0 #f1c40f, 750px 1010px 0 #3498db, 1100px 1060px 0 #f1c40f, 1450px 1030px 0 #3498db, 1800px 1050px 0 #f1c40f, 2150px 1020px 0 #f1c40f, 2500px 1040px 0 #f1c40f, 2750px 1020px 0 #3498db,
+                350px 1220px 0 #3498db, 820px 1200px 0 #f1c40f, 1250px 1240px 0 #f1c40f, 1680px 1210px 0 #f1c40f, 2150px 1230px 0 #f1c40f, 2550px 1200px 0 #f1c40f, 2780px 1220px 0 #3498db;
+            opacity: 0.75;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            z-index: -1;
+            background: #3498db;
+            box-shadow: 
+                180px 140px 0 #f1c40f, 550px 120px 0 #3498db, 820px 160px 0 #f1c40f, 1100px 130px 0 #3498db, 1420px 150px 0 #f1c40f, 1720px 110px 0 #3498db, 2000px 140px 0 #f1c40f, 2300px 110px 0 #3498db, 2580px 150px 0 #f1c40f, 2750px 120px 0 #3498db,
+                90px 360px 0 #f1c40f, 480px 340px 0 #3498db, 720px 380px 0 #f1c40f, 980px 320px 0 #3498db, 1280px 370px 0 #3498db, 1580px 350px 0 #3498db, 1880px 320px 0 #3498db, 2180px 360px 0 #f1c40f, 2450px 330px 0 #3498db, 2690px 350px 0 #3498db,
+                220px 560px 0 #3498db, 580px 530px 0 #f1c40f, 850px 580px 0 #3498db, 1220px 540px 0 #f1c40f, 1500px 570px 0 #3498db, 1820px 530px 0 #3498db, 2080px 560px 0 #3498db, 2380px 540px 0 #3498db, 2620px 570px 0 #3498db, 2780px 520px 0 #3498db,
+                130px 780px 0 #f1c40f, 400px 740px 0 #3498db, 750px 790px 0 #f1c40f, 1020px 730px 0 #3498db, 1350px 770px 0 #f1c40f, 1650px 750px 0 #3498db, 1950px 720px 0 #f1c40f, 2250px 760px 0 #3498db, 2550px 730px 0 #3498db, 2760px 770px 0 #3498db,
+                300px 920px 0 #3498db, 650px 900px 0 #f1c40f, 950px 930px 0 #3498db, 1280px 890px 0 #f1c40f, 1600px 910px 0 #3498db, 1900px 880px 0 #f1c40f, 2200px 920px 0 #3498db, 2500px 890px 0 #f1c40f, 2750px 910px 0 #3498db,
+                200px 1030px 0 #f1c40f, 550px 1060px 0 #3498db, 900px 1020px 0 #f1c40f, 1250px 1050px 0 #3498db, 1620px 1040px 0 #f1c40f, 1980px 1060px 0 #f1c40f, 2320px 1030px 0 #f1c40f, 2680px 1050px 0 #f1c40f,
+                450px 1140px 0 #f1c40f, 850px 1150px 0 #3498db, 1250px 1130px 0 #f1c40f, 1700px 1160px 0 #3498db, 2150px 1140px 0 #f1c40f, 2600px 1150px 0 #3498db,
+                150px 1280px 0 #f1c40f, 600px 1260px 0 #3498db, 1100px 1290px 0 #f1c40f, 1600px 1270px 0 #f1c40f, 2050px 1290px 0 #f1c40f, 2500px 1260px 0 #3498db;
+            opacity: 0.65;
+        }
+    </style>
+</head>
+<body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
+    <div class="header-container">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 15px; text-decoration: none;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 50px; width: auto;">
+                <h1 style="margin: 0; font-size: 24px; color: #f1c40f; text-shadow: 1px 1px 2px black;">CheepCard</h1>
+            </a>
+        </div>
+            <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
+                {% if current_user.is_authenticated %}
+                    
+                    <!-- 🏷️ Paste the active role badge code right here! -->
+                    {% if get_active_role() == 'admin' %}
+                        <span style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">ADMIN</span>
+                        <a href="{{ url_for('admin_dashboard') }}" style="text-decoration: none;">
+                            <button class="theme-btn" style="background-color: #8e44ad;">🛠️ Admin Panel</button>
+                        </a>
+                    {% elif get_active_role() == 'member' %}
+                        <span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">MEMBER</span>
+                    {% else %}
+                        <span style="background: #7f8c8d; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">FREE</span>
+                    {% endif %}
+
+                    <a href="{{ url_for('account') }}" style="text-decoration: none; display: inline-flex; align-items: center;">
+                        <button class="theme-btn user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}" style="display: inline-flex; align-items: center; gap: 6px; height: 38px !important; padding: 0 14px !important;">
+                            👤 {{ current_user.username }}
+                        </button>
+                    </a>
+                    <a href="{{ url_for('logout') }}" style="text-decoration: none;"><button class="theme-btn" style="background-color: #e74c3c;">Logout</button></a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" style="text-decoration: none;"><button class="theme-btn" style="background-color: #f39c12;">🔑 Login</button></a>
+                {% endif %}
+                
+                <button onclick="toggleSidebar()" class="theme-btn" style="background-color: #27ae60;">🎒 Deck&colon;&nbsp;<span id="mobileDeckCount">0</span></button>
+                <button id="themeToggle" onclick="toggleTheme()" class="theme-btn" style="background-color: #7f8c8d;">🌓 Dark Mode</button>
+                <button onclick="toggleView()" class="theme-btn" style="background-color: #9b59b6;">🖼️ Toggle View</button>
+            </div>
+        </div>
+        <!-- 🌟 Paste Flash Message Banner Here -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div class="flash-banner {% if category == 'success' %}flash-success{% else %}flash-error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <div class="workspace-grid">
+        <div class="result-box">
+            <h2>📈 Synergy Evaluator</h2>
+            <form method="POST" action="/synergy">
+                <p>Paste deck array list below (One card per line):</p>
+
+                <textarea name="decklist" id="deckTextArea" placeholder="1 Timber Gorge&#10;1 Game Trail" {% if not current_user.is_authenticated or get_active_role() == 'free' %}disabled style="background-color: #95a5a6; cursor: not-allowed;"{% endif %}>{{ deck_input }}</textarea>
+                <div class="btn-group">
+                    {% if current_user.is_authenticated and get_active_role() != 'free' %}
+                        <button type="submit">Evaluate Synergy</button>
+                        <button type="button" class="clear-btn" onclick="document.getElementById('deckTextArea').value=''">Clear</button>
+                    {% else %}
+                        <button type="button" style="background-color: #95a5a6; cursor: not-allowed;" onclick="alert('⚡ Synergy Engine is a Member-exclusive feature! Upgrade today to unlock.')">Evaluate Synergy (Locked)</button>
+                        <button type="button" class="clear-btn" style="background-color: #ccc; cursor: not-allowed;" disabled>Clear</button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        
+        <div class="result-box">
+            <!-- Header & Counter Flex Container -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">🔍 Search Results</h2>
+                
+                <!-- Free Searches Counter Box -->
+                {% if not current_user.is_authenticated or get_active_role() == 'free' %}
+                <div style="display: flex; align-items: flex-start; gap: 8px; border: 1px solid rgba(124, 45, 18, 0.6); background-color: rgba(69, 10, 10, 0.2); padding: 6px 12px; border-radius: 8px;">
+                    <span style="color: #f97316; font-size: 14px; margin-top: 2px;">⚡</span>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 11px; font-weight: 500; color: #fb923c; letter-spacing: 0.025em;">Free Searches Left:</span>
+                        <span id="free-search-counter" style="font-size: 14px; font-weight: 700; color: #f97316;">
+                            {% if current_user.is_authenticated and current_user.search_count is defined %}
+                                {{ 15 - current_user.search_count }}
+                            {% else %}
+                                15
+                            {% endif %}
+                            / 15
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <form method="POST" action="/search">
+                <div class="filter-section-title">📝 Rules Text Keyword Search</div>
+                <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
+
+                <div class="filter-section-title">🎨 Color Identity (Select Multiple)</div>
+                <div class="btn-cluster color-cluster">
+                    {% for c in ['W', 'U', 'B', 'R', 'G', 'C'] %}
+                    <input type="checkbox" name="colors" value="{{ c }}" id="color_{{ c }}" class="filter-input" {% if c in selected_colors %}checked{% endif %}>
+                    <label for="color_{{ c }}" class="filter-label">{{ c }}</label>
+                    {% endfor %}
+                </div>
+                
+                <div class="filter-section-title">🛡️ Key Class Target (Select Multiple)</div>
+                <div class="btn-cluster class-cluster">
+                    {% for cls in ['Draw', 'Removal', 'Ramp', 'Land', 'Boardwipe'] %}
+                    <input type="checkbox" name="classes" value="{{ cls|lower }}" id="class_{{ cls|lower }}" class="filter-input" {% if cls|lower in selected_classes %}checked{% endif %}>
+                    <label for="class_{{ cls|lower }}" class="filter-label">{{ cls }}</label>
+                    {% endfor %}
+                </div>
+                
+                <div class="filter-section-title">🏆 Ranking Tier Limit (Select Only One)</div>
+                <div class="btn-cluster">
+                    {% for r in ['Optimized', 'Fast', 'Average', 'Passive', 'Low'] %}
+                    <input type="radio" name="rank" value="{{ r|lower }}" id="rank_{{ r|lower }}" class="filter-input" {% if selected_rank == r|lower %}checked{% endif %}>
+                    <label for="rank_{{ r|lower }}" class="filter-label">{{ r }}</label>
+                    {% endfor %}
+                </div>
+
+                <div class="filter-section-title">💵 Market Value Price Tier</div>
+                <div class="btn-cluster">
+                    <input type="radio" name="price_tier" value="all" id="price_all" class="filter-input" {% if price_tier == 'all' or not price_tier %}checked{% endif %}>
+                    <label for="price_all" class="filter-label">All Prices</label>
+                    <input type="radio" name="price_tier" value="low" id="price_low" class="filter-input" {% if price_tier == 'low' %}checked{% endif %}>
+                    <label for="price_low" class="filter-label">Low (&lt; $1.00)</label>
+                    <input type="radio" name="price_tier" value="medium" id="price_medium" class="filter-input" {% if price_tier == 'medium' %}checked{% endif %}>
+                    <label for="price_medium" class="filter-label">Mid ($1.00 - $2.00)</label>
+                    <input type="radio" name="price_tier" value="high" id="price_high" class="filter-input" {% if price_tier == 'high' %}checked{% endif %}>
+                    <label for="price_high" class="filter-label">High (&gt; $2.00)</label>
+                </div>
+                <input type="number" name="custom_price" step="0.01" placeholder="Or enter exact Max Card Price Limit ($)" value="{{ custom_price }}">
+                <button type="submit" style="background-color: #9b59b6; margin-top: 10px;">Execute Reference Search</button>
+            </form>
+        </div>
+        
+        {% if report is defined and report %}
+        <div class="result-box full-width" id="reportSection">
+            <div class="archetype-banner">Identified Deck Architecture Play-style: {{ report.archetype }}</div>
+            <h2>Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
+            <div class="scrollable-table">
+                <table> 
+                    <tr><th>Theme/Variable Subtype</th><th>Card Count</th><th>Deck %</th><th>Matching Row Items</th></tr>
+                    {% for item in report.themes %}
+                    <tr><td><strong>{{ item.theme }}</strong></td><td>{{ item.count }}</td><td>{{ item.percentage }}</td><td><small style="color: var(--card-text);">{{ item.cards }}</small></td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+            <!-- 2. Search Reports Section -->
+            {% if search_reports %}
+                <!-- Parent container to align Title on the left and Test Tier on the right -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px 0; flex-wrap: wrap; gap: 10px; grid-column: span 2;">
+                    <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
+
+                    {% if current_user.is_authenticated and current_user.role == 'admin' and get_active_role() != 'admin' %}
+                    <div style="background: rgba(142, 68, 173, 0.1); border: 1px dashed #8e44ad; padding: 6px 12px; border-radius: 6px; display: flex; gap: 8px; align-items: center; font-size: 13px;">
+                        <span style="font-weight: bold;">🧪 Test Tier:</span>
+                        <a href="{{ url_for('quick_switch_role', new_role='free') }}" class="theme-btn" style="background: #7f8c8d; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Free</a>
+                        <a href="{{ url_for('quick_switch_role', new_role='member') }}" class="theme-btn" style="background: #27ae60; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Member</a>
+                        <a href="{{ url_for('quick_switch_role', new_role='reset') }}" class="theme-btn" style="background: #e74c3c; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Reset Admin</a>
+                    </div>
+                    {% endif %}
+
+                {% for sr in search_reports %}
+                <!-- THE DARK BOX -->
+                <div class="result-box full-width" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
+                        <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
+                        
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+
+                            <!-- Swaps Counter -->
+                            {% if current_user.is_authenticated and get_active_role() == 'free' %}
+                                <div style="font-size: 12px; color: #e74c3c; font-weight: bold;">
+                                    🔄 Swaps Left: <span id="swap-counter">{{ 3 - session.get('current_rerolls', 0) }}</span> / 3
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Toggle View Button -->
+                            <button type="button" class="theme-btn" onclick="toggleView()" style="background-color: #9b59b6; padding: 6px 14px; font-size: 13px; margin: 0; cursor: pointer;">🖼️ Toggle View</button>
+                        </div>
+                    </div>
+                
+                <!-- THE TABLE -->
+                <div class="scrollable-table">
+                    <table>
+                        <tr>
+                            <th>Card Name</th><th>Mana Cost</th><th>Color Identity</th><th>Price</th><th>Matched Class</th><th>Class Rank</th><th>Action</th>
+                        </tr>
+                        {% for card in sr.results %}
+                        <tr>
+                            <td onmousemove="movePreview(event)" onmouseleave="hidePreview()">
+                                <strong class="card-name-hover" draggable="true" ondragstart="drag(event)" data-name="{{ card.name }}" data-price="{{ card.price }}" data-img="{{ card.image_url }}" onmouseenter="showPreview(event, this)" style="cursor: grab;">
+                                    {{ card.name }}
+                                </strong>
+                            </td>
+                            <td>{{ card.mana_cost }}</td>
+                            <td>{{ card.identity | mana_pips | safe }}</td>
+                            <td>${{ "%.2f"|format(card.price) }}</td>
+                            <td>{{ sr.class_name }}</td>
+                            <td>{{ card.active_rank_word }}</td>
+                            <td>
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <button type="button" class="swap-btn" onclick="rerollSingleCard('{{ sr.class_name|escape }}', this)">🎲 Swap</button>
+                                    <button type="button" class="swap-btn" style="background-color: #28a745;" onclick="addCardFromRow(this, '{{ sr.class_name|escape }}')">➕ Add</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+
+                <div id="galleryView_{{ loop.index }}" style="display: none; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; margin-top: 20px;">
+                    {% for card in sr.results %}
+                    <div class="card-tile">
+                        <img src="{{ card.image_url }}" alt="{{ card.name }}" style="width: 100%; border-radius: 10px;">
+                        <div style="font-weight: bold; margin-top: 8px;" draggable="true" ondragstart="drag(event)" data-name="{{ card.name }}" data-price="{{ card.price }}" data-img="{{ card.image_url }}" data-mana="{{ card.mana_cost }}" data-id="{{ card.identity }}">{{ card.name }}</div>
+                        <button class="swap-btn" style="margin-top: 10px; width:100% !important;" onclick="addCardFromRow(this, '{{ sr.class_name|escape }}')">Add</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="sidebar" id="deckSidebar">
+        {% if current_user.is_authenticated and current_user.role != 'free' %}
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0;">🎒 Deck Builder</h2>
+            <button type="button" class="theme-btn" onclick="toggleSidebar()" style="background-color: #dc3545; padding: 4px 10px; font-size: 12px;">✕ Close</button>
+        </div>
+        
+        <!-- Stats and Printed Deck Name -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; color: var(--text-color);">
+            <div id="deck-stats" style="font-size: 14px;">
+                <strong>Total Cards:</strong> <span id="deck-count">0</span><br>
+                <strong>Est. Price:</strong> $<span id="deck-price">0.00</span>
+            </div>
+            
+            <!-- The blank span where your deck title will print! -->
+            <span id="active-deck-name" style="font-size: 14px; font-weight: bold; color: #f1c40f; text-align: right;"></span>
+        </div>
+
+        <!-- The "Weird Bar" fixed: The Mana & Color Visuals are fully restored -->
+        <div id="deck-visuals" style="display: none; margin-bottom: 15px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px; color: var(--card-text); text-transform: uppercase;">Color Focus</div>
+            <div id="color-bar" style="display: flex; width: 100%; height: 10px; border-radius: 5px; overflow: hidden; background: #555; margin-bottom: 15px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);"></div>
+            
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 6px; color: var(--card-text); text-transform: uppercase;">Mana Curve</div>
+            <div id="mana-curve" style="display: flex; align-items: flex-end; gap: 4px; height: 40px; border-bottom: 1px solid var(--border-color); padding-bottom: 2px;"></div>
+            <div id="mana-labels" style="display: flex; gap: 4px; font-size: 10px; font-weight: bold; color: var(--card-text); text-align: center; margin-top: 2px;"></div>
+        </div>
+
+        <!-- The Deck Drop Zone & List -->
+        <div id="deck-drop-zone" ondragover="allowDrop(event)" ondrop="dropCard(event)" style="border: 2px dashed var(--border-color); min-height: 250px; padding: 10px; border-radius: 8px; background: var(--bg-color); margin-bottom: 15px;">
+            <p id="drop-placeholder" style="color: var(--card-text); text-align: center; margin-top: 100px;">Drag cards here or use ➕ Add</p>
+            <ul id="deck-list-items" style="list-style: none; padding: 0; margin: 0;"></ul>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button onclick="saveUserDeck()" style="flex: 1; padding: 10px; background: #8e44ad; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">💾 Save</button>
+            <button onclick="exportDeck()" style="flex: 1; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">💾 Export</button>
+            <button onclick="copyDeck()" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">📋 Copy</button>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="clearDeck()" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">🗑️ Clear</button>
+            <button onclick="newDeck()" style="flex: 1; padding: 8px; background: #f39c12; color: white; border: none; border-radius: 5px; cursor: pointer;">✨ New Deck</button>
+        </div>
+
+            {% else %}
+            <!-- What Free Users see instead -->
+            <div style="text-align: center; padding: 40px 20px;">
+                <h2>🎒 Deck Builder Locked</h2>
+                <p style="color: var(--card-text);">Free accounts do not have access to the Side-Decker or Saved Decks.</p>
+                <button style="background-color: #f1c40f; color: #333; padding: 10px 20px; font-weight: bold; border: none; border-radius: 5px; margin-top: 15px; cursor: pointer;">
+                    Upgrade to Member
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <img id="cardPreview" style="display: none; position: fixed; pointer-events: none; z-index: 9999; max-width: 230px; border-radius: 12px; border: 2px solid rgba(241, 196, 15, 0.6); box-shadow: 0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(241, 196, 15, 0.3); opacity: 0; transition: opacity 0.25s ease-in-out;" src="" alt="Card Preview">
+
+    
+    <script>
+        window.userRole = "{{ current_user.role if current_user.is_authenticated else 'free' }}";
+
+        // Unified toggle function that updates localStorage and button text
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            const themeChoice = isDark ? 'dark' : 'light';
+            localStorage.setItem('theme', themeChoice);
+            
+            const btn = document.getElementById('themeToggle');
+            if (btn) {
+                btn.innerText = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+            }
+        }
+
+        // Initialize the array right away so it exists for all functions
+        let currentDeck = [];
+
+        // Unified DOMContentLoaded event handler for theme + deck builder state
+        window.addEventListener('DOMContentLoaded', () => {
+            // 1. Initialize Theme (Server preference first, then localStorage, default to dark)
+            const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
+            const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark';
+            
+            const btn = document.getElementById('themeToggle');
+
+            if (savedTheme === 'light') {
+                document.body.classList.remove('dark-mode');
+                if (btn) btn.innerText = '🌙 Dark Mode';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.add('dark-mode');
+                if (btn) btn.innerText = '☀️ Light Mode';
+                localStorage.setItem('theme', 'dark');
+            }
+
+            // 2. Handle incoming edits from Account page AND persist deck through searches
+            const pendingDeck = localStorage.getItem('pendingLoadDeck');
+            const pendingName = localStorage.getItem('pendingLoadDeckName');
+            
+            if (pendingDeck) {
+                localStorage.removeItem('pendingLoadDeck');
+                localStorage.removeItem('pendingLoadDeckName');
+                
+                const nameDisplay = document.getElementById('active-deck-name');
+                if (nameDisplay && pendingName) {
+                    nameDisplay.innerText = pendingName;
+                    localStorage.setItem('activeDeckName', pendingName);
+                }
+                
+                currentDeck = [];
+                
+                // Clean up quotes if JSON wrapper lingers
+                let cleanText = pendingDeck;
+                if (cleanText.startsWith('"') && cleanText.endsWith('"')) {
+                    try { cleanText = JSON.parse(cleanText); } catch(e) {}
+                }
+                
+                // Split text line by line (e.g., "1 Timber Gorge" or just "Timber Gorge")
+                const lines = cleanText.split('\n');
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed !== '') {
+                        // Match quantity if present (e.g., "4 Lightning Bolt")
+                        const match = trimmed.match(/^(\d+)\s+(.+)$/);
+                        let count = 1;
+                        let cardName = trimmed;
+                        
+                        if (match) {
+                            count = parseInt(match[1], 10);
+                            cardName = match[2];
+                        }
+                        
+                        for (let i = 0; i < count; i++) {
+                            currentDeck.push({ name: cardName, price: 0.0, mana: "", id: "" });
+                        }
+                    }
+                });
+
+                localStorage.setItem('activeDeckCards', JSON.stringify(currentDeck));
+                
+                const sidebar = document.getElementById('deckSidebar');
+                if (sidebar) {
+                    sidebar.classList.add('open');
+                    sidebar.style.display = 'block';
+                }
+            } else {
+                const savedDeck = localStorage.getItem('activeDeckCards');
+                const savedName = localStorage.getItem('activeDeckName');
+                
+                if (savedDeck) {
+                    try { currentDeck = JSON.parse(savedDeck); } catch (e) { currentDeck = []; }
+                }
+                if (savedName) {
+                    const nameDisplay = document.getElementById('active-deck-name');
+                    if (nameDisplay) nameDisplay.innerText = savedName;
+                }
+            }
+
+            updateDeckUI();
+        });
+
+        function toggleView() {
+            const galleries = document.querySelectorAll('[id^="galleryView"]');
+            const tables = document.querySelectorAll('.scrollable-table');
+            let isTableVisible = true;
+            if (tables.length > 0) {
+                isTableVisible = tables[0].style.display !== 'none';
+            }
+            tables.forEach(t => { t.style.display = isTableVisible ? 'none' : 'block'; });
+            galleries.forEach(g => { g.style.display = isTableVisible ? 'grid' : 'none'; });
+        }
+
+        function updatePreviewPosition(e) {
+            const img = document.getElementById('cardPreview');
+            if (!img || img.style.display !== 'block') return;
+            const padding = 15;
+            const imgWidth = img.offsetWidth || 220; 
+            const imgHeight = img.offsetHeight || 310;
+            let left = e.clientX + padding;
+            let top = e.clientY + padding;
+            if (left + imgWidth > window.innerWidth) left = e.clientX - imgWidth - padding;
+            if (top + imgHeight > window.innerHeight) top = e.clientY - imgHeight - padding;
+            img.style.left = Math.max(5, left) + 'px';
+            img.style.top = Math.max(5, top) + 'px';
+        }
+
+        function showPreview(e, element) {
+            const url = element.getAttribute('data-img');
+            if (!url || url === 'None' || url === '') return;
+            const img = document.getElementById('cardPreview');
+            if (!img) return;
+            
+            const colorMap = {
+                W: '#f8f6d8',
+                U: '#0e67ab',
+                B: '#3a3a3a',
+                R: '#d3202a',
+                G: '#00733e',
+                C: '#a39e93'
+            };
+
+            img.style.borderImage = 'none';
+            img.style.padding = '0';
+            img.style.background = 'none';
+            let glowStyle = '2px solid #a39e93';
+            let shadowStyle = '0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(163, 158, 147, 0.4)';
+
+            const row = element.closest('tr');
+            if (row) {
+                const identityCell = row.cells[2] ? row.cells[2].innerText.toUpperCase() : '';
+                
+                if (identityCell.includes('NONE') || identityCell.includes('COLORLESS') || identityCell.trim() === '' || identityCell.trim() === 'C') {
+                    glowStyle = '2px solid #a39e93';
+                    shadowStyle = '0 10px 25px rgba(0,0,0,0.7), 0 0 15px rgba(163, 158, 147, 0.4)';
+                } else {
+                    const foundColors = ['W', 'U', 'B', 'R', 'G', 'C'].filter(c => identityCell.includes(c));
+
+                    if (foundColors.length >= 3) {
+                        const hexes = foundColors.map(c => colorMap[c]).join(', ');
+                        glowStyle = '2px solid transparent';
+                        img.style.borderImage = `linear-gradient(135deg, ${hexes}) 1`;
+                        shadowStyle = `0 10px 25px rgba(0,0,0,0.7), 0 0 20px ${colorMap[foundColors[0]]}`;
+                    } else if (foundColors.length === 2) {
+                        const hex1 = colorMap[foundColors[0]]; 
+                        const hex2 = colorMap[foundColors[1]]; 
+                        
+                        glowStyle = `2px solid ${hex2}`;
+                        shadowStyle = `0 10px 25px rgba(0,0,0,0.7), 0 0 25px ${hex1}`;
+                    } else if (foundColors.length === 1) {
+                        const hex = colorMap[foundColors[0]];
+                        glowStyle = `2px solid ${hex}`;
+                        shadowStyle = `0 10px 25px rgba(0,0,0,0.7), 0 0 18px ${hex}`;
+                    }
+                }
+            }
+
+            img.style.border = glowStyle;
+            img.style.boxShadow = shadowStyle;
+            img.src = url;
+            img.style.display = 'block';
+            setTimeout(() => { img.style.opacity = '1'; }, 10);
+            updatePreviewPosition(e);
+        }
+
+        function movePreview(e) { updatePreviewPosition(e); }
+        
+        function hidePreview() {
+            const img = document.getElementById('cardPreview');
+            if (!img) return;
+            img.style.opacity = '0';
+            setTimeout(() => {
+                if (img.style.opacity === '0') {
+                    img.style.display = 'none';
+                    img.src = '';
+                }
+            }, 250);
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('deckSidebar');
+            if (!sidebar) return;
+            if (sidebar.style.display === 'none' || sidebar.style.width === '0px' || !sidebar.classList.contains('open')) {
+                sidebar.classList.add('open');
+                sidebar.style.display = 'block';
+            } else {
+                sidebar.classList.remove('open');
+                sidebar.style.display = 'none';
+            }
+        }
+
+        function addCardFromRow(buttonElem, categoryName) {
+            // --- FREE TIER LOCK ---
+            if (window.userRole === 'free' || !window.userRole) {
+                alert("🎒 Side-Decker is a Member-exclusive feature! Upgrade today to unlock deck building.");
+                return; // Stops the card from being added
+            }
+
+            let cardName = "Unknown Card", cardPrice = 0.0, cardMana = "", cardId = "";
+            const row = buttonElem.closest('tr');
+            if (row) {
+                const nameEl = row.querySelector('.card-name-hover');
+                cardName = nameEl ? nameEl.innerText.trim() : "Unknown Card";
+                let priceText = row.cells[3] ? row.cells[3].innerText.replace('$', '').trim() : "0";
+                cardPrice = parseFloat(priceText) || 0.0;
+                cardMana = row.cells[1] ? row.cells[1].innerText.trim() : "";
+                cardId = row.cells[2] ? row.cells[2].innerText.replace(/[\n\s]+/g, '') : ""; 
+            } else {
+                const tile = buttonElem.closest('.card-tile');
+                const nameEl = tile.querySelector('div[draggable="true"]');
+                cardName = nameEl ? nameEl.innerText.trim() : "Unknown Card";
+                cardPrice = parseFloat(nameEl.dataset.price) || 0.0;
+                cardMana = nameEl.dataset.mana || "";
+                cardId = nameEl.dataset.id || "";
+            }
+            
+            // [Rest of your existing function code for adding the card to your deck goes right here...]
+            
+            currentDeck.push({ name: cardName, price: cardPrice, mana: cardMana, id: cardId });
+            updateDeckUI();
+            
+            const originalText = buttonElem.innerText;
+            buttonElem.innerText = '✔️ Added';
+            buttonElem.style.background = '#155724';
+            setTimeout(() => {
+                buttonElem.innerText = originalText;
+                buttonElem.style.background = '#28a745';
+            }, 1000);
+        }
+
+        function drag(ev) {
+            const target = ev.target;
+            const payload = { 
+                name: target.dataset.name, 
+                price: parseFloat(target.dataset.price || 0.0),
+                mana: target.dataset.mana || "",
+                id: target.dataset.id || ""
+            };
+            ev.dataTransfer.setData("application/json", JSON.stringify(payload));
+            ev.dataTransfer.setData("text/plain", "1 " + payload.name);
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        
+        function dropCard(ev) {
+            ev.preventDefault();
+            const jsonData = ev.dataTransfer.getData("application/json");
+            if (!jsonData) return; 
+            currentDeck.push(JSON.parse(jsonData));
+            updateDeckUI();
+        }
+
+        function removeCardFromDeck(index) {
+            currentDeck.splice(index, 1);
+            updateDeckUI();
+        }
+
+        // 2. Clear out the workspace and erase local memory
+        function clearDeck() {
+            currentDeck = [];
+            localStorage.removeItem('activeDeckCards');
+            updateDeckUI();
+        }
+
+        // 3. New Deck: Clears cards, clears name, erases local memory
+        function newDeck() {
+            clearDeck();
+            localStorage.removeItem('activeDeckName');
+            const nameDisplay = document.getElementById('active-deck-name');
+            if (nameDisplay) nameDisplay.innerText = '';
+        }
+
+        // 4. Update UI and continuously sync with localStorage
+        function updateDeckUI() {
+            // Save current deck state so searches never wipe it out
+            localStorage.setItem('activeDeckCards', JSON.stringify(currentDeck));
+            const nameDisplay = document.getElementById('active-deck-name');
+            if (nameDisplay) {
+                localStorage.setItem('activeDeckName', nameDisplay.innerText);
+            }
+
+            const listEl = document.getElementById('deck-list-items');
+            const countEl = document.getElementById('deck-count');
+            const priceEl = document.getElementById('deck-price');
+            const placeholder = document.getElementById('drop-placeholder');
+            const visuals = document.getElementById('deck-visuals');
+            
+            let colorCounts = { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
+            let curveCounts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, "6+": 0 };
+            let totalColors = 0;
+
+            if (listEl) listEl.innerHTML = '';
+            
+            if (currentDeck.length === 0) {
+                if (placeholder) placeholder.style.display = 'block';
+                if (visuals) visuals.style.display = 'none';
+            } else {
+                if (placeholder) placeholder.style.display = 'none';
+                if (visuals) visuals.style.display = 'block';
+                
+                currentDeck.forEach((card, index) => {
+                    const li = document.createElement('li');
+                    li.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border-color); font-size: 13px;";
+                    li.innerHTML = "<span>" + card.name + "</span><span>$" + card.price.toFixed(2) + " <button onclick=\"removeCardFromDeck(" + index + ")\" style=\"background:none; border:none; color:#e74c3c; cursor:pointer; margin-left:5px; font-weight:bold;\">✕</button></span>";
+                    if (listEl) listEl.appendChild(li);
+
+                    let cmc = 0;
+                    const manaStr = (card.mana || "");
+                    let numVal = parseInt(manaStr);
+                    if (!isNaN(numVal)) cmc += numVal;
+                    
+                    const upperStr = manaStr.toUpperCase();
+                    for (let i = 0; i < upperStr.length; i++) {
+                        let char = upperStr.charAt(i);
+                        if (char === 'W' || char === 'U' || char === 'B' || char === 'R' || char === 'G' || char === 'C') {
+                            cmc++;
+                        }
+                    }
+                    
+                    if (cmc >= 6) curveCounts["6+"]++;
+                    else curveCounts[cmc]++;
+
+                    const identityStr = (card.id || card.mana || "").toUpperCase();
+                    let hasColor = false;
+                    let baseColors = ['W', 'U', 'B', 'R', 'G'];
+                    for (let c = 0; c < baseColors.length; c++) {
+                        if (identityStr.indexOf(baseColors[c]) !== -1) {
+                            colorCounts[baseColors[c]]++;
+                            totalColors++;
+                            hasColor = true;
+                        }
+                    }
+                    if (!hasColor) colorCounts.C++;
+                });
+
+                const colorBar = document.getElementById('color-bar');
+                if (colorBar) {
+                    colorBar.innerHTML = '';
+                    if (totalColors === 0) {
+                        colorBar.innerHTML = '<div style="width: 100%; background: #706b61;"></div>';
+                    } else {
+                        const palettes = { W: '#f8f6d8', U: '#0e67ab', B: '#3a3a3a', R: '#d3202a', G: '#00733e' };
+                        let baseColors = ['W', 'U', 'B', 'R', 'G'];
+                        for (let c = 0; c < baseColors.length; c++) {
+                            let col = baseColors[c];
+                            if (colorCounts[col] > 0) {
+                                const pct = (colorCounts[col] / totalColors) * 100;
+                                colorBar.innerHTML += '<div style="width: ' + pct + '%; background: ' + palettes[col] + ';" title="' + col + '"></div>';
+                            }
+                        }
+                    }
+                }
+
+                const curveBox = document.getElementById('mana-curve');
+                const labelsBox = document.getElementById('mana-labels');
+                if (curveBox && labelsBox) {
+                    curveBox.innerHTML = '';
+                    labelsBox.innerHTML = '';
+                    
+                    let countsArray = [];
+                    let costs = ['0', '1', '2', '3', '4', '5', '6+'];
+                    for (let k = 0; k < costs.length; k++) {
+                        countsArray.push(curveCounts[costs[k]]);
+                    }
+                    let maxCount = Math.max.apply(null, countsArray);
+                    if (maxCount === 0) maxCount = 1;
+
+                    for (let k = 0; k < costs.length; k++) {
+                        let cost = costs[k];
+                        let count = curveCounts[cost];
+                        let heightPct = (count / maxCount) * 100;
+                        curveBox.innerHTML += '<div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;"><div style="font-size: 9px; color: var(--card-text); margin-bottom: 2px;">' + (count > 0 ? count : '') + '</div><div style="width: 100%; height: ' + heightPct + '%; background: #3498db; border-radius: 3px 3px 0 0; min-height: ' + (count > 0 ? '4px' : '0') + '; transition: height 0.3s ease;"></div></div>';
+                        labelsBox.innerHTML += '<div style="flex: 1;">' + cost + '</div>';
+                    }
+                }
+            }
+            
+            if (countEl) countEl.innerText = currentDeck.length;
+            if (priceEl) priceEl.innerText = currentDeck.reduce((sum, card) => sum + card.price, 0).toFixed(2);
+            const mobileCount = document.getElementById('mobileDeckCount');
+            if (mobileCount) mobileCount.innerText = currentDeck.length;
+        }
+
+        function copyDeck() {
+            if (currentDeck.length === 0) { alert("Your deck is empty!"); return; }
+            const counts = {};
+            currentDeck.forEach(card => { counts[card.name] = (counts[card.name] || 0) + 1; });
+            let textContent = "";
+            for (const [name, count] of Object.entries(counts)) { textContent += count + " " + name + "\n"; }
+            navigator.clipboard.writeText(textContent).then(() => {
+                alert("📋 Deck copied to clipboard!");
+            }).catch(err => {
+                alert("Failed to copy. Your browser might be blocking clipboard access.");
+            });
+        }
+
+        function exportDeck() {
+            if (currentDeck.length === 0) { alert("Your deck is empty!"); return; }
+            const counts = {};
+            currentDeck.forEach(card => { counts[card.name] = (counts[card.name] || 0) + 1; });
+            let textContent = "";
+            for (const [name, count] of Object.entries(counts)) { textContent += count + " " + name + "\n"; }
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'my_cheepcard_deck.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function saveUserDeck() {
+            if (currentDeck.length === 0) {
+                alert("Your deck is empty!");
+                return;
+            }
+
+            let deckName = document.getElementById('active-deck-name').innerText;
+            
+            if (!deckName || deckName.trim() === "") {
+                deckName = prompt("Please enter a name for your new deck:");
+                if (!deckName) return; 
+                
+                document.getElementById('active-deck-name').innerText = deckName;
+            }
+
+            // Send the entire rich array (currentDeck) instead of stripping it down to text!
+            try {
+                const response = await fetch('/save_deck', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: deckName, cards: currentDeck }) // <--- The magic fix
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert("💾 Deck saved successfully to your account!");
+                } else {
+                    alert("Please log in to save decks.");
+                }
+            } catch (err) {
+                alert("Error saving deck.");
+            }
+        }
+    </script> <!-- 1. Close the first script block here -->
+
+    <script>
+        async function rerollSingleCard(categoryName, buttonElem) {
+            const table = buttonElem.closest('table');
+            const row = buttonElem.closest('tr');
+            const rejectedName = row.querySelector('.card-name-hover').innerText.trim();
+            const currentNames = Array.from(table.querySelectorAll('.card-name-hover')).map(el => el.innerText.trim());
+
+            buttonElem.disabled = true;
+            const originalText = buttonElem.innerText;
+            buttonElem.innerText = '🎲 ...';
+
+            try {
+                const response = await fetch('/reroll', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category: categoryName, current_names: currentNames, rejected_card_name: rejectedName })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const newCard = data.new_card;
+                    const nameStrong = row.querySelector('.card-name-hover');
+                    if (nameStrong) {
+                        nameStrong.innerText = newCard.name;
+                        nameStrong.setAttribute('data-img', newCard.image_url || '');
+                    }
+                    row.cells[0].querySelector('.card-name-hover').innerText = newCard.name;
+                    row.cells[1].innerText = newCard.mana_cost || '';
+                    row.cells[2].innerHTML = newCard.identity || ''; 
+                    row.cells[3].innerText = '$' + parseFloat(newCard.price || 0).toFixed(2);
+                    row.cells[4].innerText = categoryName; 
+                    row.cells[5].innerText = newCard.active_rank_word || 'None';
+
+                    // 👉 Instantly decreases the swap counter on the screen
+                    const swapCounterEl = document.getElementById('swap-counter');
+                    if (swapCounterEl) {
+                        let currentVal = parseInt(swapCounterEl.innerText, 10);
+                        if (currentVal > 0) {
+                            swapCounterEl.innerText = currentVal - 1;
+                        }
+                    }
+
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) {
+                console.error('Error re-rolling card:', err);
+                alert("Network error while trying to swap the card.");
+            } finally {
+                buttonElem.disabled = false;
+                buttonElem.innerText = originalText;
+            }
+        }
+    </script>
+    <!-- 🚨 CLEAN MAX SEARCH ALERT POPUP -->
+    {% if show_limit_popup %}
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            alert("🚨 You have reached your max 15 searches for today! Upgrade to Member for unlimited searching and full deck-building access.");
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

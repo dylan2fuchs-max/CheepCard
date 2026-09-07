@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheepCards - Terms of Service</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dark-mode" style="background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0;">
+
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--box-bg); border-bottom: 2px solid #f1c40f;">
+        <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 15px; text-decoration: none;">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 40px; width: auto;">
+            <h2 style="margin: 0; color: #f1c40f;">CheepCards</h2>
+        </a>
+        <a href="{{ url_for('home') }}" class="cta-btn" style="background: #2980b9; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px;">&larr; Back to Home</a>
+    </header>
+
+    <div style="max-width: 800px; margin: 40px auto; padding: 30px; background: var(--box-bg); border: 1px solid var(--border-color); border-radius: 8px;">
+        <h1 style="color: #f1c40f; margin-top: 0;">Terms of Service</h1>
+        <p style="color: var(--card-text);">Last updated: August 2026</p>
+        
+        <h3 style="color: var(--title-color);">1. Acceptance of Terms</h3>
+        <p>By accessing and using CheepCards, you agree to comply with and be bound by these Terms of Service.</p>
+        
+        <h3 style="color: var(--title-color);">2. User Accounts & Responsibilities</h3>
+        <p>You are responsible for maintaining the confidentiality of your account credentials and password. Free tier accounts are subject to daily search limits and restrictions on saved decks.</p>
+        
+        <h3 style="color: var(--title-color);">3. Intellectual Property</h3>
+        <p>Card data, images, and symbols pulled via external APIs (such as Scryfall) belong to their respective copyright holders. The application structure, rankings, and custom UI design belong to CheepCards.</p>
+    </div>
+
+</body>
+</html>

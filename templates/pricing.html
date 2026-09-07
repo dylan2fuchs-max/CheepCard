@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing & Plans - CheepCards</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9; 
+            --box-bg: white; 
+            --text-color: #333;
+            --title-color: #2c3e50;
+            --border-color: #bdc3c7;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --title-color: #f1c40f;
+            --border-color: #444;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+        }
+
+        .pricing-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .panel-box {
+            background: var(--box-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+        }
+
+        .panel-box.featured {
+            border-color: #f39c12;
+            position: relative;
+        }
+
+        .badge-pro-tag {
+            background-color: #f39c12;
+            color: #2c1800;
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        h2 { color: var(--title-color); margin-top: 0; font-size: 24px; }
+        .price { font-size: 36px; font-weight: bold; color: var(--title-color); margin: 15px 0; }
+        .price span { font-size: 14px; font-weight: normal; color: var(--text-color); opacity: 0.8; }
+
+        ul.features-list {
+            text-align: left;
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0 30px 0;
+        }
+
+        ul.features-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        button { 
+            background-color: #3498db; 
+            color: white; 
+            padding: 12px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 15px; 
+            font-weight: bold; 
+            width: 100%; 
+            transition: 0.2s;
+        }
+
+        button:hover { background-color: #2980b9; }
+
+        .theme-toggle-btn {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .flash-message {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* Background pattern decoration */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 8px; height: 8px;
+            z-index: -1;
+            background: #f1c40f;
+            box-shadow: 
+                80px 60px 0 #f1c40f, 250px 40px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #f1c40f, 1780px 50px 0 #3498db,
+                30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #f1c40f;
+            opacity: 0.75;
+        }
+    </style>
+</head>
+<body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
+    <div class="container">
+        <div class="header-container">
+            <h1 style="margin: 0; color: var(--title-color);">🚀 Choose Your Plan</h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
+                <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
+                    <button style="background-color: #7f8c8d; width: auto; padding: 8px 14px; font-size: 12px;">← Dashboard</button>
+                </a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="pricing-grid">
+            <div class="panel-box featured">
+                <span class="badge-pro-tag">⭐ Pro Subscriber</span>
+                <h2>CheepCards Pro</h2>
+                <div class="price">$5.00 <span>/ month</span></div>
+                
+                <ul class="features-list">
+                    <li>✓ Advanced database sync & expansion tools</li>
+                    <li>✓ Automatic weekly price updates & legality sweeps</li>
+                    <li>✓ Exclusive Pro Name Tag customization (Gold, Onyx, Copper)</li>
+                    <li>✓ Priority deck synergy and filtering support</li>
+                </ul>
+
+                <form action="/create-checkout-session" method="POST">
+                    <button type="submit" style="background-color: #f39c12; color: #2c1800;">Upgrade to Pro Now</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            const themeChoice = isDark ? 'dark-mode' : 'light';
+            localStorage.setItem('theme', themeChoice);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
+            const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark-mode';
+
+            if (savedTheme === 'light') {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark-mode');
+            }
+        });
+    </script>
+</body>
+</html>
