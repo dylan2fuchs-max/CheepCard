@@ -6,14 +6,15 @@ import ngrok
 import time
 import json
 import stripe
+import requests
 from datetime import date, datetime
 from dotenv import load_dotenv
-from twilio.rest import Client
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
 from flask import Flask, request, render_template, session, jsonify, abort, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from Excel_Manager import ExcelManager
 from Card_Filter import Card
@@ -32,6 +33,11 @@ app.secret_key = os.environ.get("SECRET_KEY", "cheepcard_secret_key_987654321_de
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cheepcard.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+print("STRIPE KEY CHECK:", os.getenv("STRIPE_SECRET_KEY"))
+
+# Reads 'True' or 'False' from your environment variables
+MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -44,29 +50,14 @@ if os.path.exists('disposable_domains.json'):
         DISPOSABLE_DOMAINS = set(json.load(f))
 
 manager = ExcelManager("Magic Card Data Base Current View.xlsx")
+
+# (Remove the old register_review_routes call here entirely)
+
 SEARCH_CLUSTERS = {}
 
 load_dotenv()
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-
-# Configuration (Keep these secure in environment variables later)
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
-
-def send_sms_code(to_phone, code):
-    """Triggers Twilio to send the 6-digit OTP to the user's phone."""
-    try:
-        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        message = client.messages.create(
-            body=f"Your CheepCards verification code is: {code}",
-            from_=TWILIO_PHONE_NUMBER,
-            to=to_phone
-        )
-        return True
-    except Exception as e:
-        print(f"Twilio SMS Error: {e}")
-        return False
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
 
 def validate_password_strength(password):
     """
@@ -89,12 +80,20 @@ def validate_password_strength(password):
         return "Password must include at least one special symbol."
     return None
 
-# Flask-Mail Configuration
-app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your_email@gmail.com'
-app.config['MAIL_PASSWORD'] = 'your_email_password'
+@app.before_request
+def check_maintenance():
+    # If maintenance mode is active, block all routes except static files (CSS/images)
+    if MAINTENANCE_MODE and request.endpoint not in ['static']:
+        return render_template('maintenance.html'), 503
+
+# Flask-Mail configuration using environment variables
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+
 mail = Mail(app)
 
 def get_reset_token(user, expires_sec=1800):
@@ -116,15 +115,11 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
-    phone_number = db.Column(db.String(20), unique=True, nullable=False)
-    
-    # Verification & Security Fields
-    is_verified = db.Column(db.Boolean, default=False)
-    verification_code = db.Column(db.String(6), nullable=True)
     
     # Stripe & Subscription Mapping
     stripe_customer_id = db.Column(db.String(100), nullable=True)
     role = db.Column(db.String(20), default='free') 
+    pro_expires_at = db.Column(db.DateTime, nullable=True)
     
     # Existing App Fields
     default_theme = db.Column(db.String(50), default='dark-mode')
@@ -166,6 +161,139 @@ class Feedback(db.Model):
     category = db.Column(db.String(50), nullable=False)
     message = db.Column(db.Text, nullable=False)
 
+# Temporary in-memory staging dictionary for unranked card reviews
+STAGED_EDITS = {}
+
+@app.route('/review/card/<target_class>')
+@login_required
+def review_card(target_class):
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+
+    file_path = "Magic Card Data Base Current View.xlsx"
+    if hasattr(manager, 'file_path'):
+        file_path = manager.file_path
+    elif hasattr(manager, 'path'):
+        file_path = manager.path
+        
+    df = pd.read_excel(file_path, engine="openpyxl")
+    
+    name_col = next((c for c in df.columns if 'name' in c.strip().lower() or 'title' in c.strip().lower()), df.columns[0])
+    class1_col = next((c for c in df.columns if 'class' in c.strip().lower()), df.columns[1])
+    rank_col = next((c for c in df.columns if 'rank' in c.strip().lower()), df.columns[2])
+
+    # Apply active in-memory staged edits so reviewed cards don't reappear before saving
+    for c_idx, edit_data in STAGED_EDITS.items():
+        if c_idx in df.index:
+            df.loc[c_idx, class1_col] = edit_data['new_class']
+            df.loc[c_idx, rank_col] = edit_data['new_rank']
+
+    unranked_subset = df[
+        (df[class1_col].astype(str).str.strip().str.lower() == target_class.strip().lower()) & 
+        (df[rank_col].isna() | (df[rank_col].astype(str).str.strip() == '') | (df[rank_col].astype(str).str.strip().str.lower() == 'nan'))
+    ]
+
+    remaining_count = len(unranked_subset)
+    if remaining_count == 0:
+        save_btn_html = ""
+        if STAGED_EDITS:
+            save_btn_html = f'<form action="{url_for("review_save_all")}" method="POST" style="margin-top:20px;"><button type="submit" style="background:#27ae60;color:white;padding:10px 20px;border:none;border-radius:4px;cursor:pointer;">💾 Save {len(STAGED_EDITS)} Staged Changes to Excel</button></form>'
+        return f"<h1>All cards in class '{target_class}' are fully ranked! (Staged changes pending: {len(STAGED_EDITS)})</h1>{save_btn_html}<p><a href='/'>Home</a></p>"
+
+    target_row = unranked_subset.iloc[0]
+    card_idx = target_row.name
+    card_name = str(target_row[name_col]).strip()
+    clean_name = card_name.split(" // ")[0].strip()
+
+    image_url = "https://cards.scryfall.io/normal/front/0/0/00000000-0000-0000-0000-000000000000.jpg"
+    try:
+        resp = requests.get(f"https://api.scryfall.com/cards/named?exact={clean_name}", headers={"User-Agent": "CheepCardsApp/1.0"})
+        if resp.status_code == 200:
+            data = resp.json()
+            if 'image_uris' in data:
+                image_url = data['image_uris']['normal']
+            elif 'card_faces' in data:
+                image_url = data['card_faces'][0]['image_uris']['normal']
+    except Exception:
+        pass
+
+    return render_template(
+        'review.html',
+        card_name=card_name,
+        card_idx=card_idx,
+        target_class=target_class,
+        remaining_count=remaining_count,
+        image_url=image_url,
+        staged_count=len(STAGED_EDITS)
+    )
+
+@app.route('/review/submit', methods=['POST'])
+@login_required
+def review_submit():
+    if current_user.role != 'admin':
+        abort(403)
+
+    card_idx = int(request.form['card_idx'])
+    target_class = request.form['target_class']
+    new_class = request.form['new_class']
+    new_rank = request.form['new_rank']
+
+    # Store edit in memory instantly with zero disk lag
+    STAGED_EDITS[card_idx] = {
+        'new_class': new_class,
+        'new_rank': new_rank
+    }
+
+    flash(f"Card staged successfully. ({len(STAGED_EDITS)} changes pending save)", "info")
+    return redirect(url_for('review_card', target_class=target_class))
+
+@app.route('/review/save_all', methods=['POST'])
+@login_required
+def review_save_all():
+    if current_user.role != 'admin':
+        abort(403)
+
+    if not STAGED_EDITS:
+        flash("No staged changes to save.", "warning")
+        return redirect(url_for('home'))
+
+    if hasattr(manager, '_create_timestamped_backup'):
+        manager._create_timestamped_backup()
+
+    file_path = "Magic Card Data Base Current View.xlsx"
+    if hasattr(manager, 'file_path'):
+        file_path = manager.file_path
+    elif hasattr(manager, 'path'):
+        file_path = manager.path
+
+    import openpyxl
+    wb = openpyxl.load_workbook(file_path)
+    ws = wb.active
+
+    headers = [cell.value for cell in ws[1]]
+    class1_col_idx = next((i + 1 for i, h in enumerate(headers) if h and 'class' in str(h).strip().lower()), 2)
+    rank_col_idx = next((i + 1 for i, h in enumerate(headers) if h and 'rank' in str(h).strip().lower()), 3)
+
+    count = len(STAGED_EDITS)
+    for card_idx, data in STAGED_EDITS.items():
+        excel_row = card_idx + 2
+        ws.cell(row=excel_row, column=class1_col_idx, value=data['new_class'])
+        ws.cell(row=excel_row, column=rank_col_idx, value=data['new_rank'])
+
+    wb.save(file_path)
+    STAGED_EDITS.clear()
+
+    if hasattr(manager, 'load_cards'):
+        manager.load_cards()
+
+    flash(f"Successfully bulk saved {count} card reviews to Excel!", "success")
+    return redirect(url_for('home'))
+
+@app.route('/healthz')
+def healthz():
+    return 'OK', 200
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -173,10 +301,15 @@ def load_user(user_id):
 # --- HELPER FUNCTIONS ---
 
 def get_rank_word_from_value(val):
+    # If Excel_Manager passes a word or number, map it safely for frontend display
+    if isinstance(val, str):
+        text_map = {"optimized": "Optimized", "fast": "Fast", "average": "Average", "passive": "Passive", "low": "Low"}
+        return text_map.get(val.strip().lower(), "Average")
+    
     try:
         v = int(val)
     except (ValueError, TypeError):
-        return "Average"
+        v = 3
     
     RANK_WORD_MAP = {
         5: "Optimized",
@@ -190,17 +323,27 @@ def get_rank_word_from_value(val):
 def get_daily_budget_card():
     today = date.today()
     if today.month == 1 and today.day == 1:
-        BudgetCardHistory.query.delete()
+        db.session.execute(db.delete(BudgetCardHistory))
         db.session.commit()
 
-    today_record = BudgetCardHistory.query.filter_by(date_used=today).first()
+    # Check if a budget card was already picked for today
+    stmt = db.select(BudgetCardHistory).filter_by(date_used=today)
+    today_record = db.session.execute(stmt).scalar_one_or_none()
+
     if today_record:
         matched_card = next((c for c in manager.card_pool if getattr(c, 'name', '').lower() == today_record.card_name.lower()), None)
         if matched_card:
-            matched_card.active_rank_word = get_rank_word_from_value(getattr(matched_card, 'active_priority_val', 3))
+            r1_word = str(getattr(matched_card, 'ranking_1_word', 'none')).strip()
+            r2_word = str(getattr(matched_card, 'ranking_2_word', 'none')).strip()
+            word = r1_word if r1_word.lower() != "none" and r1_word != "" else r2_word
+            matched_card.active_rank_word = word.capitalize() if word.lower() != "none" and word != "" else "Average"
+            
+            c1 = str(getattr(matched_card, 'card_class_1', 'none')).strip()
+            matched_card.display_class = c1 if c1.lower() != "none" and c1 != "" else getattr(matched_card, 'card_class_2', 'N/A')
             return matched_card
 
-    used_names = {record.card_name.lower() for record in BudgetCardHistory.query.all()}
+    used_stmt = db.select(BudgetCardHistory.card_name)
+    used_names = {name.lower() for name in db.session.execute(used_stmt).scalars().all()}
     
     eligible_cards = []
     for card in manager.card_pool:
@@ -209,22 +352,43 @@ def get_daily_budget_card():
             continue
             
         try:
-            price = float(getattr(card, 'price', 0.0))
-            rank_val = int(getattr(card, 'active_priority_val', getattr(card, 'ranking_1_value', 0)))
-            
-            if price <= 1.00 and rank_val >= 3:
+            # 1. Price check <= $1.00
+            price = float(getattr(card, 'price', 0.0) or 0.0)
+            if price > 1.00:
+                continue
+
+            # 2. Class check: must have a valid class in card_class_1 or card_class_2
+            c1 = str(getattr(card, 'card_class_1', 'none')).strip().lower()
+            c2 = str(getattr(card, 'card_class_2', 'none')).strip().lower()
+            has_class = (c1 and c1 != 'none' and c1 != 'nan') or (c2 and c2 != 'none' and c2 != 'nan')
+            if not has_class:
+                continue
+
+            # 3. Rank check: Average or better means numeric value >= 3 (3=Average, 4=Fast, 5=Optimized)
+            r1_val = int(getattr(card, 'ranking_1_value', 0) or 0)
+            r2_val = int(getattr(card, 'ranking_2_value', 0) or 0)
+            max_rank = max(r1_val, r2_val)
+
+            if max_rank >= 3:
                 eligible_cards.append(card)
         except (ValueError, TypeError):
             continue
 
     if not eligible_cards:
-        BudgetCardHistory.query.delete()
-        db.session.commit()
         return None
 
+    # Randomize from the strictly filtered Excel card pool
     chosen_card = random.choice(eligible_cards)
-    rank_val = int(getattr(chosen_card, 'active_priority_val', getattr(chosen_card, 'ranking_1_value', 3)))
-    chosen_card.active_rank_word = get_rank_word_from_value(rank_val)
+    
+    r1_word = str(getattr(chosen_card, 'ranking_1_word', 'none')).strip()
+    r2_word = str(getattr(chosen_card, 'ranking_2_word', 'none')).strip()
+    word = r1_word if r1_word.lower() != "none" and r1_word != "" else r2_word
+    chosen_card.active_rank_word = word.capitalize() if word.lower() != "none" and word != "" else "Average"
+
+    # Apply title casing to newly chosen card
+    c1 = str(getattr(chosen_card, 'card_class_1', 'none')).strip()
+    raw_class = c1 if c1.lower() != "none" and c1 != "" else str(getattr(chosen_card, 'card_class_2', 'N/A')).strip()
+    chosen_card.display_class = raw_class.title() if raw_class.lower() != "none" and raw_class != "" else "N/A"
 
     new_history = BudgetCardHistory(card_name=getattr(chosen_card, 'name'), date_used=today)
     db.session.add(new_history)
@@ -271,7 +435,8 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            return redirect(url_for('home'))
+            next_page = request.args.get('next')
+            return redirect(next_page) if next_page else redirect(url_for('home'))
         else:
             flash('Please check your login details and try again.', 'danger')
             
@@ -474,7 +639,11 @@ def search():
         if clean_target_class == "all available cards":
             class_results = manager.card_pool
         else:
-            class_results = manager.find_cards_by_value("class", clean_target_class)
+            class_results = [
+                card for card in manager.card_pool 
+                if clean_target_class in str(getattr(card, 'card_class_1', '')).lower() 
+                or clean_target_class in str(getattr(card, 'card_class_2', '')).lower()
+            ]
 
         filtered_results = []
         for card in class_results:
@@ -497,20 +666,20 @@ def search():
             current_card_rank_value = 0
             
             if clean_target_class == "all available cards":
-                current_card_rank_word = r1_word
-                current_card_rank_value = r1_val
-            elif c1_val == clean_target_class:
-                current_card_rank_word = r1_word
-                current_card_rank_value = r1_val
-            elif c2_val == clean_target_class:
-                current_card_rank_word = r2_word
-                current_card_rank_value = r2_val
+                current_card_rank_word = r1_word if r1_word != "none" else r2_word
+                current_card_rank_value = r1_val if r1_val > 0 else r2_val
+            elif clean_target_class in c1_val:
+                current_card_rank_word = r1_word if r1_word != "none" else r2_word
+                current_card_rank_value = r1_val if r1_val > 0 else r2_val
+            elif clean_target_class in c2_val:
+                current_card_rank_word = r2_word if r2_word != "none" else r1_word
+                current_card_rank_value = r2_val if r2_val > 0 else r1_val
             else:
-                current_card_rank_word = r1_word
-                current_card_rank_value = r1_val
+                current_card_rank_word = r1_word if r1_word != "none" else r2_word
+                current_card_rank_value = r1_val if r1_val > 0 else r2_val
 
             card.active_priority_val = int(current_card_rank_value)
-            card.active_rank_word = current_card_rank_word
+            card.active_rank_word = current_card_rank_word.capitalize()
 
             card_type = str(getattr(card, 'card_type', getattr(card, 'type', ''))).lower()
             is_land = "land" in card_type or c1_val == "land" or c2_val == "land"
@@ -726,55 +895,25 @@ def reroll_card():
 
     return jsonify({'success': True, 'new_card': new_card_data})
 
-# Initialize Stripe with your secret key from environment variables
-stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = "price_1UD8xLFptxxDBwjmVmE8DV1W"
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
-    try:
-        # Create a Checkout Session for your subscription
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[
-                {
-                    # Replace with your actual Stripe Price ID from your Stripe Dashboard
-                    'price': 'price_1XXXXXXXXXXXXXXXXXXXX', 
-                    'quantity': 1,
-                },
-            ],
-            mode='subscription',
-            success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=request.host_url + 'cancel',
-        )
-        
-        # Redirect the user to Stripe's secure checkout page
-        return redirect(checkout_session.url, code=303)
-        
-    except Exception as e:
-        return jsonify(error=str(e)), 500
+    checkout_session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price': STRIPE_PRICE_ID,
+            'quantity': 1,
+        }],
+        mode='subscription',
+        success_url=url_for('success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url=url_for('cancel', _external=True),
+    )
+    return redirect(checkout_session.url, code=303)
 
 @app.route('/pricing')
 def pricing():
     return render_template('pricing.html')
-
-@app.route('/create-checkout-session', methods=['POST'])
-def create_checkout_session():
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[
-                {
-                    'price': 'price_1XXXXXXXXXXXXXXXXXXXX',  # Replace with your actual Stripe Price ID
-                    'quantity': 1,
-                },
-            ],
-            mode='subscription',
-            success_url=request.host_url + 'success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=request.host_url + 'cancel',
-        )
-        return redirect(checkout_session.url, code=303)
-    except Exception as e:
-        return jsonify(error=str(e)), 500
 
 @app.route('/success')
 def success():
@@ -910,6 +1049,11 @@ DISPOSABLE_DOMAINS = {
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        # Ensure terms agreement checkbox was checked
+        if not request.form.get('terms_agreement'):
+            flash('You must agree to the Terms of Service and Privacy Policy to register.', 'danger')
+            return redirect(url_for('register'))
+
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
@@ -937,7 +1081,6 @@ def register():
             username=username,
             email=email,
             password_hash=hashed_password,
-            is_verified=True,  # Set to True since phone verification is removed
             role='free'
         )
         
@@ -1015,6 +1158,21 @@ If you did not make this request, simply ignore this email.
         
     return render_template('forgot_password.html')
 
+from flask_mail import Message
+
+@app.route('/test-email')
+def test_email():
+    try:
+        msg = Message(
+            subject='CheepCards Pro Brevo Test',
+            recipients=['your_personal_email@gmail.com']  # Put your real email here
+        )
+        msg.body = 'Success! Your local Flask app is successfully talking to Brevo SMTP.'
+        mail.send(msg)
+        return 'Email sent successfully! Check your inbox.'
+    except Exception as e:
+        return f'Email failed: {str(e)}'
+
 
 @app.route("/reset-password/<token>", methods=['GET', 'POST'])
 def reset_token(token):
@@ -1055,7 +1213,7 @@ def save_deck():
     active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
 
     if active_role == 'free':
-        return {'success': False, 'message': 'Free users cannot save decks. Upgrade to Member!'}
+        return {'success': False, 'message': 'Free users cannot save decks. Upgrade to Pro!'}
         
     data = request.get_json()
     deck_name = data.get('name', 'My Custom Deck').strip()
@@ -1077,6 +1235,17 @@ def save_deck():
 
 from sqlalchemy import extract, func
 
+from datetime import datetime
+
+@app.before_request
+def check_pro_expiration():
+    if current_user.is_authenticated and current_user.role == 'pro':
+        if current_user.pro_expires_at and current_user.pro_expires_at < datetime.utcnow():
+            current_user.role = 'free'
+            db.session.commit()
+
+from datetime import datetime, timedelta
+
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
     payload = request.get_data(as_text=True)
@@ -1097,11 +1266,19 @@ def stripe_webhook():
         if customer_email:
             user = User.query.filter_by(email=customer_email).first()
             if user:
+                now = datetime.utcnow()
+                # If they already have an active expiration date in the future, stack/add 30 days to it. 
+                # Otherwise, start counting 30 days from right now.
+                if user.pro_expires_at and user.pro_expires_at > now:
+                    user.pro_expires_at = user.pro_expires_at + timedelta(days=30)
+                else:
+                    user.pro_expires_at = now + timedelta(days=30)
+                
                 user.role = 'pro'
                 db.session.commit()
-                print(f"⭐ Upgraded user {customer_email} to Pro!")
+                print(f"⭐ Upgraded user {customer_email} to Pro! Expires: {user.pro_expires_at}")
 
-    return jsonify(success=True), 200
+    return '', 200
 
 @app.route("/admin/dashboard")
 @login_required
@@ -1114,11 +1291,19 @@ def admin_dashboard():
     selected_year = int(request.args.get('year', now.year))
     selected_month = int(request.args.get('month', now.month))
 
+    # Fetch users first so the list exists for counting
     user_query = request.args.get('user_q', '')
     if user_query:
         users = User.query.filter(User.username.ilike(f"%{user_query}%")).all()
+        all_users = User.query.all() # Used for overall metrics if filtering search
     else:
         users = User.query.all()
+        all_users = users
+
+    admin_users = sum(1 for u in all_users if u.role == 'admin')
+    pro_users = sum(1 for u in all_users if u.role == 'pro')
+    free_users = sum(1 for u in all_users if u.role == 'free')
+    total_users = len(all_users)
 
     top_cards = db.session.query(
         SearchLog.card_name, func.count(SearchLog.card_name).label('total')
@@ -1154,7 +1339,11 @@ def admin_dashboard():
 
     return render_template(
         'admin.html',
-        users=users,
+        users=users, 
+        total_users=total_users, 
+        admin_users=admin_users, 
+        pro_users=pro_users, 
+        free_users=free_users,
         top_cards=top_cards,
         top_category=top_category,
         top_rank=top_rank,
@@ -1171,7 +1360,7 @@ def admin_set_role(user_id, new_role):
         return redirect(url_for('home'))
         
     target_user = User.query.get_or_404(user_id)
-    if new_role in ['free', 'member', 'admin']:
+    if new_role in ['free', 'pro', 'admin']:
         target_user.role = new_role
         db.session.commit()
         flash(f"Successfully switched {target_user.username}'s role to {new_role.upper()}!", "success")
@@ -1204,7 +1393,7 @@ def quick_switch_role(new_role):
         flash('Access denied.')
         return redirect(url_for('home'))
         
-    if new_role in ['free', 'member', 'admin', 'reset']:
+    if new_role in ['free', 'pro', 'admin', 'reset']:
         if new_role == 'reset':
             session.pop('sandbox_role', None)
             flash("⚡ Sandbox reset to your actual Admin account.")
@@ -1222,12 +1411,14 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
 
+    port = int(os.environ.get("PORT", 5000))
+
     def connect_ngrok():
         time.sleep(1.5)
         try:
+            ngrok.set_auth_token("3Hm4J7DxMhKVgYGh5OeXrxjTUn3_XuwimmpHxJNfnAbiy4nU")
             forwarder = ngrok.forward(
-                "localhost:5000", 
-                authtoken_from_env=True,
+                port, 
                 basic_auth="friend:cheepcard825"
             )
             print(f"\n🌍 Your workspace is live at: {forwarder.url()}\n")
@@ -1237,5 +1428,4 @@ if __name__ == '__main__':
     import threading
     threading.Thread(target=connect_ngrok, daemon=True).start()
 
-    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

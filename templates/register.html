@@ -181,14 +181,20 @@
         <form method="POST" action="{{ url_for('register') }}">
             <input type="text" name="username" placeholder="Username" required>
             <input type="email" name="email" placeholder="Email Address" required>
-            <input type="tel" name="phone_number" placeholder="Phone Number (+15555555555)" required>
-    
+
             <!-- Password Input Container -->
             <div style="position: relative; margin-bottom: 5px;">
                 <input type="password" name="password" id="passwordInput" placeholder="Password" required style="margin-bottom: 0; padding-right: 40px; width: 100%;">
                 <span onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;" title="Toggle Password Visibility">👁️</span>
             </div>
-            <small class="password-hint" style="margin-top: 6px; display: block;">Min 8 chars, uppercase, lowercase, number & symbol.</small>
+            <small class="password-hint" style="margin-top: 6px; display: block; margin-bottom: 15px;">Min 8 chars, uppercase, lowercase, number & symbol.</small>
+
+            <div style="margin: 15px 0;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--card-text); cursor: pointer; line-height: 1.4;">
+                    <input type="checkbox" name="terms_agreement" required style="cursor: pointer;">
+                    I agree to the <a href="{{ url_for('terms') }}" target="_blank" style="color: #f1c40f;">Terms of Service</a> and <a href="{{ url_for('privacy') }}" target="_blank" style="color: #f1c40f;">Privacy Policy</a> (must be 13 or older).
+                </label>
+            </div>
 
             <button type="submit">📝 Create Account</button>
         </form>

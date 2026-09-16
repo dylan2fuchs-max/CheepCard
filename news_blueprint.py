@@ -70,9 +70,13 @@ def admin_news():
             question = request.form.get('poll_question')
             opt1 = request.form.get('opt1')
             opt2 = request.form.get('opt2')
+            opt3 = request.form.get('opt3')
+            opt4 = request.form.get('opt4')
             options = {}
             if opt1: options[opt1] = 0
             if opt2: options[opt2] = 0
+            if opt3: options[opt3] = 0
+            if opt4: options[opt4] = 0
             if question and options:
                 new_post["poll"] = {
                     "id": new_post["id"],
@@ -107,6 +111,8 @@ def edit_news(post_id):
             question = request.form.get('poll_question')
             opt1 = request.form.get('opt1')
             opt2 = request.form.get('opt2')
+            opt3 = request.form.get('opt3')
+            opt4 = request.form.get('opt4')
             
             existing_poll = post.get("poll", {})
             existing_options = existing_poll.get("options", {}) if existing_poll else {}
@@ -117,6 +123,10 @@ def edit_news(post_id):
                 options[opt1] = existing_options.get(opt1, 0)
             if opt2: 
                 options[opt2] = existing_options.get(opt2, 0)
+            if opt3: 
+                options[opt3] = existing_options.get(opt1, 0)
+            if opt4: 
+                options[opt4] = existing_options.get(opt2, 0)
                 
             if question and options:
                 post["poll"] = {

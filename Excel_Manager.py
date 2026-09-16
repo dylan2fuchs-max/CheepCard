@@ -5,6 +5,8 @@ import pandas as pd
 import urllib.parse
 import requests
 import time
+import re
+from collections import Counter
 from Card_Filter import Card
 
 class ExcelManager:
@@ -18,6 +20,14 @@ class ExcelManager:
         self.card_pool = []
         self.df = None
         self.load_cards()
+
+    def _make_safe_request(self, session, url, params=None, timeout=5):
+        try:
+            response = session.get(url, params=params, timeout=timeout)
+            return response
+        except Exception as e:
+            print(f"Request error for {url}: {e}")
+            return None
 
     def load_cards(self):
         self.card_pool = []
@@ -34,35 +44,54 @@ class ExcelManager:
                 engine_kwargs={"read_only": True, "data_only": True}
             )
             
-            df.columns = df.columns.astype(str).str.strip().str.lower().str.replace(' ', '_')
-            self.df = df  # Ensure dataframe is stored for search lookups
+            df.columns = (
+                df.columns.astype(str)
+                .str.replace('\xa0', ' ', regex=False)
+                .str.strip()
+                .str.lower()
+                .str.replace(r'\s+', '_', regex=True)
+            )
+            self.df = df
+
+            RANK_MAP = {"optimized": 5, "fast": 4, "average": 3, "passive": 2, "low": 1}
+
+            def get_row_val(row_data, *col_names, default="none"):
+                for col in col_names:
+                    if col in row_data and pd.notna(row_data[col]):
+                        val = str(row_data[col]).strip()
+                        if val and val.lower() not in ("nan", "none"):
+                            return val
+                return default
 
             for idx, row in df.iterrows():
-                def get_row_val(row_data, *col_names, default="none"):
-                    for col in col_names:
-                        if col in row_data and pd.notna(row_data[col]):
-                            val = str(row_data[col]).strip()
-                            if val and val.lower() != "nan":
-                                return val
-                    return default
-
                 card_name = get_row_val(row, "name", "card_name", "title")
                 if card_name == "none" or not card_name:
                     continue
 
                 mana_cost = get_row_val(row, "mana_cost", "mana", default="{0}")
                 
-                raw_price = get_row_val(row, "price", default="0.00")
+                raw_price = get_row_val(row, "price", "usd", default="0.00")
                 try:
                     price = float(str(raw_price).replace('$', '').replace(',', '').strip())
                 except ValueError:
                     price = 0.00
 
-                c1 = get_row_val(row, "class_1", "class1", default="none")
-                c2 = get_row_val(row, "class_2", "class2", default="none")
-                r1 = get_row_val(row, "ranking_1", "ranking1", default="none")
-                r2 = get_row_val(row, "ranking_2", "ranking2", default="none")
+                c1 = get_row_val(row, "class_1", "class1", "card_class_1", "class", default="none")
+                c2 = get_row_val(row, "class_2", "class2", "card_class_2", default="none")
                 
+                r1 = get_row_val(row, "ranking_1", "ranking1", "rank_1", "rank", default="none")
+                r2 = get_row_val(row, "ranking_2", "ranking2", "rank_2", default="none")
+
+                # Properly resolve words and values here
+                r1_clean = r1.strip().lower()
+                r2_clean = r2.strip().lower()
+                
+                r1_val = RANK_MAP.get(r1_clean, 0)
+                r2_val = RANK_MAP.get(r2_clean, 0)
+                
+                r1_word = r1.capitalize() if r1.lower() != "none" else "None"
+                r2_word = r2.capitalize() if r2.lower() != "none" else "None"
+
                 card_type = get_row_val(row, "type", "card_type", default="")
                 rarity = get_row_val(row, "rarity", default="Common")
                 oracle_text = get_row_val(row, "text", "oracle_text", default="")
@@ -77,15 +106,13 @@ class ExcelManager:
                     "identity": get_row_val(row, "identity", default="{COLORLESS}"),
                     "mana_cost": mana_cost,
                     "price": price,
-                    "ranking_1": r1,
-                    "ranking_2": r2,
-                    "card_type": card_type,
-                    "rarity": rarity,
+                    "ranking_1": r1,  # <--- Pass raw r1 string so Card class handles validation
+                    "ranking_2": r2,  # <--- Pass raw r2 string
                     "card_class_1": c1,
                     "card_class_2": c2,
-                    "oracle_text": oracle_text,
-                    "set_name": set_name,
+                    "rarity": rarity,
                     "image_url": img_url,
+                    "oracle_text": oracle_text,
                     "excel_row_num": idx + 2
                 }
                 
@@ -154,6 +181,233 @@ class ExcelManager:
             print(f"🏷️ Class Judgement applied to {updated_classes} cards.")
         return df
 
+    def analyze_class_oracle_text(self, target_class="Removal", top_n=40):
+        """
+        Scans all cards in a specific class (e.g., 'Removal') and extracts 
+        the most common words and two-word phrases (bigrams) from their Oracle text.
+        """
+        try:
+            print(f"Analyzing Oracle text patterns for class: {target_class}...")
+            df = pd.read_excel(self.file_path, engine="openpyxl")
+            
+            name_col = next((c for c in df.columns if c.strip().lower() in ['name', 'card_name', 'title']), 'Name')
+            class1_col = next((c for c in df.columns if c.strip().lower() in ['class_1', 'class1']), 'Class 1')
+            text_col = next((c for c in df.columns if c.strip().lower() in ['text', 'oracle_text']), 'Text')
+            
+            class_df = df[df[class1_col].astype(str).str.strip().str.lower() == target_class.lower()]
+            print(f"Found {len(class_df)} cards in class '{target_class}' to analyze.")
+            
+            all_text = []
+            session = requests.Session()
+            session.headers.update({"User-Agent": "CheepCardsApp/1.0", "Accept": "application/json"})
+            search_url = "https://api.scryfall.com/cards/search"
+            
+            for idx, row in class_df.iterrows():
+                oracle_text = ""
+                if text_col and text_col in df.columns:
+                    oracle_text = str(row.get(text_col, '')).lower()
+                
+                if not oracle_text or oracle_text == 'nan':
+                    card_name = str(row.get(name_col, '')).strip().split(" // ")[0]
+                    if card_name:
+                        time.sleep(0.04)
+                        resp = self._make_safe_request(session, search_url, {"q": f'! "{card_name}"'})
+                        if resp and resp.status_code == 200:
+                            data = resp.json()
+                            if data.get("data"):
+                                oracle_text = data["data"][0].get("oracle_text", "").lower()
+                
+                if oracle_text:
+                    all_text.append(oracle_text)
+            
+            full_corpus = " ".join(all_text)
+            cleaned_corpus = re.sub(r'[^a-z\s]', ' ', full_corpus)
+            words = cleaned_corpus.split()
+            
+            stopwords = {
+                'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                'with', 'by', 'as', 'of', 'it', 'its', 'is', 'are', 'was', 'were', 
+                'this', 'that', 'these', 'those', 'from', 'you', 'your', 'yours', 
+                'he', 'him', 'his', 'she', 'her', 'they', 'them', 'their', 'cards', 'card',
+                'each', 'controller', 'control', 'mana', 'owner', 'owners'
+            }
+            
+            filtered_words = [w for w in words if w not in stopwords and len(w) > 2]
+            
+            # Count words and bigrams
+            word_counts = Counter(filtered_words)
+            bigrams = [f"{filtered_words[i]} {filtered_words[i+1]}" for i in range(len(filtered_words)-1)]
+            bigram_counts = Counter(bigrams)
+            
+            print(f"\n================ TOP {top_n} SINGLE WORDS ================")
+            for word, count in word_counts.most_common(top_n):
+                print(f"{word}: {count:,}")
+                
+            print(f"\n================ TOP {top_n} TWO-WORD PHRASES ================")
+            for bigram, count in bigram_counts.most_common(top_n):
+                print(f"{bigram}: {count:,}")
+                
+            return True
+            
+        except Exception as e:
+            print(f"Error during text analysis: {e}")
+            return False
+
+    def filter_removal_strict_only(self):
+        """
+        Final precision cleanup with corrected tag query syntax:
+        1. Local Text Whitelist -> Stays 'Removal'
+        2. Scryfall Removal Function -> Stays 'Removal'
+        3. Scryfall Counterspell Function -> Stays 'Removal'
+        4. Graveyard Hate / Sweeps -> Stays 'Removal' (Checked before Board Wipe)
+        5. Scryfall Impulse Draw Tag -> Changes to 'Draw1'
+        6. Scryfall Red Draw Search -> Changes to 'Draw1'
+        7. Scryfall Board Wipe Check -> Changes to 'Board Wipe'
+        8. Network Failsafe / Drops to 'N/A'
+        """
+        try:
+            self._create_timestamped_backup()
+            print("Running final ordered pipeline with syntax fix...")
+            df = pd.read_excel(self.file_path, engine="openpyxl")
+            
+            name_col = next((c for c in df.columns if c.strip().lower() in ['name', 'card_name', 'title']), 'Name')
+            class1_col = next((c for c in df.columns if c.strip().lower() in ['class_1', 'class1']), 'Class 1')
+            rank_col = next((c for c in df.columns if c.strip().lower() in ['rank', 'card_rank', 'ranking']), None)
+            text_col = next((c for c in df.columns if c.strip().lower() in ['text', 'oracle_text']), 'Text')
+            
+            session = requests.Session()
+            session.headers.update({
+                "User-Agent": "CheepCardsApp/1.0",
+                "Accept": "application/json"
+            })
+            search_url = "https://api.scryfall.com/cards/search"
+            
+            skipped_ranked = 0
+            kept_via_text = 0
+            kept_via_scryfall_api = 0
+            moved_to_draw1 = 0
+            moved_to_boardwipe = 0
+            updated_to_na = 0
+            
+            approved_patterns = [
+                r"target\b.*\bcreature",
+                r"deals\b.*\bdamage",
+                r"destroy\b.*\btarget",
+                r"damage\b.*\btarget",
+                r"sacrifice\b.*\bcreature",
+                r"exile\b.*\btarget",
+                r"counter\b.*\btarget",
+                r"target\b.*\bartifact",
+                r"return\b.*\btarget",
+                r"enchant\b.*\b(creature|permanent)",
+                r"exile\b.*\b(top|cards)\b.*\bplay",
+                r"exile\b.*\bgraveyards"
+            ]
+            
+            for idx, row in df.iterrows():
+                c1 = str(row.get(class1_col, '')).strip()
+                if c1.lower() != 'removal':
+                    continue
+                    
+                if rank_col and rank_col in df.columns:
+                    rank_val = row.get(rank_col)
+                    if pd.notna(rank_val) and str(rank_val).strip() != '':
+                        skipped_ranked += 1
+                        continue
+                        
+                card_name = row.get(name_col)
+                if pd.isna(card_name) or not str(card_name).strip():
+                    continue
+                    
+                clean_name = str(card_name).strip().split(" // ")[0].strip()
+                print(f"Processing: {clean_name}...", end="\r")
+                
+                time.sleep(0.15)
+                
+                oracle_text = ""
+                if text_col and text_col in df.columns:
+                    oracle_text = str(row.get(text_col, '')).lower()
+                
+                if not oracle_text or oracle_text == 'nan':
+                    resp = self._make_safe_request(session, search_url, {"q": f'! "{clean_name}"'})
+                    if resp and resp.status_code == 200:
+                        data = resp.json()
+                        cards_found = data.get("data", [])
+                        if cards_found:
+                            oracle_text = cards_found[0].get("oracle_text", "").lower()
+                
+                # Step 1: Local text whitelist match
+                matched_text = any(re.search(pattern, oracle_text) for pattern in approved_patterns)
+                
+                if matched_text:
+                    kept_via_text += 1
+                else:
+                    # Step 2: Scryfall removal function check -> Stays Removal
+                    time.sleep(0.15)
+                    rem_resp = self._make_safe_request(session, search_url, {"q": f'!"{clean_name}" function:removal'})
+                    if rem_resp and rem_resp.status_code == 200 and len(rem_resp.json().get("data", [])) > 0:
+                        kept_via_scryfall_api += 1
+                        continue
+                    
+                    # Step 3: Scryfall counterspell function check -> Stays Removal
+                    time.sleep(0.15)
+                    cnt_resp = self._make_safe_request(session, search_url, {"q": f'!"{clean_name}" function:counterspell'})
+                    if cnt_resp and cnt_resp.status_code == 200 and len(cnt_resp.json().get("data", [])) > 0:
+                        kept_via_scryfall_api += 1
+                        continue
+                        
+                    # Step 4: Scryfall Graveyard Hate check -> Stays Removal
+                    time.sleep(0.15)
+                    gy_resp = self._make_safe_request(session, search_url, {"q": f'!"{clean_name}" otag:sweeper-graveyard'})
+                    if gy_resp and gy_resp.status_code == 200 and len(gy_resp.json().get("data", [])) > 0:
+                        kept_via_scryfall_api += 1
+                        continue
+                        
+                    # Step 5: Scryfall Impulse Draw tag check -> Draw1
+                    time.sleep(0.15)
+                    imp_resp = self._make_safe_request(session, search_url, {"q": f'!"{clean_name}" otag:impulsive-draw'})
+                    if imp_resp and imp_resp.status_code == 200 and len(imp_resp.json().get("data", [])) > 0:
+                        df.at[idx, class1_col] = "Draw1"
+                        moved_to_draw1 += 1
+                        print(f"\n[Impulse Draw -> Draw1] {clean_name}")
+                        continue
+                        
+                    # Step 6: Scryfall General Draw check -> Draw1
+                    time.sleep(0.15)
+                    draw_resp = self._make_safe_request(session, search_url, {"q": f'!"{clean_name}" o:draw c:r'})
+                    if draw_resp and draw_resp.status_code == 200 and len(draw_resp.json().get("data", [])) > 0:
+                        df.at[idx, class1_col] = "Draw1"
+                        moved_to_draw1 += 1
+                        print(f"\n[Red Draw -> Draw1] {clean_name}")
+                        continue
+                        
+                    # Step 7: Scryfall Board Wipe check -> Board Wipe (Fixed query syntax)
+                    time.sleep(0.15)
+                    bw_resp = self._make_safe_request(session, search_url, {"q": f'"{clean_name}" otag:boardwipe'})
+                    if bw_resp and bw_resp.status_code == 200 and len(bw_resp.json().get("data", [])) > 0:
+                        df.at[idx, class1_col] = "Board Wipe"
+                        moved_to_boardwipe += 1
+                        print(f"\n[Board Wipe -> Board Wipe] {clean_name}")
+                        continue
+                        
+                    # Step 8 Failsafe
+                    api_had_error = (rem_resp is None or cnt_resp is None or gy_resp is None or imp_resp is None or draw_resp is None or bw_resp is None)
+                    if api_had_error:
+                        kept_via_text += 1
+                    else:
+                        df.at[idx, class1_col] = "N/A"
+                        updated_to_na += 1
+                        print(f"\n[N/A] {clean_name} (Verified non-removal by all systems)")
+                        
+            df.to_excel(self.file_path, index=False, engine="openpyxl")
+            print(f"\n--- [FILTER COMPLETE] Skipped: {skipped_ranked} | Kept Removal: {kept_via_text + kept_via_scryfall_api} | Draw1: {moved_to_draw1} | Board Wipes: {moved_to_boardwipe} | Changed to N/A: {updated_to_na} ---")
+            self.load_cards()
+            return True
+            
+        except Exception as e:
+            print(f"Error during ordered pipeline filter: {e}")
+            return False
+
     def update_and_sweep_sheet(self) -> bool:
         """
         Lightweight weekly maintenance: Updates prices and set names for existing cards only,
@@ -170,11 +424,13 @@ class ExcelManager:
             set_col = next((c for c in df.columns if c.strip().lower() in ['set name', 'set', 'set_name']), 'Set')
             price_col = next((c for c in df.columns if c.strip().lower() in ['price', 'usd']), 'Price')
             
-            headers = {
+            session = requests.Session()
+            session.headers.update({
                 "User-Agent": "CheepCardsApp/1.0",
                 "Accept": "application/json"
-            }
+            })
             search_url = "https://api.scryfall.com/cards/search"
+            exact_url = "https://api.scryfall.com/cards/named"
             
             total_cards = len(df)
             print(f"Starting maintenance sweep and price update for {total_cards} cards...")
@@ -189,39 +445,43 @@ class ExcelManager:
                 clean_name = str(card_name).strip().split(" // ")[0].strip()
                 print(f"[{index}/{total_cards}] Checking: {clean_name}...", end="\r")
                 
-                try:
-                    time.sleep(0.08)
-                    query_param = f'! "{clean_name}" legal:commander'
-                    resp = requests.get(search_url, headers=headers, params={"q": query_param}, timeout=5)
+                time.sleep(0.08)
+                
+                query_param = f'! "{clean_name}" legal:commander'
+                resp = self._make_safe_request(session, search_url, {"q": query_param})
+                
+                card_json = None
+                if resp and resp.status_code == 200:
+                    search_data = resp.json()
+                    cards_found = search_data.get("data", [])
+                    if cards_found:
+                        card_json = cards_found[0]
+                
+                # Fallback: Exact match check for unindexed new cards, 
+                # but explicitly block cards that are banned in Commander (e.g., Balance)
+                if not card_json:
+                    fallback_resp = self._make_safe_request(session, exact_url, {"exact": clean_name})
+                    if fallback_resp and fallback_resp.status_code == 200:
+                        temp_json = fallback_resp.json()
+                        legalities = temp_json.get("legalities", {})
+                        if legalities.get("commander") != "banned":
+                            card_json = temp_json
+
+                if card_json:
+                    live_set_name = card_json.get("set_name", "")
+                    live_price = card_json.get("prices", {}).get("usd")
                     
-                    if resp.status_code == 200:
-                        search_data = resp.json()
-                        cards_found = search_data.get("data", [])
-                        
-                        if cards_found:
-                            card_json = cards_found[0]
-                            live_set_name = card_json.get("set_name", "")
-                            live_price = card_json.get("prices", {}).get("usd")
-                            
-                            if live_set_name and set_col in df.columns:
-                                df.at[idx, set_col] = str(live_set_name)
-                            if live_price is not None and price_col in df.columns:
-                                try:
-                                    df.at[idx, price_col] = float(live_price)
-                                except ValueError:
-                                    pass
-                            
-                            updated_count += 1
-                        else:
-                            rows_to_drop.append(idx)
-                            print(f"❌ Removing unverified card: {clean_name}")
-                            
-                    elif resp.status_code == 404:
-                        rows_to_drop.append(idx)
-                        print(f"❌ Removing illegal/404 card: {clean_name}")
-                        
-                except Exception as api_err:
-                    print(f"API error for '{clean_name}': {api_err}")
+                    if live_set_name and set_col in df.columns:
+                        df.at[idx, set_col] = str(live_set_name)
+                    if live_price is not None and price_col in df.columns:
+                        try:
+                            df.at[idx, price_col] = float(live_price)
+                        except ValueError:
+                            pass
+                    updated_count += 1
+                else:
+                    rows_to_drop.append(idx)
+                    print(f"❌ Removing illegal/404 card: {clean_name}")
 
             if rows_to_drop:
                 df = df.drop(rows_to_drop)
@@ -339,7 +599,9 @@ class ExcelManager:
                                 rarity_col: rarity,
                                 text_col: oracle_text,
                                 set_col: live_set_name,
-                                date_col: today_str
+                                date_col: today_str,
+                                "Ranking 1": "none",
+                                "Ranking 2": "none"
                             }
                             new_rows_buffer.append(new_row)
                             print(f"➕ Adding new card with timestamp {today_str}: {clean_name}")

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CheepCards - Under Maintenance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dark-mode" style="background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center;">
+
+    <div style="max-width: 600px; padding: 40px; background: var(--box-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 60px; width: auto; margin-bottom: 20px;">
+        <h1 style="color: #f1c40f; margin-top: 0;">We'll Be Right Back!</h1>
+        <p style="color: var(--card-text); font-size: 1.1em; line-height: 1.6;">
+            CheepCards Pro is currently undergoing scheduled maintenance or system updates. We are working hard to bring you the best Commander search and deck-building experience. Please check back soon!
+        </p>
+        <div style="margin-top: 30px; font-size: 0.9em; color: #888;">
+            &copy; 2026 CheepCards. All rights reserved.
+        </div>
+    </div>
+
+</body>
+</html>

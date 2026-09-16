@@ -196,17 +196,50 @@
         .badge-pro { background-color: #f39c12; color: #2c1800; }
         .badge-free { background-color: #7f8c8d; color: white; }
 
-        /* Background pattern decoration */
+        /* Extra Dense Right-Side Background Squares */
         body::before {
             content: "";
             position: fixed;
-            top: 0; left: 0; width: 8px; height: 8px;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
             z-index: -1;
             background: #f1c40f;
             box-shadow: 
-                80px 60px 0 #f1c40f, 250px 40px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #f1c40f, 1780px 50px 0 #3498db,
-                30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #f1c40f;
+                80px 60px 0 #f1c40f, 250px 120px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #3498db, 1780px 50px 0 #3498db, 2050px 70px 0 #3498db, 2300px 40px 0 #3498db, 2550px 90px 0 #3498db,
+                30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #3498db, 1980px 250px 0 #3498db, 2250px 210px 0 #3498db, 2480px 260px 0 #f1c40f, 2720px 230px 0 #3498db,
+                150px 480px 0 #f1c40f, 420px 450px 0 #3498db, 780px 420px 0 #f1c40f, 1050px 490px 0 #3498db, 1320px 440px 0 #3498db, 1600px 470px 0 #3498db, 1850px 410px 0 #f1c40f, 2100px 460px 0 #3498db, 2350px 430px 0 #3498db, 2600px 450px 0 #3498db, 2750px 470px 0 #3498db,
+                70px 680px 0 #3498db, 350px 640px 0 #f1c40f, 600px 690px 0 #3498db, 880px 650px 0 #3498db, 1120px 670px 0 #3498db, 1400px 630px 0 #3498db, 1720px 660px 0 #3498db, 1950px 610px 0 #3498db, 2220px 650px 0 #3498db, 2520px 680px 0 #3498db, 2740px 630px 0 #3498db,
+                200px 880px 0 #f1c40f, 500px 850px 0 #3498db, 820px 890px 0 #f1c40f, 1180px 840px 0 #3498db, 1450px 870px 0 #3498db, 1750px 820px 0 #3498db, 2020px 860px 0 #3498db, 2290px 810px 0 #3498db, 2580px 850px 0 #3498db, 2780px 880px 0 #3498db,
+                1650px 150px 0 #3498db, 1920px 180px 0 #f1c40f, 2200px 130px 0 #3498db, 2480px 170px 0 #f1c40f, 2750px 140px 0 #3498db,
+                1750px 330px 0 #3498db, 2040px 300px 0 #f1c40f, 2320px 350px 0 #3498db, 2640px 310px 0 #f1c40f,
+                1630px 550px 0 #3498db, 1910px 520px 0 #f1c40f, 2260px 580px 0 #3498db, 2540px 530px 0 #f1c40f, 2760px 560px 0 #3498db,
+                1790px 750px 0 #3498db, 2120px 710px 0 #f1c40f, 2410px 770px 0 #3498db, 2610px 740px 0 #f1c40f, 2790px 720px 0 #3498db,
+                100px 1020px 0 #3498db, 400px 1050px 0 #f1c40f, 750px 1010px 0 #3498db, 1100px 1060px 0 #3498db, 1450px 1030px 0 #3498db, 1800px 1050px 0 #3498db, 2150px 1020px 0 #3498db, 2500px 1040px 0 #3498db, 2750px 1020px 0 #3498db,
+                350px 1220px 0 #3498db, 820px 1200px 0 #f1c40f, 1250px 1240px 0 #f1c40f, 1680px 1210px 0 #f1c40f, 2150px 1230px 0 #f1c40f, 2550px 1200px 0 #f1c40f, 2780px 1220px 0 #3498db;
             opacity: 0.75;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            z-index: -1;
+            background: #3498db;
+            box-shadow: 
+                180px 140px 0 #f1c40f, 550px 500px 0 #3498db, 820px 160px 0 #f1c40f, 1100px 130px 0 #3498db, 1420px 150px 0 #f1c40f, 1720px 110px 0 #3498db, 2000px 140px 0 #f1c40f, 2300px 110px 0 #3498db, 2580px 150px 0 #f1c40f, 2750px 120px 0 #3498db,
+                90px 360px 0 #f1c40f, 480px 340px 0 #3498db, 720px 380px 0 #3498db, 980px 320px 0 #3498db, 1280px 370px 0 #3498db, 1580px 350px 0 #3498db, 1880px 320px 0 #3498db, 2180px 360px 0 #f1c40f, 2450px 330px 0 #3498db, 2690px 350px 0 #3498db,
+                220px 560px 0 #3498db, 580px 530px 0 #f1c40f, 850px 580px 0 #3498db, 1220px 540px 0 #f1c40f, 1500px 570px 0 #3498db, 1820px 530px 0 #3498db, 2080px 560px 0 #3498db, 2380px 540px 0 #3498db, 2620px 570px 0 #3498db, 2780px 520px 0 #3498db,
+                130px 780px 0 #f1c40f, 400px 740px 0 #3498db, 750px 790px 0 #f1c40f, 1020px 730px 0 #3498db, 1350px 770px 0 #3498db, 1650px 750px 0 #3498db, 1950px 720px 0 #3498db, 2250px 760px 0 #3498db, 2550px 730px 0 #3498db, 2760px 770px 0 #3498db,
+                300px 920px 0 #3498db, 650px 900px 0 #f1c40f, 950px 930px 0 #3498db, 1280px 890px 0 #f1c40f, 1600px 910px 0 #3498db, 1900px 880px 0 #3498db, 2200px 920px 0 #3498db, 2500px 890px 0 #f1c40f, 2750px 910px 0 #3498db,
+                200px 1030px 0 #f1c40f, 550px 1060px 0 #3498db, 900px 1020px 0 #f1c40f, 1250px 1050px 0 #3498db, 1620px 1040px 0 #3498db, 1980px 1060px 0 #3498db, 2320px 1030px 0 #3498db, 2680px 1050px 0 #3498db,
+                450px 1140px 0 #f1c40f, 850px 1150px 0 #3498db, 1250px 1130px 0 #f1c40f, 1700px 1160px 0 #3498db, 2150px 1140px 0 #3498db, 2600px 1150px 0 #3498db,
+                150px 1280px 0 #f1c40f, 600px 1260px 0 #3498db, 1100px 1290px 0 #f1c40f, 1600px 1270px 0 #3498db, 2050px 1290px 0 #3498db, 2500px 1260px 0 #3498db;
+            opacity: 0.65;
         }
     </style>
 </head>
@@ -239,19 +272,30 @@
             <div class="panel-box">
                 <h2>⚙️ Settings & Security</h2>
                 
-                <!-- Account Status Badges & Stripe Upgrade -->
+                <!-- Account Status Badges & Subscription Control -->
                 <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 10px; border-radius: 6px;">
                     <div>
                         <div style="font-size: 11px; color: var(--border-color); margin-bottom: 4px; text-transform: uppercase; font-weight: bold;">Membership</div>
-                        {% if current_user.role == 'pro' %}
+                        {% if current_user.role == 'admin' %}
+                            <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
+                        {% elif current_user.role == 'pro' %}
                             <span class="status-badge badge-pro" style="margin-bottom: 0;">⭐ Pro Subscriber</span>
+                            {% if current_user.pro_expires_at %}
+                            <div style="font-size: 11px; opacity: 0.8; margin-top: 3px;">Access until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }}</div>
+                            {% endif %}
                         {% else %}
                             <span class="status-badge badge-free" style="margin-bottom: 0;">Free Tier</span>
                         {% endif %}
                     </div>
-                    {% if current_user.role != 'pro' %}
+                    
+                    {% if current_user.role == 'free' %}
                     <form action="/create-checkout-session" method="POST" style="margin: 0;">
                         <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px;">⭐ Upgrade to Pro</button>
+                    </form>
+                    {% elif current_user.role == 'pro' %}
+                    <!-- Double-Confirmation Cancellation Button -->
+                    <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0;">
+                        <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 13px;">Cancel Pro</button>
                     </form>
                     {% endif %}
                 </div>
@@ -259,9 +303,6 @@
                 <form method="POST" action="{{ url_for('account') }}">
                     <label>Email Address (For Password Recovery)</label>
                     <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
-
-                    <label>Verified Phone Number</label>
-                    <input type="tel" name="phone_number" value="{{ current_user.phone_number or '' }}" placeholder="+15555555555" readonly style="background-color: var(--border-color); opacity: 0.8; cursor: not-allowed;" title="Phone number is locked after verification.">
 
                     <label>Background Theme Preference</label>
                     <select name="default_theme">

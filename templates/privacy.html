@@ -3,16 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheepCards - Privacy Policy</title>
+    <title>Privacy Policy - CheepCards</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script>
-        // Apply saved theme instantly
-        if (localStorage.getItem('theme') === 'light') {
-            document.body.classList.remove('dark-mode');
-        } else {
-            document.body.classList.add('dark-mode');
-        }
-    </script>
 </head>
 <body class="dark-mode" style="background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0;">
 
@@ -26,16 +18,40 @@
 
     <div style="max-width: 800px; margin: 40px auto; padding: 30px; background: var(--box-bg); border: 1px solid var(--border-color); border-radius: 8px;">
         <h1 style="color: #f1c40f; margin-top: 0;">Privacy Policy</h1>
-        <p style="color: var(--card-text);">Last updated: August 2026</p>
+        <p style="color: var(--card-text);">Effective Date: September 7, 2026</p>
         
-        <h3 style="color: var(--title-color);">1. Information We Collect</h3>
-        <p>We collect basic account information including your username, email address, and securely hashed passwords when you register an account, along with saved deck data and search history logs required to operate your tier limits.</p>
+        <h3 style="color: var(--title-color);">1. Introduction</h3>
+        <p style="color: var(--card-text);">CheepCards respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our software-as-a-service (SaaS) application.</p>
         
-        <h3 style="color: var(--title-color);">2. How We Use Your Information</h3>
-        <p>Your data is used solely to maintain your user account, track daily search limitations according to your membership tier, and store your saved deck configurations.</p>
+        <h3 style="color: var(--title-color);">2. Information We Collect</h3>
+        <p style="color: var(--card-text);">We collect information to provide and improve our Magic: The Gathering card search and deck-building services:</p>
+        <ul style="color: var(--card-text); margin-top: 5px; margin-bottom: 15px;">
+            <li><strong>Account Information:</strong> When you register an account, we collect your username, email address, and securely hashed passwords.</li>
+            <li><strong>User Content:</strong> Custom deck lists, saved searches, and search history logs required to operate your tier limits.</li>
+            <li><strong>Payment Information:</strong> Subscription and billing details are collected and processed securely by Stripe. We do not store raw credit card numbers or sensitive financial authentication details on our servers.</li>
+        </ul>
         
-        <h3 style="color: var(--title-color);">3. Data Security</h3>
-        <p>We employ standard security protocols to safeguard your account data. We do not sell or share your personal information with third parties.</p>
+        <h3 style="color: var(--title-color);">3. Cookies and Tracking Technologies</h3>
+        <p style="color: var(--card-text);">We use essential cookies and local session storage solely to maintain your user session, keep you logged in, and remember your interface preferences (such as dark or light themes). A cookie is a small text file sent to your device by a web server to remember information about your browsing activity. First-party cookies are created by CheepCards. You can block or clear cookies via your browser's settings, though disabling essential session cookies may impact your ability to log in or use application features. We do not use third-party advertising tracking cookies or behavioral pixels.</p>
+        
+        <h3 style="color: var(--title-color);">4. How We Use Your Information</h3>
+        <p style="color: var(--card-text);">Your data is used to maintain your user account, track usage limitations according to your membership tier, process your recurring subscription via Stripe, and execute custom deck searches and synergy evaluations. We do not sell, rent, or trade your personal information.</p>
+        
+        <h3 style="color: var(--title-color);">5. Third-Party Integrations</h3>
+        <p style="color: var(--card-text);">We integrate with essential third-party services to support our application functionality:</p>
+        <ul style="color: var(--card-text); margin-top: 5px; margin-bottom: 15px;">
+            <li><strong>Stripe:</strong> Secure payment processing and subscription management.</li>
+            <li><strong>Scryfall API:</strong> External database queries for Magic: The Gathering card metadata and images.</li>
+        </ul>
+        
+        <h3 style="color: var(--title-color);">6. Data Security & Retention</h3>
+        <p style="color: var(--card-text);">We employ standard security protocols, including environment variable protection for API credentials and hashed password storage, to safeguard your account data. We retain your account data for as long as your account remains active or as needed to provide services.</p>
+        
+        <h3 style="color: var(--title-color);">7. Children's Privacy</h3>
+        <p style="color: var(--card-text);">Our services are not directed to individuals under the age of 13. We do not knowingly collect personal information from children under 13.</p>
+        
+        <h3 style="color: var(--title-color);">8. Changes to This Privacy Policy</h3>
+        <p style="color: var(--card-text); margin-bottom: 0;">We may update this Privacy Policy from time to time. We will notify you of any substantial changes by posting the new policy on this page and updating the effective date.</p>
     </div>
 
 </body>

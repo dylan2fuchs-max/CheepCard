@@ -84,10 +84,28 @@ def run_synergy_analysis(deck_list: list) -> dict:
     if deck_size == 0:
         return {}
 
-    # Setup tracking variables for our primary website dashboard pillars
     core_categories = {
-        "Card Draw": {"keywords": ["draw", "draws", "drawing"], "exclude_type": None, "cards": set()},
-        "Ramp & Land Velocity": {"keywords": ["ramp", "add one mana", "additional land", "basic land card, put it onto the battlefield", "put land", "add {w}", "add {g}", "add {r}", "add {u}", "add {b}", "add {c}"], "exclude_type": "land", "cards": set()},
+        "Card Draw": {
+            "keywords": ["draw", "draws", "drawing"],
+            "regex_patterns": [],
+            "exclude_type": None,
+            "cards": set(),
+        },
+        "Ramp & Land Velocity": {
+            "keywords": [
+                "ramp",
+                "additional land",
+                "basic land card, put it onto the battlefield",
+                "put land",
+            ],
+            # Matches "add {any mana symbol}" like "add {b}", "add {w}{b}", "add {c}{c}", "add one mana", etc.
+            "regex_patterns": [
+                r"\badd\s+(?:\{[wubrgc0-9xyz/]+\}|\bone\s+mana\b)",
+                r"\bput\s+.*?land.*?\bonto the battlefield\b",
+            ],
+            "exclude_type": "land",
+            "cards": set(),
+        },
     }
 
     from theme_engine import ThemeEngine
@@ -124,16 +142,27 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if not rules_text:
             continue
 
-        # 1. PROCESS CORE THEMES (Upgraded with regex word boundaries)
+        # 1. PROCESS CORE THEMES
         for cat_name, tracking in core_categories.items():
             exclude_param = tracking.get("exclude_type")
             if exclude_param and exclude_param in current_card_type:
                 continue
+
+            # Check literal keywords using word boundaries
+            matched = False
             for kw in tracking.get("keywords", []):
-                # Use regex word boundaries to prevent substring false positives
                 pattern = r'\b' + re.escape(kw) + r'\b'
-                if bool(re.search(pattern, rules_text, re.IGNORECASE)):
+                if re.search(pattern, rules_text, re.IGNORECASE):
                     tracking["cards"].add(actual_name_in_excel)
+                    matched = True
+                    break
+
+            # Check dedicated regex patterns if not already matched
+            if not matched:
+                for reg in tracking.get("regex_patterns", []):
+                    if re.search(reg, rules_text, re.IGNORECASE):
+                        tracking["cards"].add(actual_name_in_excel)
+                        break
 
         # 2. READ CREATURE TYPE SUBTYPES DIRECTLY FROM SPREADSHEET TYPE COLUMN
         clean_types = re.sub(r'[^\w\s]', ' ', current_card_type)
@@ -157,7 +186,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 card_assignments[card_name.strip()].append(word)
 
     # Calculate dynamic themes and creature types that appear at least 4 times
-    MIN_MATCHES = 4
+    MIN_MATCHES = 5
     
     theme_counts = Counter(raw_theme_pool)
     valid_themes = {theme: count for theme, count in theme_counts.items() if count >= MIN_MATCHES}

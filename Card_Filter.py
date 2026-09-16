@@ -1,7 +1,7 @@
 import pandas as pd
 
 class Card:
-    VALID_CLASSES = ["draw", "ramp", "removal", "boardwipe", "land", "none", "nan", ""]
+    VALID_CLASSES = ["draw", "ramp", "removal", "board wipe", "land", "none", "nan", ""]
     
     # 1. Added 'fat' and custom words to valid rankings list
     VALID_RANKINGS = ["optimized", "fast", "average", "medium", "passive", "low", "fat", "none", "nan", ""]

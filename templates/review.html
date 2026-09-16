@@ -1,0 +1,212 @@
+REVIEW_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Card Review - {{ card_name }}</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .counter {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        }
+        .card-img {
+            max-width: 320px;
+            border-radius: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        section h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #bb86fc;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #444;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        button:hover {
+            background-color: #3d3d3d;
+            border-color: #bb86fc;
+        }
+        .class-btn.active {
+            background-color: #bb86fc;
+            color: #121212;
+            font-weight: bold;
+        }
+        .rank-btn.active {
+            background-color: #03dac6;
+            color: #121212;
+            font-weight: bold;
+        }
+        .submit-section {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .btn-submit {
+            background-color: #03dac6;
+            color: #121212;
+            font-weight: bold;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+        }
+        .btn-submit:hover {
+            background-color: #01cb00;
+        }
+        .btn-save-all {
+            background-color: #27ae60;
+            color: white;
+            font-weight: bold;
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: none;
+        }
+        .btn-save-all:hover {
+            background-color: #219653;
+        }
+        .shortcuts-hint {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="counter">
+        <span>Reviewing Class: <strong>{{ target_class }}</strong> | Remaining Unranked: {{ remaining_count }}</span>
+        {% if staged_count and staged_count > 0 %}
+        <form action="{{ url_for('review_save_all') }}" method="POST" style="margin: 0;">
+            <button type="submit" class="btn-save-all" style="padding: 5px 12px; font-size: 12px;">💾 Save All ({{ staged_count }} staged)</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="container">
+        <div>
+            <img src="{{ image_url }}" alt="{{ card_name }}" class="card-img">
+        </div>
+        
+        <form action="{{ url_for('review_submit') }}" method="POST" class="controls" id="reviewForm">
+            <input type="hidden" name="card_idx" value="{{ card_idx }}">
+            <input type="hidden" name="target_class" value="{{ target_class }}">
+            
+            <section>
+                <h3>Select Class:</h3>
+                <div class="button-group">
+                    {% for c in ['Removal', 'Draw', 'Board Wipe', 'Ramp', 'N/A'] %}
+                    <button type="button" class="class-btn {% if c == target_class %}active{% endif %}" onclick="selectClass('{{ c }}', this)">{{ c }}</button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="new_class" id="selected_class" value="{{ target_class }}">
+            </section>
+
+            <section>
+                <h3>Select Rank:</h3>
+                <div class="button-group">
+                    {% for r in ['optimized', 'fast', 'average', 'passive', 'low'] %}
+                    <button type="button" class="rank-btn" onclick="selectRank('{{ r }}', this)">{{ r | capitalize }}</button>
+                    {% endfor %}
+                </div>
+                <!-- Removed required attribute so an empty rank can be submitted if deselected -->
+                <input type="hidden" name="new_rank" id="selected_rank" value="">
+            </section>
+
+            <div class="submit-section">
+                <button type="submit" class="btn-submit">Next Card ➡️</button>
+            </div>
+            
+            <div class="shortcuts-hint">
+                Shortcuts: <kbd>Z</kbd> (N/A Class) | <kbd>Enter</kbd> (Next Card)
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function selectClass(val, btn) {
+            document.getElementById('selected_class').value = val;
+            document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function selectRank(val, btn) {
+            const input = document.getElementById('selected_rank');
+            if (btn.classList.contains('active')) {
+                // Clicked the active button again -> deselect it
+                btn.classList.remove('active');
+                input.value = '';
+            } else {
+                // Select normally
+                document.querySelectorAll('.rank-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                input.value = val;
+            }
+        }
+
+        // Keyboard shortcuts listener
+        document.addEventListener('keydown', function(event) {
+            const key = event.key.toLowerCase();
+            
+            // Press 'z' to select the N/A class button
+            if (key === 'z') {
+                event.preventDefault();
+                const naButton = Array.from(document.querySelectorAll('.class-btn')).find(b => b.textContent.trim() === 'N/A');
+                if (naButton) {
+                    naButton.click();
+                }
+            }
+            
+            // Press 'Enter' to submit the form (Next Card)
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const form = document.getElementById('reviewForm');
+                form.requestSubmit();
+            }
+        });
+    </script>
+</body>
+</html>
+"""

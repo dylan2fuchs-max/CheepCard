@@ -338,8 +338,8 @@
                         <a href="{{ url_for('admin_dashboard') }}" style="text-decoration: none;">
                             <button class="theme-btn" style="background-color: #8e44ad;">🛠️ Admin Panel</button>
                         </a>
-                    {% elif get_active_role() == 'member' %}
-                        <span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">MEMBER</span>
+                    {% elif get_active_role() == 'pro' %}
+                        <span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">PRO</span>
                     {% else %}
                         <span style="background: #7f8c8d; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">FREE</span>
                     {% endif %}
@@ -428,7 +428,7 @@
                 
                 <div class="filter-section-title">🛡️ Key Class Target (Select Multiple)</div>
                 <div class="btn-cluster class-cluster">
-                    {% for cls in ['Draw', 'Removal', 'Ramp', 'Land', 'Boardwipe'] %}
+                    {% for cls in ['Draw', 'Removal', 'Ramp', 'Land', 'Board Wipe'] %}
                     <input type="checkbox" name="classes" value="{{ cls|lower }}" id="class_{{ cls|lower }}" class="filter-input" {% if cls|lower in selected_classes %}checked{% endif %}>
                     <label for="class_{{ cls|lower }}" class="filter-label">{{ cls }}</label>
                     {% endfor %}
@@ -466,7 +466,19 @@
                 <table> 
                     <tr><th>Theme/Variable Subtype</th><th>Card Count</th><th>Deck %</th><th>Matching Row Items</th></tr>
                     {% for item in report.themes %}
-                    <tr><td><strong>{{ item.theme }}</strong></td><td>{{ item.count }}</td><td>{{ item.percentage }}</td><td><small style="color: var(--card-text);">{{ item.cards }}</small></td></tr>
+                    <tr>
+                        <td><strong>{{ item.theme }}</strong></td>
+                        <td>{{ item.count }}</td>
+                        <td>{{ item.percentage }}</td>
+                        <td>
+                            <button type="button" onclick="const el = document.getElementById('cards-{{ loop.index }}'); el.style.display = el.style.display === 'none' ? 'block' : 'none';" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">
+                                View Cards ({{ item.count }})
+                            </button>
+                            <div id="cards-{{ loop.index }}" style="display: none; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px; line-height: 1.4; color: var(--card-text); max-height: 150px; overflow-y: auto;">
+                                {{ item.cards }}
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -483,7 +495,7 @@
                     <div style="background: rgba(142, 68, 173, 0.1); border: 1px dashed #8e44ad; padding: 6px 12px; border-radius: 6px; display: flex; gap: 8px; align-items: center; font-size: 13px;">
                         <span style="font-weight: bold;">🧪 Test Tier:</span>
                         <a href="{{ url_for('quick_switch_role', new_role='free') }}" class="theme-btn" style="background: #7f8c8d; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Free</a>
-                        <a href="{{ url_for('quick_switch_role', new_role='member') }}" class="theme-btn" style="background: #27ae60; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Member</a>
+                        <a href="{{ url_for('quick_switch_role', new_role='pro') }}" class="theme-btn" style="background: #27ae60; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Pro</a>
                         <a href="{{ url_for('quick_switch_role', new_role='reset') }}" class="theme-btn" style="background: #e74c3c; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Reset Admin</a>
                     </div>
                     {% endif %}
@@ -602,7 +614,7 @@
                 <h2>🎒 Deck Builder Locked</h2>
                 <p style="color: var(--card-text);">Free accounts do not have access to the Side-Decker or Saved Decks.</p>
                 <button style="background-color: #f1c40f; color: #333; padding: 10px 20px; font-weight: bold; border: none; border-radius: 5px; margin-top: 15px; cursor: pointer;">
-                    Upgrade to Member
+                    Upgrade to Pro
                 </button>
             </div>
         {% endif %}
@@ -1135,9 +1147,27 @@
     {% if show_limit_popup %}
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            alert("🚨 You have reached your max 15 searches for today! Upgrade to Member for unlimited searching and full deck-building access.");
+            alert("🚨 You have reached your max 15 searches for today! Upgrade to Pro for unlimited searching and full deck-building access.");
         });
     </script>
     {% endif %}
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const csrfTokenMeta = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfTokenMeta) return;
+            const csrfToken = csrfTokenMeta.getAttribute('content');
+
+            document.querySelectorAll('form[method="POST"], form[method="post"]').forEach(form => {
+                if (!form.querySelector('input[name="csrf_token"]')) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'csrf_token';
+                    input.value = csrfToken;
+                    form.appendChild(input);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
