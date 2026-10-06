@@ -10,9 +10,7 @@ wheels/
 .venv
 .env
 
-# Application databases & files
-*.xlsx
-
 # Local Development Tools
 Tools/
+!Tools/sync_db.py
 backups/
