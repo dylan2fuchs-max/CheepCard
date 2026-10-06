@@ -109,7 +109,7 @@
             transition-delay: 0s;
         }
 
-        /* Base arcade card tile style (no hover state here!) */
+        /* 🌟 Remove any global hover styles on .arcade-card-tile so mobile never triggers it by default */
         .arcade-card-tile {
             background: var(--box-bg); border: 2px solid var(--border-color);
             border-radius: 8px; padding: 6px; text-align: center; cursor: pointer;
@@ -177,8 +177,8 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* 🌟 Desktop Only Hover Zoom (Strictly disabled on screens under 900px) */
-        @media (min-width: 900px) {
+        /* 🌟 Only apply the hover zoom if the device actually uses a mouse/pointer (Strictly disables on touch screens) */
+        @media (hover: hover) and (pointer: fine) {
             .arcade-card-tile:hover {
                 transform: translateY(-12px) scale(1.75);
                 border-color: var(--title-color);

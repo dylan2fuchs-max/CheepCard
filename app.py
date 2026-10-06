@@ -1058,8 +1058,16 @@ def level_select():
 
 @app.route('/arcade/submit', methods=["POST"])
 def arcade_submit():
-    # 🌟 Added silent=True so it prevents 400 Bad Request errors if headers are missing
-    data = request.get_json(silent=True) or {}
+    # 🌟 Bulletproof parsing: checks JSON, form data, or raw data fallback
+    data = request.get_json(silent=True) or request.form
+    if not data:
+        # Fallback if sent as raw body
+        import json
+        try:
+            data = json.loads(request.data.decode('utf-8'))
+        except Exception:
+            data = {}
+            
     user_sequence = data.get("sequence", [])
     rules = session.get('active_puzzle_rules', {})
     
