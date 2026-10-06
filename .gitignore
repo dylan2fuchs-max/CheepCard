@@ -12,3 +12,7 @@ wheels/
 
 # Application databases & files
 *.xlsx
+
+# Local Development Tools
+Tools/
+backups/
