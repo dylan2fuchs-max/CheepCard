@@ -1058,7 +1058,8 @@ def level_select():
 
 @app.route('/arcade/submit', methods=["POST"])
 def arcade_submit():
-    data = request.get_json() or {}
+    # 🌟 Added silent=True so it prevents 400 Bad Request errors if headers are missing
+    data = request.get_json(silent=True) or {}
     user_sequence = data.get("sequence", [])
     rules = session.get('active_puzzle_rules', {})
     
@@ -1073,7 +1074,7 @@ def arcade_submit():
         if session.get('is_bonus_level', False):
             session.pop('is_bonus_level', None)
             session.pop('arcade_level', None)
-            session['bonus_stage_cleared'] = True
+            session.pop('bonus_stage_cleared', True)
             
             if current_user.is_authenticated:
                 current_user.bonus_completed = True
