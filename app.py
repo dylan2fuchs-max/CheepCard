@@ -153,7 +153,7 @@ def dev_unlock():
     if token and secret_token and token == secret_token:
         session['dev_bypass'] = True
         flash("Developer bypass activated!", "success")
-        return redirect(url_for('index')) # Change 'index' to your main home route name if different
+        return redirect(url_for('home')) # Change 'index' to your main home route name if different
         
     abort(403)
 
