@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin — User Feedback Log</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container" style="max-width: 1000px; margin-top: 30px; margin-bottom: 50px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+            <h1>📥 User Feedback & Bug Reports</h1>
+            <a href="{{ url_for('news.admin_news') }}" class="cta-btn" style="background-color: #4a5568; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">← Back to Admin Panel</a>
+        </div>
+
+        <div class="panel-box" style="background: #1a202c; border: 1px solid #2d3748; border-radius: 10px; padding: 25px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #2d3748; color: #a0aec0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 12px;">Date / Status</th>
+                            <th style="padding: 12px;">Submitted By</th>
+                            <th style="padding: 12px;">Message / Issue</th>
+                            <th style="padding: 12px; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in feedbacks %}
+                        <tr style="border-bottom: 1px solid #2d3748; color: #e2e8f0; {% if not item.viewed %}background: rgba(49, 130, 206, 0.08);{% endif %}">
+                            <td style="padding: 14px 12px; color: #a0aec0; font-size: 0.85rem; vertical-align: top; white-space: nowrap;">
+                                <div>{{ item.date }}</div>
+                                {% if not item.viewed %}
+                                    <span style="display: inline-block; background: #3182ce; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-top: 4px;">NEW</span>
+                                {% else %}
+                                    <div style="font-size: 0.75rem; color: #718096; margin-top: 4px;">Viewed by <span style="color: #cbd5e0; font-weight: 500;">{{ item.viewed_by or 'Admin' }}</span></div>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 14px 12px; font-weight: 600; color: #63b3ed; vertical-align: top; white-space: nowrap;">{{ item.email }}</td>
+                            <td style="padding: 14px 12px; line-height: 1.5; word-break: break-word; vertical-align: top;">{{ item.message }}</td>
+                            <td style="padding: 14px 12px; text-align: right; vertical-align: top; white-space: nowrap;">
+                                <form action="{{ url_for('news.delete_feedback', feedback_id=item.id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Are you sure you want to delete this feedback log?');">
+                                    <button type="submit" style="background-color: #e53e3e; color: white; border: none; padding: 6px 10px; font-size: 12px; border-radius: 4px; font-weight: 600; cursor: pointer;">🗑️ Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #718096; padding: 40px; font-style: italic;">No feedback or bug reports logged yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

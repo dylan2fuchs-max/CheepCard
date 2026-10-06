@@ -23,14 +23,13 @@ def run_qa_search_engine(manager):
         print("Options: W (White), U (Blue), B (Black), R (Red), G (Green) [Or press Enter for Any]")
         raw_color = input("Your choice: ").strip().lower()
         
-        if raw_color == "":  # 🌟 Force clear None if skipped
+        if raw_color == "":  # Force clear None if skipped
             target_color = None
             break
         if raw_color in VALID_COLORS:
             target_color = VALID_COLORS[raw_color]
             break
         print("❌ INVALID COLOR. Please choose W, U, B, R, G, or press Enter.")
-
 
     # 3. Limit Rule for Budget Constraints
     while True:
@@ -62,11 +61,10 @@ def run_qa_search_engine(manager):
     # --- EXECUTION ENGINE ---
     print(f"\nProcessing rules for {target_class.upper()}...")
     
-    # 1. Fetch records adaptively from ExcelManager (using our dual-class check function)
+    # 1. Fetch records adaptively from ExcelManager
     if target_class == "land":
         raw_results = manager.find_cards_by_value("Type", "Land")
     else:
-        # Our updated find_cards_by_value already checks both Class 1 and Class 2!
         raw_results = manager.find_cards_by_value("Class", target_class)
 
     # 2. De-duplicate any instances
@@ -78,8 +76,6 @@ def run_qa_search_engine(manager):
     price_drops = 0
     
     for card in unique_cards:
-        # 🌟 THE BULLETPROOF FIX: 
-        # Only run color filter if target_color exists, isn't empty, and isn't a blank space.
         if target_color and str(target_color).strip():
             if card.identity != target_color:
                 color_drops += 1
@@ -91,27 +87,18 @@ def run_qa_search_engine(manager):
             
         filtered_list.append(card)
 
-        
-    # 🌟 PASTE THIS EXACT LINE RIGHT ABOVE YOUR DIAGNOSTIC PRINT BLOCK:
+    # Clean Diagnostic Report & Debug output
     print(f"\n🔍 DEBUG VALUE: target_color is currently equal to: '{target_color}' (Type: {type(target_color)})")
-
-    print(f"\n[Diagnostic Report]:")
-    print(f"-> Total raw cards pulled from Excel: {len(unique_cards)}")
-
-    # 🌟 PASTE THE DIAGNOSTIC REPORT RIGHT HERE:
     print(f"\n[Diagnostic Report]:")
     print(f"-> Total raw cards pulled from Excel: {len(unique_cards)}")
     print(f"-> Cards filtered out by Color mismatch: {color_drops}")
     print(f"-> Cards filtered out by Budget limit: {price_drops}")
     print(f"-> Cards remaining for the Top 10 list: {len(filtered_list)}\n")
 
-
     # 4. Apply the Sorting Algorithm based on the User's choice
     if priority_choice == "2":
-        # Budget First: Sort by price ascending, then ranking value descending
         filtered_list.sort(key=lambda c: (c.price, -c.ranking_1_value))
     else:
-        # Quality First: Sort by ranking value descending, then price ascending
         filtered_list.sort(key=lambda c: (-c.ranking_1_value, c.price))
 
     # 5. Display the Top 10 Results using list slicing [:10]
@@ -136,7 +123,6 @@ def main():
         print(f"Initialization Error: {e}")
         return
 
-    # 🌟 RUNS ONLY THE Q&A DECK-BUILDER (Completely cleans out old loop code)
     run_qa_search_engine(manager)
 
 if __name__ == "__main__":

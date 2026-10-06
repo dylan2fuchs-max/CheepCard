@@ -116,6 +116,7 @@ class ThemeEngine:
             "Job Select": ["job select"], "Level Up": ["level up"], "Retrace": ["retrace"],
             "Books": ["tome"], "Dandan": ["dandan"], "Planechase": ["planar"], "Dash": ["dash"],
         }
+
     def evaluate_card_for_theme(self, theme, rules_txt, card_type):
         """Returns True if the card matches the given theme's keywords using exact word boundaries (Handles Strings and Tuples)."""
         keywords = self.theme_rules.get(theme, [])
@@ -135,26 +136,29 @@ class ThemeEngine:
                     
         return False
 
-    def detect_deck_themes(self, card_list, rules_df):
-        """Scans processed cards and flags themes with a count >= 8"""
+    def detect_deck_themes(self, card_list, rules_df=None):
+        """Scans processed cards and flags themes with a count >= 8 (Supports both Card objects and Pandas DataFrames)"""
         theme_counts = {theme: 0 for theme in self.theme_rules.keys()}
         
-        # Clean rules dataframe indexing for speedy matching
-        rules_df.columns = rules_df.columns.str.strip()
-        text_col = "Text" if "Text" in rules_df.columns else "Rules Text"
-        
         for card in card_list:
-            card_name_clean = str(card.name).strip().lower()
-            card_type_clean = str(getattr(card, 'type', '')).strip().lower()
+            card_type_clean = str(getattr(card, 'raw_type', getattr(card, 'type', ''))).strip().lower()
+            rules_txt = ""
             
-            # Extract oracle text from your main reference sheet rows
-            matched_rows = rules_df[rules_df["Name"].astype(str).str.strip().str.lower() == card_name_clean]
-            rules_txt = str(matched_rows.iloc[0].get(text_col, "")).lower() if not matched_rows.empty else ""
+            # Check if card object has oracle_text or text attributes directly
+            if hasattr(card, 'oracle_text') and card.oracle_text:
+                rules_txt = str(card.oracle_text).lower()
+            elif hasattr(card, 'text') and card.text:
+                rules_txt = str(card.text).lower()
+            elif rules_df is not None:
+                # Fallback to DataFrame lookup if rules_df is provided
+                card_name_clean = str(getattr(card, 'name', card)).strip().lower()
+                rules_df.columns = rules_df.columns.str.strip()
+                text_col = "Text" if "Text" in rules_df.columns else "Rules Text"
+                matched_rows = rules_df[rules_df["Name"].astype(str).str.strip().str.lower() == card_name_clean]
+                rules_txt = str(matched_rows.iloc[0].get(text_col, "")).lower() if not matched_rows.empty else ""
             
-            # Map items across your configurations by calling your theme evaluation function
             for theme in self.theme_rules.keys():
                 if self.evaluate_card_for_theme(theme, rules_txt, card_type_clean):
                     theme_counts[theme] += 1
                     
-        # Return all styles hitting the threshold requirement constraint
         return [theme for theme, count in theme_counts.items() if count >= 8]

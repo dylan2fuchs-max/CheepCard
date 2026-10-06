@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
+import json
+import os
 
 news_bp = Blueprint('news', __name__)
 
@@ -19,6 +21,25 @@ NEWS_POSTS = [
         }
     }
 ]
+
+# --- PERSISTENT FEEDBACK STORAGE HELPERS ---
+FEEDBACK_FILE = os.path.join(os.path.dirname(__file__), 'feedback_store.json')
+
+def load_feedback_logs():
+    if os.path.exists(FEEDBACK_FILE):
+        try:
+            with open(FEEDBACK_FILE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_feedback_logs(logs):
+    try:
+        with open(FEEDBACK_FILE, 'w') as f:
+            json.dump(logs, f, indent=4)
+    except Exception as e:
+        print(f"Error saving feedback: {e}")
 
 @news_bp.route('/news')
 def public_news():
@@ -45,6 +66,31 @@ def vote_poll(poll_id):
             else:
                 flash("Invalid poll option selected.", "danger")
     return redirect(url_for('news.public_news'))
+
+@news_bp.route('/news/feedback', methods=['GET', 'POST'])
+def feedback_page():
+    if request.method == 'POST':
+        message = request.form.get('message', '').strip()
+        
+        if message:
+            logs = load_feedback_logs()
+            new_feedback = {
+                "id": max([f["id"] for f in logs], default=0) + 1,
+                "email": "Anonymous", 
+                "message": message,
+                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "viewed": False,
+                "viewed_by": None
+            }
+            logs.insert(0, new_feedback)
+            save_feedback_logs(logs) # 👈 Safely written to disk!
+            flash("Thank you! Your feedback has been logged successfully.", "success")
+        else:
+            flash("Feedback message cannot be empty.", "danger")
+            
+        return redirect(url_for('news.public_news'))
+        
+    return render_template('feedback.html')
 
 @news_bp.route('/admin/news', methods=['GET', 'POST'])
 @login_required
@@ -91,6 +137,43 @@ def admin_news():
         
     return render_template('news_admin.html', posts=NEWS_POSTS)
 
+@news_bp.route('/admin/news/feedback')
+@login_required
+def view_feedback():
+    if getattr(current_user, 'role', None) != 'admin':
+        abort(403)
+        
+    logs = load_feedback_logs()
+    admin_name = getattr(current_user, 'username', 'Admin')
+    updated = False
+    
+    for item in logs:
+        if not item.get("viewed", False):
+            item["viewed"] = True
+            item["viewed_by"] = admin_name
+            updated = True
+        elif not item.get("viewed_by"):
+            item["viewed_by"] = admin_name
+            updated = True
+            
+    if updated:
+        save_feedback_logs(logs) # Save read status updates
+        
+    return render_template('admin_feedback.html', feedbacks=logs)
+
+@news_bp.route('/admin/news/feedback/delete/<int:feedback_id>', methods=['POST'])
+@login_required
+def delete_feedback(feedback_id):
+    if getattr(current_user, 'role', None) != 'admin':
+        abort(403)
+        
+    logs = load_feedback_logs()
+    logs = [f for f in logs if f["id"] != feedback_id]
+    save_feedback_logs(logs) # Save deletion updates
+    
+    flash("Feedback entry deleted successfully.", "success")
+    return redirect(url_for('news.view_feedback'))
+
 @news_bp.route('/admin/news/edit/<int:post_id>', methods=['GET', 'POST'])
 @login_required
 def edit_news(post_id):
@@ -124,9 +207,9 @@ def edit_news(post_id):
             if opt2: 
                 options[opt2] = existing_options.get(opt2, 0)
             if opt3: 
-                options[opt3] = existing_options.get(opt1, 0)
+                options[opt3] = existing_options.get(opt3, 0)
             if opt4: 
-                options[opt4] = existing_options.get(opt2, 0)
+                options[opt4] = existing_options.get(opt4, 0)
                 
             if question and options:
                 post["poll"] = {

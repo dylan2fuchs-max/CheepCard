@@ -1,42 +1,18 @@
 import sys
 import os
-import pandas as pd
-from collections import Counter
 import re
+from collections import Counter
 
-# Add the parent directory (CheepCards root) to Python's search path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from Card_Filter import Card
 
 class CardProfiler:
-    def __init__(self, file_path="../Magic Card Data Base Current View.xlsx"):
-        self.file_path = file_path
-        self.df = pd.read_excel(self.file_path, engine="openpyxl")
-        
-        # Convert every Excel row into your validated Card object
+    def __init__(self, file_path=None):
+        # Load all cards from PostgreSQL database via SQLAlchemy
         self.cards = []
-        for _, row in self.df.iterrows():
-            row_dict = row.to_dict()
-            
-            card_obj = Card(
-                name=row_dict.get('Name') or row_dict.get('name'),
-                identity=row_dict.get('Colors') or row_dict.get('Identity') or row_dict.get('identity'),
-                mana_cost=row_dict.get('Mana Value') or row_dict.get('Mana Cost') or row_dict.get('mana_cost'),
-                price=row_dict.get('Price', 0.0),
-                ranking_1=row_dict.get('Ranking 1') or row_dict.get('Rank 1') or row_dict.get('ranking_1'),
-                ranking_2=row_dict.get('Ranking 2') or row_dict.get('Rank 2') or row_dict.get('ranking_2'),
-                card_class_1=row_dict.get('Class 1') or row_dict.get('Card Class 1') or row_dict.get('card_class_1'),
-                card_class_2=row_dict.get('Class 2') or row_dict.get('Card Class 2') or row_dict.get('card_class_2'),
-                rarity=row_dict.get('Rarity', 'Common'),
-                image_url=row_dict.get('Image URL', ''),
-                oracle_text=row_dict.get('Text') or row_dict.get('Oracle Text') or row_dict.get('oracle_text')
-            )
-            
-            card_obj.raw_type = str(row_dict.get('Type') or row_dict.get('Type Line') or '')
-            card_obj.raw_mana_val = row_dict.get('Mana Value') or row_dict.get('Mana Cost') or row_dict.get('CMC') or 0
-            self.cards.append(card_obj)
-            
-        # Isolate hand-reviewed cards (strictly excluding temporary machine-tags ending in 'm' like DrawM)
+        self.load_cards_from_db()
+        
+        # Isolate hand-reviewed cards
         self.reviewed_cards = [
             c for c in self.cards 
             if (
@@ -49,9 +25,17 @@ class CardProfiler:
             )
         ]
 
+    def load_cards_from_db(self):
+        """Fetches all cards from the database."""
+        try:
+            self.cards = Card.query.all()
+            print(f"[Profiler] Loaded {len(self.cards)} cards from PostgreSQL database.")
+        except Exception as e:
+            print(f"[Profiler Error] Could not query database: {e}")
+            self.cards = []
+
     def _extract_numeric_mana(self, raw_val):
-        """Safely parses numbers from raw mana values or MTG cost strings like '{2}{G}'."""
-        if pd.isna(raw_val):
+        if raw_val is None:
             return None
         try:
             return float(raw_val)
@@ -70,7 +54,6 @@ class CardProfiler:
         return None
 
     def _get_land_mana_profile(self, card):
-        """Extracts mana production traits from a land's oracle text."""
         text = card.oracle_text.lower() if card.oracle_text else ""
         traits = []
         if "any color" in text:
@@ -85,6 +68,23 @@ class CardProfiler:
         for symbol in ['{w}', '{u}', '{b}', '{r}', '{g}', '{c}']:
             if symbol in text:
                 traits.append(symbol)
+        return traits
+
+    def _get_ramp_profile(self, card):
+        text = card.oracle_text.lower() if card.oracle_text else ""
+        traits = []
+        if "add" in text:
+            traits.append("produces_mana")
+        if "search your library" in text and ("land" in text or "basic" in text):
+            traits.append("land_search")
+        if "treasure" in text:
+            traits.append("treasure_generation")
+        if "additional land" in text or "play an additional" in text:
+            traits.append("extra_land_drop")
+            
+        for symbol in ['{w}', '{u}', '{b}', '{r}', '{g}', '{c}']:
+            if symbol in text:
+                traits.append(f"produces_{symbol}")
         return traits
 
     def generate_granular_profiles(self, target_class):
@@ -106,13 +106,9 @@ class CardProfiler:
             all_ranks = ['default']
 
         for rank in sorted(list(all_ranks)):
-            if rank == 'default':
-                rank_cards = class_cards
-            else:
-                rank_cards = [
-                    c for c in class_cards 
-                    if c.ranking_1_word == rank or c.ranking_2_word == rank
-                ]
+            rank_cards = class_cards if rank == 'default' else [
+                c for c in class_cards if c.ranking_1_word == rank or c.ranking_2_word == rank
+            ]
             
             if not rank_cards:
                 continue
@@ -134,30 +130,6 @@ class CardProfiler:
 
             for color_label, color_sub_list in valid_rank_groups.items():
                 self._print_color_stats(color_sub_list, color_label)
-
-        print(f"\n" + "#"*55)
-        print(f" 🌟 GRAND CLASS SUMMARY: {target_class.upper()} (Pooled Total >= 10)")
-        print(f"#"*55)
-
-        grand_color_groups = {}
-        for c in class_cards:
-            ident = c.identity if c.identity else "{COLORLESS}"
-            if ident not in grand_color_groups:
-                grand_color_groups[ident] = []
-            grand_color_groups[ident].append(c)
-
-        displayed_count = 0
-        skipped_groups = []
-
-        for color_label, color_sub_list in grand_color_groups.items():
-            if len(color_sub_list) >= 10:
-                self._print_grand_color_stats(color_sub_list, color_label)
-                displayed_count += 1
-            else:
-                skipped_groups.append(f"{color_label} ({len(color_sub_list)} cards)")
-
-        if skipped_groups:
-            print(f"\n    [Notice] Excluded low-sample groups (<10 total cards): {', '.join(skipped_groups)}")
 
     def _print_color_stats(self, color_sub_list, color_label):
         count = len(color_sub_list)
@@ -194,8 +166,8 @@ class CardProfiler:
 
         print(f"    ----------------------------------------------")
         print(f"    -> Color Group: {color_label} (Cards: {count})")
-        print(f"      * Avg Mana Value: {avg_mana}")
-        print(f"      * Top Types:      {type_counts}")
+        print(f"      * Avg Mana Value:      {avg_mana}")
+        print(f"      * Top Types:       {type_counts}")
         print(f"      * Common Phrases: {common_phrases}")
 
     def _print_grand_color_stats(self, color_sub_list, color_label):
@@ -238,28 +210,31 @@ class CardProfiler:
         print(f"      * Core Key Phrases:    {common_phrases}")
 
 if __name__ == "__main__":
-    try:
-        profiler = CardProfiler("../Magic Card Data Base Current View.xlsx")
-        
-        print("\n========================================")
-        print("   GRANULAR PROFILER + PRECISION SUMMARY")
-        print("========================================")
-        
-        while True:
-            try:
-                target_class = input("\nEnter class to evaluate (e.g., Removal, Ramp, Draw, Land, Board Wipe) or type 'exit': ").strip()
-            except (EOFError, KeyboardInterrupt):
-                print("\nExiting profiler. Have a great day!")
-                break
-                
-            if target_class.lower() == 'exit':
-                print("Exiting profiler. Have a great day!")
-                break
-                
-            if not target_class:
-                continue
-                
-            profiler.generate_granular_profiles(target_class=target_class)
+    from app import app, db  # Import your Flask app instance
+    
+    with app.app_context():
+        try:
+            profiler = CardProfiler()
             
-    except Exception as e:
-        print(f"❌ Error initializing profiler: {e}")
+            print("\n========================================")
+            print("   GRANULAR PROFILER + PRECISION SUMMARY")
+            print("========================================")
+            
+            while True:
+                try:
+                    target_class = input("\nEnter class to evaluate (e.g., Removal, Ramp, Draw, Land, Board Wipe) or type 'exit': ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    print("\nExiting profiler. Have a great day!")
+                    break
+                    
+                if target_class.lower() == 'exit':
+                    print("Exiting profiler. Have a great day!")
+                    break
+                    
+                if not target_class:
+                    continue
+                    
+                profiler.generate_granular_profiles(target_class=target_class)
+                
+        except Exception as e:
+            print(f"❌ Error initializing profiler: {e}")

@@ -6,23 +6,62 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="dark-mode">
-    <div class="container" style="max-width: 800px; margin-top: 30px;">
+    <div class="container" style="max-width: 800px; margin-top: 30px; margin-bottom: 50px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h1>✏️ Edit Update Log</h1>
             <a href="{{ url_for('news.admin_news') }}" class="cta-btn" style="background-color: #7f8c8d; padding: 8px 14px; text-decoration: none;">← Back to Admin Panel</a>
         </div>
 
-        <div class="panel-box" style="margin-bottom: 30px;">
+        <div class="panel-box" style="margin-bottom: 30px; background: #1a202c; border: 1px solid #2d3748; border-radius: 10px; padding: 30px;">
             <form method="POST">
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Post Title</label>
-                    <input type="text" name="title" value="{{ post.title }}" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: rgba(0,0,0,0.2); color: inherit;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #cbd5e0;">Post Title</label>
+                    <input type="text" name="title" value="{{ post.title }}" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4a5568; background: #121418; color: #fff; box-sizing: border-box;">
                 </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Content / Update Details</label>
-                    <textarea name="content" rows="6" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; background: rgba(0,0,0,0.2); color: inherit;">{{ post.content }}</textarea>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #cbd5e0;">Content / Update Details</label>
+                    <textarea name="content" rows="6" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #4a5568; background: #121418; color: #fff; resize: vertical; box-sizing: border-box;">{{ post.content }}</textarea>
                 </div>
-                <button type="submit" class="cta-btn" style="background-color: #27ae60; padding: 10px 20px;">💾 Save Changes</button>
+
+                <hr style="border: 0; border-top: 1px solid #2d3748; margin: 20px 0;">
+
+                <!-- Poll Section -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #cbd5e0; cursor: pointer;">
+                        <input type="checkbox" name="has_poll" value="1" {% if post.poll %}checked{% endif %} onclick="document.getElementById('poll-fields').style.display = this.checked ? 'block' : 'none'">
+                        Include / Update Poll for this post
+                    </label>
+                </div>
+
+                <div id="poll-fields" style="display: {% if post.poll %}block{% else %}none{% endif %}; background: #121418; padding: 20px; border-radius: 6px; border: 1px solid #2d3748; margin-bottom: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; color: #a0aec0;">Poll Question</label>
+                        <input type="text" name="poll_question" value="{% if post.poll %}{{ post.poll.question }}{% endif %}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4a5568; background: #1a202c; color: #fff; box-sizing: border-box;">
+                    </div>
+
+                    {% set options_list = post.poll.options.keys()|list if post.poll else [] %}
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.85rem; color: #a0aec0;">Option 1</label>
+                            <input type="text" name="opt1" value="{{ options_list[0] if options_list|length > 0 else '' }}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4a5568; background: #1a202c; color: #fff; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; color: #a0aec0;">Option 2</label>
+                            <input type="text" name="opt2" value="{{ options_list[1] if options_list|length > 1 else '' }}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4a5568; background: #1a202c; color: #fff; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; color: #a0aec0;">Option 3 (Optional)</label>
+                            <input type="text" name="opt3" value="{{ options_list[2] if options_list|length > 2 else '' }}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4a5568; background: #1a202c; color: #fff; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; color: #a0aec0;">Option 4 (Optional)</label>
+                            <input type="text" name="opt4" value="{{ options_list[3] if options_list|length > 3 else '' }}" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #4a5568; background: #1a202c; color: #fff; box-sizing: border-box;">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="cta-btn" style="background-color: #27ae60; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 15px;">💾 Save Changes</button>
             </form>
         </div>
     </div>

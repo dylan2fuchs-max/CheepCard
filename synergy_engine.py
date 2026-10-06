@@ -1,11 +1,8 @@
-from pathlib import Path
-import pandas as pd
 import re
 from collections import Counter
 from auto_filler_words import AUTO_FILLER_WORDS
-
-# STRICTLY READ-ONLY REFERENCE PATH
-EXCEL_PATH = Path.cwd() / "Magic Card Data Base Current View.xlsx"
+from Card_Filter import Card
+from theme_engine import ThemeEngine
 
 PROTECTED_TYPES = {
     'human', 'wizard', 'warrior', 'soldier', 'spirit', 'zombie', 'cleric',
@@ -45,44 +42,40 @@ PROTECTED_TYPES = {
     'lobster', 'nautilus', 'pest', 'phelddagrif', 'scientist', 'sponge',
     'townsfolk', 'wombat', 'vehicles', 'defender', 'hero', 'spacecraft',
     'necron', 'mounts', 'daleks', 'Time Lord', 'Astarte', 'Cybermen',
-    'Symbiote', 
-
+    'Symbiote',
 }
 
 def run_synergy_analysis(deck_list: list) -> dict:
     """
-    STRICTLY READ-ONLY ARCHITECTURE ENGINE.
-    Evaluates card text loops in memory. Contains ZERO file-write mechanisms.
+    POSTGRESQL-BACKED SYNERGY ENGINE.
+    Evaluates card text loops in memory by querying SQLAlchemy instead of Excel files.
     """
-    if not EXCEL_PATH.exists():
-        return {"error": "Spreadsheet database file not found."}
-        
-    # Read the sheet safely in memory
-    df = pd.read_excel(EXCEL_PATH, engine="openpyxl")
-    df.columns = df.columns.str.strip()
-    
-    text_col = "Text" if "Text" in df.columns else "Rules Text"
-    type_col = "Type" if "Type" in df.columns else "Card Type"
-    
-    # Build two reference dictionaries mapping card names to their text and type configurations
-    card_text_map = {}
-    card_type_map = {}
-    
-    for _, row in df.iterrows():
-        name = str(row.get("Name", "")).strip().lower()
-        rules_text = str(row.get(text_col, "")).lower() if pd.notna(row.get(text_col)) else ""
-        card_type = str(row.get(type_col, "")).lower() if pd.notna(row.get(type_col)) else ""
-        
-        if name:
-            card_text_map[name] = rules_text
-            card_type_map[name] = card_type
-
-    # 1. EXPANDED AGGRESSIVE FILLER LIST
-    filler_words = AUTO_FILLER_WORDS
-
     deck_size = len(deck_list)
     if deck_size == 0:
         return {}
+
+    # Build reference maps directly from PostgreSQL via SQLAlchemy
+    card_text_map = {}
+    card_type_map = {}
+    
+    try:
+        db_cards = Card.query.all()
+        for c in db_cards:
+            name = c.name.strip().lower()
+            rules_text = c.oracle_text.lower() if c.oracle_text else ""
+            card_type = c.raw_type.lower() if c.raw_type else ""
+            if name:
+                card_text_map[name] = rules_text
+                card_type_map[name] = card_type
+    except Exception as e:
+        print(f"[Synergy Engine Error] Failed to fetch cards from database: {e}")
+        return {"error": "Could not retrieve card data from database."}
+
+    if not card_text_map:
+        return {"error": "Card database is empty."}
+
+    # 1. EXPANDED AGGRESSIVE FILLER LIST
+    filler_words = AUTO_FILLER_WORDS
 
     core_categories = {
         "Card Draw": {
@@ -98,7 +91,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "basic land card, put it onto the battlefield",
                 "put land",
             ],
-            # Matches "add {any mana symbol}" like "add {b}", "add {w}{b}", "add {c}{c}", "add one mana", etc.
             "regex_patterns": [
                 r"\badd\s+(?:\{[wubrgc0-9xyz/]+\}|\bone\s+mana\b)",
                 r"\bput\s+.*?land.*?\bonto the battlefield\b",
@@ -108,7 +100,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
         },
     }
 
-    from theme_engine import ThemeEngine
     theme_engine = ThemeEngine()
     theme_card_pools = {theme: set() for theme in theme_engine.theme_rules.keys()}
 
@@ -148,7 +139,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
             if exclude_param and exclude_param in current_card_type:
                 continue
 
-            # Check literal keywords using word boundaries
             matched = False
             for kw in tracking.get("keywords", []):
                 pattern = r'\b' + re.escape(kw) + r'\b'
@@ -157,17 +147,15 @@ def run_synergy_analysis(deck_list: list) -> dict:
                     matched = True
                     break
 
-            # Check dedicated regex patterns if not already matched
             if not matched:
                 for reg in tracking.get("regex_patterns", []):
                     if re.search(reg, rules_text, re.IGNORECASE):
                         tracking["cards"].add(actual_name_in_excel)
                         break
 
-        # 2. READ CREATURE TYPE SUBTYPES DIRECTLY FROM SPREADSHEET TYPE COLUMN
+        # 2. READ CREATURE TYPE SUBTYPES DIRECTLY FROM TYPE COLUMN
         clean_types = re.sub(r'[^\w\s]', ' ', current_card_type)
         for sub_type in clean_types.split():
-            # If the word in the type column is in our list, track it as an explicit creature type match
             if sub_type in PROTECTED_TYPES:
                 creature_type_pool.append(sub_type)
                 card_creature_type_assignments[card_name.strip()].append(sub_type)
@@ -185,7 +173,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 raw_theme_pool.append(word)
                 card_assignments[card_name.strip()].append(word)
 
-    # Calculate dynamic themes and creature types that appear at least 4 times
     MIN_MATCHES = 5
     
     theme_counts = Counter(raw_theme_pool)
@@ -196,7 +183,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
     output = []
     
-    # 1. Append custom categories to the top of the table report
     for cat_name, tracking in core_categories.items():
         count = len(tracking["cards"])
         if count > 0:
@@ -208,8 +194,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "cards": ", ".join(sorted(list(tracking["cards"])))
             })
 
-    # 2. Append the True Creature Type matches next with our FUN MEME ALIEN SYMBOL
-    for type_name, count in sorted(valid_creature_types.items(), key=lambda item: item, reverse=True):
+    for type_name, count in sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True):
         percentage = round((count / deck_size) * 100, 2)
         matching_cards = []
         for card in deck_list:
@@ -223,7 +208,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
             "cards": ", ".join(matching_cards)
         })
 
-   # 3. Append the major rule-based structural themes with a custom visual anchor
     major_themes_formatted = []
     for theme, cards_set in theme_card_pools.items():
         count = len(cards_set)
@@ -238,12 +222,10 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "cards": ", ".join(matching_cards)
             })
             
-    # Sort major playstyles by highest count and append them cleanly
     for theme_data in sorted(major_themes_formatted, key=lambda x: x["count"], reverse=True):
         output.append(theme_data)
 
-    # 4. Append the secondary organic word topics underneath
-    for theme, count in sorted(valid_themes.items(), key=lambda item: item, reverse=True):
+    for theme, count in sorted(valid_themes.items(), key=lambda item: item[1], reverse=True):
         if theme in ["draw", "land", "lands"]:
             continue
             

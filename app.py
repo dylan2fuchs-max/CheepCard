@@ -8,7 +8,9 @@ import json
 import stripe
 import requests
 from datetime import date, datetime
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # <--- Load environment variables first!
+load_dotenv()
+
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
 from flask import Flask, request, render_template, session, jsonify, abort, redirect, url_for, flash
@@ -17,7 +19,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from Excel_Manager import ExcelManager
-from Card_Filter import Card
+from Card_Filter import db, Card
 from synergy_engine import run_synergy_analysis
 from puzzle_engine import (
     get_random_puzzle, 
@@ -29,8 +31,30 @@ from puzzle_engine import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "cheepcard_secret_key_987654321_dev")
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cheepcard.db'
+csrf = CSRFProtect(app)  # <--- Ensures all POST forms are cryptographically protected
+
+# Add these right under your app configuration
+app.config['SESSION_COOKIE_SECURE'] = True      # Forces cookies to only transmit over HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True    # Prevents JavaScript (XSS) from stealing session cookies
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'   # Protects against cross-site request forgery
+
+# --- Enforce Secure Secret Key ---
+secret_key = os.environ.get("SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("SECRET_KEY environment variable is not set!")
+app.secret_key = secret_key
+
+# --- Database Configuration ---
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'instance', 'cheepcards.db')}"
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 print("STRIPE KEY CHECK:", os.getenv("STRIPE_SECRET_KEY"))
@@ -38,7 +62,7 @@ print("STRIPE KEY CHECK:", os.getenv("STRIPE_SECRET_KEY"))
 # Reads 'True' or 'False' from your environment variables
 MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
 
-db = SQLAlchemy(app)
+db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -51,13 +75,19 @@ if os.path.exists('disposable_domains.json'):
 
 manager = ExcelManager("Magic Card Data Base Current View.xlsx")
 
-# (Remove the old register_review_routes call here entirely)
-
 SEARCH_CLUSTERS = {}
 
-load_dotenv()
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    # Catches server hiccups or database dropped connections
+    return render_template('500.html'), 500
 
 def validate_password_strength(password):
     """
@@ -80,13 +110,7 @@ def validate_password_strength(password):
         return "Password must include at least one special symbol."
     return None
 
-@app.before_request
-def check_maintenance():
-    # If maintenance mode is active, block all routes except static files (CSS/images)
-    if MAINTENANCE_MODE and request.endpoint not in ['static']:
-        return render_template('maintenance.html'), 503
-
-# Flask-Mail configuration using environment variables
+# --- Flask-Mail Configuration ---
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp-relay.brevo.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
@@ -95,6 +119,43 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 mail = Mail(app)
+
+
+# --- Maintenance Mode Guard with Developer Bypass ---
+@app.before_request
+def check_maintenance():
+    # If maintenance mode is OFF, let everyone through normally
+    if not MAINTENANCE_MODE:
+        return
+
+    # Allow static files (CSS/images/JS) so the maintenance page styles correctly
+    if request.endpoint == 'static':
+        return
+        
+    # Allow the secret unlock route itself so you can activate your session
+    if request.endpoint == 'dev_unlock':
+        return
+        
+    # If you have already used your secret token on this browser/device, let you pass
+    if session.get('dev_bypass'):
+        return
+        
+    # Block everyone else and show the Coming Soon page
+    return render_template('maintenance.html'), 503
+
+
+@app.route('/dev-unlock')
+def dev_unlock():
+    """Secret route to grant your browser access while maintenance mode is ON."""
+    token = request.args.get('token')
+    secret_token = os.environ.get('DEV_UNLOCK_TOKEN')
+    
+    if token and secret_token and token == secret_token:
+        session['dev_bypass'] = True
+        flash("Developer bypass activated!", "success")
+        return redirect(url_for('index')) # Change 'index' to your main home route name if different
+        
+    abort(403)
 
 def get_reset_token(user, expires_sec=1800):
     s = Serializer(app.config['SECRET_KEY'])
@@ -636,14 +697,16 @@ def search():
     for target_class in target_classes:
         clean_target_class = target_class.strip().lower()
         
+        # Query PostgreSQL directly instead of relying solely on ExcelManager memory pool
         if clean_target_class == "all available cards":
-            class_results = manager.card_pool
+            class_results = Card.query.all()
         else:
-            class_results = [
-                card for card in manager.card_pool 
-                if clean_target_class in str(getattr(card, 'card_class_1', '')).lower() 
-                or clean_target_class in str(getattr(card, 'card_class_2', '')).lower()
-            ]
+            class_results = Card.query.filter(
+                db.or_(
+                    db.func.lower(Card.card_class_1).contains(clean_target_class),
+                    db.func.lower(Card.card_class_2).contains(clean_target_class)
+                )
+            ).all()
 
         filtered_results = []
         for card in class_results:
