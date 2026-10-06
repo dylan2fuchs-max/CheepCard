@@ -109,6 +109,14 @@
             transition-delay: 0s;
         }
 
+        /* Base arcade card tile style (no hover state here!) */
+        .arcade-card-tile {
+            background: var(--box-bg); border: 2px solid var(--border-color);
+            border-radius: 8px; padding: 6px; text-align: center; cursor: pointer;
+            width: 110px; position: relative; 
+            transition: transform 0.1s ease-out, border-color 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
         .arcade-card-tile img { width: 100%; border-radius: 5px; }
 
         .sequence-slots {
@@ -169,12 +177,12 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* 🌟 Desktop Only Hover Zoom (Disabled on mobile touch screens) */
+        /* 🌟 Desktop Only Hover Zoom (Strictly disabled on screens under 900px) */
         @media (min-width: 900px) {
-            .budget-display img:hover,
-            .arcade-card-img:hover {
-                transform: translateY(-8px) scale(1.6);
-                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            .arcade-card-tile:hover {
+                transform: translateY(-12px) scale(1.75);
+                border-color: var(--title-color);
+                box-shadow: 0 15px 35px rgba(0,0,0,0.5);
                 z-index: 100;
                 transition-delay: 0s;
             }
