@@ -415,6 +415,8 @@ def generate_puzzle_from_blueprint(blueprint, rng=None):
     }
 
 def validate_user_sequence(user_sequence, rules):
+    cleaned_sequence = [str(card).strip() for card in user_sequence]
+    
     if len(user_sequence) != 7:
         return {"success": False, "message": "You must place all 7 cards into sequence slots!"}
 

@@ -168,6 +168,17 @@
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* 🌟 Desktop Only Hover Zoom (Disabled on mobile touch screens) */
+        @media (min-width: 900px) {
+            .budget-display img:hover,
+            .arcade-card-img:hover {
+                transform: translateY(-8px) scale(1.6);
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+                z-index: 100;
+                transition-delay: 0s;
+            }
+        }
     </style>
 </head>
 <body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% elif session.get('default_theme') %}{{ session.get('default_theme') }}{% else %}dark-mode{% endif %}">
