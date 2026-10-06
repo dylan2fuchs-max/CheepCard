@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy - CheepCards</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* 🌟 NEW: Global box-sizing fix */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* 🌟 NEW: Mobile responsive header and container adjustments */
+        @media (max-width: 600px) {
+            header {
+                flex-wrap: wrap;
+                justify-content: center !important;
+                gap: 15px;
+                padding: 15px !important;
+                text-align: center;
+            }
+            .policy-container {
+                margin: 20px 10px !important;
+                padding: 20px !important;
+            }
+        }
+    </style>
 </head>
 <body class="dark-mode" style="background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0;">
 
@@ -16,7 +37,7 @@
         <a href="{{ url_for('home') }}" class="cta-btn" style="background: #2980b9; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px;">&larr; Back to Home</a>
     </header>
 
-    <div style="max-width: 800px; margin: 40px auto; padding: 30px; background: var(--box-bg); border: 1px solid var(--border-color); border-radius: 8px;">
+    <div class="policy-container" style="max-width: 800px; margin: 40px auto; padding: 30px; background: var(--box-bg); border: 1px solid var(--border-color); border-radius: 8px;">
         <h1 style="color: #f1c40f; margin-top: 0;">Privacy Policy</h1>
         <p style="color: var(--card-text);">Effective Date: September 7, 2026</p>
         
