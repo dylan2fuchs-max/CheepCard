@@ -6,6 +6,11 @@
     <title>CheepCards - Home</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
+        /* 🌟 NEW: Global box-sizing fix to prevent horizontal overflow */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         /* Pixel-feel Backdrop & Retro Styling */
         body {
             background-color: #121214;
@@ -20,6 +25,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            overflow-x: hidden; /* 🌟 NEW: Prevent side-scrolling on mobile */
         }
 
         /* Light Mode Dynamic Overrides */
@@ -66,15 +72,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 30px;
+            padding: 15px 20px; /* 🌟 CHANGED: Reduced padding slightly for mobile fit */
             background: #1e1e24;
             border-bottom: 2px solid #f1c40f;
+            flex-wrap: wrap; /* 🌟 NEW: Allow header items to wrap on small screens */
+            gap: 10px; /* 🌟 NEW: Spacing when wrapped */
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px; /* 🌟 CHANGED: Tighter gap for mobile buttons */
+            flex-wrap: wrap; /* 🌟 NEW: Allow nav buttons to wrap cleanly */
         }
 
         .hero-section {
@@ -85,24 +94,25 @@
         }
 
         .hero-section h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem; /* 🌟 CHANGED: Slightly smaller scale for mobile screens */
             color: #f1c40f;
             margin-bottom: 10px;
             text-shadow: 2px 2px #000;
         }
 
         .hero-section p {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             color: #bdc3c7;
             max-width: 600px;
             margin: 0 auto 20px auto;
+            padding: 0 10px; /* 🌟 NEW: Safety padding */
         }
 
         .cta-btn {
             background: #2980b9;
             color: white;
-            padding: 10px 20px;
-            font-size: 1rem;
+            padding: 8px 16px; /* 🌟 CHANGED: Optimized for touch targets */
+            font-size: 0.95rem;
             font-weight: bold;
             border: 2px solid #f1c40f;
             border-radius: 6px;
@@ -120,15 +130,17 @@
         /* 3-Column Layout */
         .main-container {
             max-width: 1400px;
-            margin: 30px auto;
-            padding: 0 20px;
+            margin: 20px auto; /* 🌟 CHANGED: Reduced outer margin for mobile */
+            padding: 0 15px; /* 🌟 CHANGED: Added side padding so cards never touch screen edges */
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 25px;
+            gap: 20px; /* 🌟 CHANGED: Slightly tighter gap */
             flex: 1;
+            width: 100%; /* 🌟 NEW: Force full width container bounds */
         }
 
-        @media (max-width: 1100px) {
+        /* 🌟 CHANGED: Responsive breakpoint lowered to 900px for better tablet support */
+        @media (max-width: 900px) {
             .main-container {
                 grid-template-columns: 1fr;
             }
@@ -143,6 +155,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            width: 100%; /* 🌟 NEW: Ensure card spans full container width on mobile */
         }
 
         .content-card h2 {
@@ -160,13 +173,24 @@
             flex-wrap: wrap;
         }
 
+        /* 🌟 NEW: Mobile centering and responsiveness for card of the day image */
         .budget-display img {
-            max-width: 140px;
+            max-width: 130px;
+            width: 100%;
+            height: auto;
             border-radius: 8px;
             border: 2px solid #f1c40f;
             cursor: pointer;
             position: relative;
             transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
+        @media (max-width: 500px) {
+            .budget-display {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
         }
 
         /* Snappy instant zoom matching arcade cards */
@@ -181,7 +205,7 @@
         .home-footer {
             background: #1e1e24;
             border-top: 1px solid #333;
-            padding: 20px 30px;
+            padding: 20px;
             text-align: center;
             color: #95a5a6;
             font-size: 0.9rem;
@@ -195,7 +219,9 @@
 
         .footer-links {
             display: flex;
-            gap: 20px;
+            gap: 15px;
+            flex-wrap: wrap; /* 🌟 NEW: Allow footer links to wrap on narrow viewports */
+            justify-content: center;
         }
 
         .footer-links a {
@@ -212,28 +238,26 @@
 
     <!-- Header / Navbar -->
     <header class="home-header">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 15px; text-decoration: none;">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 40px; width: auto;">
-                <h2 style="margin: 0; color: #f1c40f; text-shadow: 1px 1px 2px black; font-size: 1.2rem;">CheepCards</h2>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 35px; width: auto;">
+                <h2 style="margin: 0; color: #f1c40f; text-shadow: 1px 1px 2px black; font-size: 1.1rem;">CheepCards</h2>
             </a>
         </div>
         <div class="header-right">
-            <a href="{{ url_for('dashboard') }}" class="cta-btn" style="padding: 6px 12px; font-size: 0.9rem;">Workspace</a>
+            <a href="{{ url_for('dashboard') }}" class="cta-btn" style="padding: 6px 10px; font-size: 0.85rem;">Workspace</a>
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('account') }}" class="cta-btn" style="background: #27ae60; padding: 6px 12px; font-size: 0.9rem;">Profile</a>
-                <a href="{{ url_for('logout') }}" class="cta-btn" style="background: #e74c3c; padding: 6px 12px; font-size: 0.9rem;">Logout</a>
+                <a href="{{ url_for('account') }}" class="cta-btn" style="background: #27ae60; padding: 6px 10px; font-size: 0.85rem;">Profile</a>
+                <a href="{{ url_for('logout') }}" class="cta-btn" style="background: #e74c3c; padding: 6px 10px; font-size: 0.85rem;">Logout</a>
             {% else %}
-                <a href="{{ url_for('login') }}" class="cta-btn" style="background: #27ae60; padding: 6px 12px; font-size: 0.9rem;">Login</a>
+                <a href="{{ url_for('login') }}" class="cta-btn" style="background: #27ae60; padding: 6px 10px; font-size: 0.85rem;">Login</a>
             {% endif %}
-            <!-- Dark/Light Mode toggle placeholder if used -->
-            <button type="button" id="themeToggle" class="cta-btn" style="background: #7f8c8d; padding: 6px 10px; font-size: 0.9rem;" onclick="toggleTheme()">☀️ Light Mode</button>
+            <button type="button" id="themeToggle" class="cta-btn" style="background: #7f8c8d; padding: 6px 10px; font-size: 0.85rem;" onclick="toggleTheme()">☀️ Light</button>
         </div>
     </header>
     <script>
         window.userRole = "{{ current_user.role if current_user.is_authenticated else 'free' }}";
 
-        // Set initial theme on page load based on database or localStorage
         window.addEventListener('DOMContentLoaded', () => {
             const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
             const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark';
@@ -241,12 +265,12 @@
             if (savedTheme === 'light') {
                 document.body.classList.remove('dark-mode');
                 const btn = document.getElementById('themeToggle');
-                if (btn) btn.innerText = '🌓 Dark Mode';
+                if (btn) btn.innerText = '🌓 Dark';
                 localStorage.setItem('theme', 'light');
             } else {
                 document.body.classList.add('dark-mode');
                 const btn = document.getElementById('themeToggle');
-                if (btn) btn.innerText = '☀️ Light Mode';
+                if (btn) btn.innerText = '☀️ Light';
                 localStorage.setItem('theme', 'dark');
             }
         });
@@ -255,14 +279,14 @@
             const isDark = document.body.classList.toggle('dark-mode');
             const btn = document.getElementById('themeToggle');
             if (isDark) {
-                if (btn) btn.innerText = '☀️ Light Mode';
+                if (btn) btn.innerText = '☀️ Light';
                 localStorage.setItem('theme', 'dark');
             } else {
-                if (btn) btn.innerText = '🌓 Dark Mode';
+                if (btn) btn.innerText = '🌓 Dark';
                 localStorage.setItem('theme', 'light');
             }
         }
-</script>
+    </script>
 
     <!-- Hero Banner -->
     <section class="hero-section">
@@ -298,7 +322,7 @@
                 <p style="color: #f1c40f;">No budget card available for today.</p>
                 {% endif %}
             </div>
-            <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 10px;">
                 <a href="{{ url_for('dashboard') }}" style="color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9rem;">Explore More in Workspace &rarr;</a>
             </div>
         </div>
@@ -323,15 +347,15 @@
         <div class="content-card" style="border: 1px solid #f1c40f;">
             <div>
                 <h2>🎮 Arcade Mini-Game</h2>
-                <p style="color: var(--card-text); font-size: 0.9rem; margin-top: 10px;">Test your MTG sequencing and combo puzzle skills!</p>
-                <div style="background: rgba(241, 196, 15, 0.05); padding: 20px; text-align: center; border-radius: 6px; margin-top: 15px;">
+                <p style="color: #bdc3c7; font-size: 0.9rem; margin-top: 10px;">Test your MTG sequencing and combo puzzle skills!</p>
+                <div style="background: rgba(241, 196, 15, 0.05); padding: 15px; text-align: center; border-radius: 6px; margin-top: 15px;">
                     <span style="font-size: 2rem;">🎲</span>
                     <p style="color: #f1c40f; font-weight: bold; margin: 10px 0 0 0;">Mana Mash-up is Live!</p>
-                    <p style="color: var(--card-text); font-size: 0.8rem; margin: 5px 0 15px 0;">Solve today's 7-card puzzle sequence.</p>
+                    <p style="color: #bdc3c7; font-size: 0.8rem; margin: 5px 0 15px 0;">Solve today's 7-card puzzle sequence.</p>
                     <a href="{{ url_for('arcade') }}" class="cta-btn" style="padding: 6px 14px; font-size: 0.85rem;">Play Now &rarr;</a>
                 </div>
             </div>
-            <div style="border-top: 1px solid var(--border-color); padding-top: 10px; margin-top: 15px;">
+            <div style="border-top: 1px solid #333; padding-top: 10px; margin-top: 15px;">
                 <a href="{{ url_for('arcade') }}" style="color: #3498db; text-decoration: none; font-weight: bold; font-size: 0.9rem;">Launch Arcade Hub &rarr;</a>
             </div>
         </div>
