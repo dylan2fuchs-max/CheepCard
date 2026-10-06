@@ -415,16 +415,32 @@ def generate_puzzle_from_blueprint(blueprint, rng=None):
     }
 
 def validate_user_sequence(user_sequence, rules):
-    if len(user_sequence) != 7:
+    # 🌟 Safely extract card names whether the frontend sends strings, dicts, or objects
+    cleaned_sequence = []
+    for card in user_sequence:
+        if isinstance(card, dict):
+            name = card.get('name') or card.get('Name') or str(card)
+        elif hasattr(card, 'name'):
+            name = card.name
+        else:
+            name = str(card)
+        cleaned_sequence.append(name.strip())
+
+    print(f"DEBUG - Cleaned User Sequence: {cleaned_sequence}") # Check your Render logs for this!
+
+    if len(cleaned_sequence) != 7:
         return {"success": False, "message": "You must place all 7 cards into sequence slots!"}
 
     slot_rules = rules.get("slots")
     if slot_rules:
         for i, allowed_cards in enumerate(slot_rules):
-            card_in_slot = user_sequence[i]
-            if card_in_slot not in allowed_cards:
+            card_in_slot = cleaned_sequence[i]
+            # Clean allowed rule cards too
+            cleaned_allowed = [str(c).strip() for c in allowed_cards]
+            
+            if card_in_slot not in cleaned_allowed:
                 slot_num = i + 1
-                expected_str = " / ".join(allowed_cards)
+                expected_str = " / ".join(cleaned_allowed)
                 return {
                     "success": False,
                     "message": f"Placement Error in Slot {slot_num}: '{card_in_slot}' cannot be played here. Expected: [{expected_str}]"
@@ -432,19 +448,22 @@ def validate_user_sequence(user_sequence, rules):
 
     must_be_before = rules.get("must_be_before", [])
     for card_a, card_b in must_be_before:
-        if card_a in user_sequence and card_b in user_sequence:
-            if user_sequence.index(card_a) > user_sequence.index(card_b):
+        clean_a, clean_b = str(card_a).strip(), str(card_b).strip()
+        if clean_a in cleaned_sequence and clean_b in cleaned_sequence:
+            if cleaned_sequence.index(clean_a) > cleaned_sequence.index(clean_b):
                 return {
                     "success": False,
-                    "message": f"Sequencing Error: '{card_a}' must be played before '{card_b}'!"
+                    "message": f"Sequencing Error: '{clean_a}' must be played before '{clean_b}'!"
                 }
 
     must_be_last = rules.get("must_be_last")
-    if must_be_last and user_sequence[-1] != must_be_last:
-        return {
-            "success": False, 
-            "message": f"Optimal Line Failed: '{must_be_last}' must be cast last in slot 7!"
-        }
+    if must_be_last:
+        clean_last = str(must_be_last).strip()
+        if cleaned_sequence[-1] != clean_last:
+            return {
+                "success": False, 
+                "message": f"Optimal Line Failed: '{clean_last}' must be cast last in slot 7!"
+            }
 
     return {
         "success": True, 
