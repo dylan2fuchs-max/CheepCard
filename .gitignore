@@ -10,6 +10,10 @@ wheels/
 .venv
 .env
 
+# Application databases & files
+*.xlsx
+!Magic Card Data Base Current View.xlsx
+
 # Local Development Tools
 Tools/
 !Tools/sync_db.py
