@@ -1236,7 +1236,6 @@ from flask_mail import Message
 from flask_wtf.csrf import csrf_exempt
 
 @app.route('/test-email')
-@csrf_exempt
 def test_email():
     try:
         msg = Message(
