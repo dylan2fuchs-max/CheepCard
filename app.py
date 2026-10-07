@@ -1217,7 +1217,7 @@ def forgot_password():
             reset_url = url_for('reset_token', token=token, _external=True)
             
             msg = Message('Password Reset Request - CheepCards',
-                          sender='noreply@cheepcards.com',
+                          sender=app.config.get('MAIL_DEFAULT_SENDER'),
                           recipients=[user.email])
             msg.body = f'''To reset your password, visit the following link:
 {reset_url}
@@ -1226,9 +1226,8 @@ If you did not make this request, simply ignore this email.
 '''
             try:
                 mail.send(msg)
-            except Exception:
-                # Safely catches SMTP errors during local testing until Brevo is configured
-                pass
+            except Exception as e:
+                print(f"MAIL ERROR FAILED: {e}")
                 
         flash('If an account with that email exists, a reset link has been sent.', 'info')
         return redirect(url_for('login'))
