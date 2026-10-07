@@ -6,7 +6,9 @@ from Card_Filter import db
 import json
 import os
 
-csrf = CSRFProtect(app) 
+# Initialize standalone CSRF extension without passing 'app' here
+csrf = CSRFProtect()
+
 news_bp = Blueprint('news', __name__)
 
 NEWS_POSTS = [
