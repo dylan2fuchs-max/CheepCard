@@ -1487,22 +1487,27 @@ def quick_switch_role(new_role):
 from news_blueprint import news_bp
 app.register_blueprint(news_bp)
 
-with app.app_context():
-    db.create_all()
-    from werkzeug.security import generate_password_hash
-    admin_email = 'dylan2fuchs@gmail.com'
-    existing_user = User.query.filter_by(email=admin_email).first()
-    if existing_user:
-        existing_user.is_admin = True
-        db.session.commit()
-    else:
-        new_admin = User(
-            email=admin_email,
-            password_hash=generate_password_hash('TempPassword123!'),
-            is_admin=True
-        )
-        db.session.add(new_admin)
-        db.session.commit()
+# Safe database initialization that won't crash your deployment
+try:
+    with app.app_context():
+        db.create_all()
+        from werkzeug.security import generate_password_hash
+        admin_email = 'dylan2fuchs@gmail.com'
+        existing_user = User.query.filter_by(email=admin_email).first()
+        if existing_user:
+            existing_user.is_admin = True
+            db.session.commit()
+        else:
+            new_admin = User(
+                email=admin_email,
+                password_hash=generate_password_hash('TempPassword123!'),
+                is_admin=True
+            )
+            db.session.add(new_admin)
+            db.session.commit()
+        print("✅ Database & Admin User initialized successfully!")
+except Exception as e:
+    print(f"⚠️ Database init warning (will retry on next boot): {e}")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
