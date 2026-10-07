@@ -1487,8 +1487,7 @@ def quick_switch_role(new_role):
 from news_blueprint import news_bp
 app.register_blueprint(news_bp)
 
-if __name__ == '__main__':
-    with app.app_context():
+with app.app_context():
     db.create_all()
     from werkzeug.security import generate_password_hash
     admin_email = 'dylan2fuchs@gmail.com'
@@ -1505,6 +1504,7 @@ if __name__ == '__main__':
         db.session.add(new_admin)
         db.session.commit()
 
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
 
     def connect_ngrok():
