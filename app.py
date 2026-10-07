@@ -1226,8 +1226,11 @@ If you did not make this request, simply ignore this email.
 '''
             try:
                 mail.send(msg)
+                print(f"SUCCESS: Password reset email sent to {user.email}")
             except Exception as e:
                 print(f"MAIL ERROR FAILED: {e}")
+        else:
+            print(f"DEBUG: No user found in database with email: {email}")
                 
         flash('If an account with that email exists, a reset link has been sent.', 'info')
         return redirect(url_for('login'))
