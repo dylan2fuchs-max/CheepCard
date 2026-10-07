@@ -214,10 +214,10 @@
                 200px 880px 0 #f1c40f, 500px 850px 0 #3498db, 820px 890px 0 #f1c40f, 1180px 840px 0 #3498db, 1450px 870px 0 #3498db, 1750px 820px 0 #3498db, 2020px 860px 0 #3498db, 2290px 810px 0 #3498db, 2580px 850px 0 #3498db, 2780px 880px 0 #3498db,
                 1650px 150px 0 #3498db, 1920px 180px 0 #f1c40f, 2200px 130px 0 #3498db, 2480px 170px 0 #f1c40f, 2750px 140px 0 #3498db,
                 1750px 330px 0 #3498db, 2040px 300px 0 #f1c40f, 2320px 350px 0 #3498db, 2640px 310px 0 #f1c40f,
-                1630px 550px 0 #3498db, 1910px 520px 0 #f1c40f, 2260px 580px 0 #3498db, 2540px 530px 0 #f1c40f, 2760px 560px 0 #3498db,
-                1790px 750px 0 #3498db, 2120px 710px 0 #f1c40f, 2410px 770px 0 #3498db, 2610px 740px 0 #f1c40f, 2790px 720px 0 #3498db,
+                1630px 550px 0 #3498db, 1910px 520px 0 #f1c40f, 2260px 580px 0 #3498db, 2540px 530px 0 #3498db, 2760px 560px 0 #3498db,
+                1790px 750px 0 #3498db, 2120px 710px 0 #f1c40f, 2410px 770px 0 #3498db, 2610px 740px 0 #3498db, 2790px 720px 0 #3498db,
                 100px 1020px 0 #3498db, 400px 1050px 0 #f1c40f, 750px 1010px 0 #3498db, 1100px 1060px 0 #3498db, 1450px 1030px 0 #3498db, 1800px 1050px 0 #3498db, 2150px 1020px 0 #3498db, 2500px 1040px 0 #3498db, 2750px 1020px 0 #3498db,
-                350px 1220px 0 #3498db, 820px 1200px 0 #f1c40f, 1250px 1240px 0 #f1c40f, 1680px 1210px 0 #f1c40f, 2150px 1230px 0 #f1c40f, 2550px 1200px 0 #f1c40f, 2780px 1220px 0 #3498db;
+                350px 1220px 0 #3498db, 820px 1200px 0 #f1c40f, 1250px 1240px 0 #f1c40f, 1680px 1210px 0 #f1c40f, 2150px 1230px 0 #3498db, 2550px 1200px 0 #f1c40f, 2780px 1220px 0 #3498db;
             opacity: 0.75;
         }
 
@@ -290,17 +290,20 @@
                     
                     {% if current_user.role == 'free' %}
                     <form action="/create-checkout-session" method="POST" style="margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px;">⭐ Upgrade to Pro</button>
                     </form>
                     {% elif current_user.role == 'pro' %}
                     <!-- Double-Confirmation Cancellation Button -->
                     <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 13px;">Cancel Pro</button>
                     </form>
                     {% endif %}
                 </div>
 
                 <form method="POST" action="{{ url_for('account') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <label>Email Address (For Password Recovery)</label>
                     <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
 
@@ -351,6 +354,7 @@
                                 <button type="button" class="copy-deck-btn" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #007bff; width: auto; cursor: pointer;">Copy</button>
                                 <button type="button" class="export-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #27ae60; width: auto; cursor: pointer;">Export</button>
                                 <form action="{{ url_for('delete_deck', deck_id=deck.id) }}" method="POST" style="margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" style="padding: 4px 8px; font-size: 11px; background-color: #e74c3c; width: auto; cursor: pointer;">Delete</button>
                                 </form>
                             </div>

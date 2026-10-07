@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app
 from flask_login import login_required, current_user
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 from Card_Filter import db
 import json
 import os
 
+csrf = CSRFProtect(app) 
 news_bp = Blueprint('news', __name__)
 
 NEWS_POSTS = [
