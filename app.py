@@ -490,6 +490,7 @@ def home():
     return render_template("home.html", budget_card=budget_card)
 
 @app.route("/login", methods=['GET', 'POST'])
+@csrf.exempt
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -1322,6 +1323,7 @@ def check_pro_expiration():
 from datetime import datetime, timedelta
 
 @app.route('/webhook', methods=['POST'])
+@csrf.exempt
 def stripe_webhook():
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Stripe-Signature')
