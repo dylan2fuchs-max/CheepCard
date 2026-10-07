@@ -7,6 +7,7 @@ import time
 import json
 import stripe
 import requests
+import logging
 from datetime import date, datetime
 from dotenv import load_dotenv  # <--- Load environment variables first!
 load_dotenv()
@@ -1232,12 +1233,15 @@ If you did not make this request, simply ignore this email.
 
 from flask_mail import Message
 
+from flask_wtf.csrf import csrf_exempt
+
 @app.route('/test-email')
+@csrf_exempt
 def test_email():
     try:
         msg = Message(
             subject='CheepCards Pro Brevo Test',
-            recipients=['your_personal_email@gmail.com']  # Put your real email here
+            recipients=['your_personal_email@gmail.com']
         )
         msg.body = 'Success! Your local Flask app is successfully talking to Brevo SMTP.'
         mail.send(msg)
