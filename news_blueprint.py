@@ -56,6 +56,7 @@ def public_news():
     return render_template('news_public.html', posts=filtered_posts, search_query=request.args.get('q', ''))
 
 @news_bp.route('/news/vote/<int:poll_id>', methods=['POST'])
+@csrf.exempt
 def vote_poll(poll_id):
     selected_option = request.form.get('option')
     for post in NEWS_POSTS:
@@ -69,6 +70,7 @@ def vote_poll(poll_id):
     return redirect(url_for('news.public_news'))
 
 @news_bp.route('/news/feedback', methods=['GET', 'POST'])
+@csrf.exempt
 def feedback_page():
     if request.method == 'POST':
         message = request.form.get('message', '').strip()
