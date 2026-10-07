@@ -1206,6 +1206,7 @@ def account():
     return render_template('account.html')
 
 @app.route("/forgot-password", methods=['GET', 'POST'])
+@csrf.exempt
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email')
