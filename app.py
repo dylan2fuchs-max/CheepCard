@@ -1489,7 +1489,21 @@ app.register_blueprint(news_bp)
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+    db.create_all()
+    from werkzeug.security import generate_password_hash
+    admin_email = 'dylan2fuchs@gmail.com'
+    existing_user = User.query.filter_by(email=admin_email).first()
+    if existing_user:
+        existing_user.is_admin = True
+        db.session.commit()
+    else:
+        new_admin = User(
+            email=admin_email,
+            password_hash=generate_password_hash('TempPassword123!'),
+            is_admin=True
+        )
+        db.session.add(new_admin)
+        db.session.commit()
 
     port = int(os.environ.get("PORT", 5000))
 
