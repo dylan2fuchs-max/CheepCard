@@ -9,6 +9,7 @@ import stripe
 import requests
 import logging
 from datetime import date, datetime
+from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from dotenv import load_dotenv  # <--- Load environment variables first!
 load_dotenv()
 
@@ -1120,6 +1121,7 @@ DISPOSABLE_DOMAINS = {
 }
 
 @app.route('/register', methods=['GET', 'POST'])
+@csrf.exempt
 def register():
     if request.method == 'POST':
         # Ensure terms agreement checkbox was checked
@@ -1232,8 +1234,6 @@ If you did not make this request, simply ignore this email.
     return render_template('forgot_password.html')
 
 from flask_mail import Message
-
-from flask_wtf.csrf import csrf_exempt
 
 @app.route('/test-email')
 def test_email():
