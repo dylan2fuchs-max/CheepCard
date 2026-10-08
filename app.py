@@ -541,7 +541,7 @@ def login():
         
         if user and check_password_hash(user.password_hash, password):
             device_token = request.cookies.get('device_token')
-            active_role = get_active_role() if 'get_active_role' in globals() else user.role
+            active_role = user.role # Direct check to ensure role accuracy
             max_devices = 999 if active_role in ['pro', 'admin'] else 1
             
             if not device_token:
@@ -552,7 +552,7 @@ def login():
             
             if existing_device:
                 # Device belongs to this user. Check if it's awaiting approval.
-                if not existing_device.is_approved and user.role != 'admin':
+                if not existing_device.is_approved and active_role != 'admin':
                     flash('This device is pending approval from your account settings.', 'warning')
                     return render_template('login.html')
             else:
@@ -563,25 +563,27 @@ def login():
                     db.session.commit()
 
                 total_devices = TrustedDevice.query.filter_by(user_id=user.id, is_approved=True).count()
-                if total_devices >= max_devices and user.role != 'admin':
+                
+                # Pro and Admin users should never be blocked from adding devices within reason
+                if total_devices >= max_devices and active_role == 'free':
                     logger.warning("Device limit reached for user: '%s'", username)
                     flash('Access denied: Free accounts are limited to 1 trusted device. Upgrade to Pro.', 'danger')
                     return render_template('login.html')
                 
-                # Register as pending approval if user already has trusted devices
+                # Register device
                 is_first_ever = (TrustedDevice.query.filter_by(user_id=user.id).count() == 0)
-                is_admin_user = (user.role == 'admin')
+                is_unrestricted_role = (active_role in ['pro', 'admin'])
                 
                 new_dev = TrustedDevice(
                     user_id=user.id,
                     device_token=device_token,
                     device_name=f"{(request.user_agent.platform or 'Unknown').capitalize()} - {(request.user_agent.browser or 'Unknown').capitalize()}",
-                    is_approved=(is_first_ever or is_admin_user)
+                    is_approved=(is_first_ever or is_unrestricted_role) # Pro/Admin devices auto-approve instantly!
                 )
                 db.session.add(new_dev)
                 db.session.commit()
                 
-                if not is_first_ever and not is_admin_user:
+                if not is_first_ever and not is_unrestricted_role:
                     flash('New device login detected. Please approve this login from your active Account page within 30 seconds.', 'warning')
                     return render_template('login.html')
 
@@ -1095,7 +1097,9 @@ def reroll_card():
     return jsonify({'success': True, 'new_card': new_card_data})
 
 @app.route('/create-checkout-session', methods=['POST'])
+@login_required
 def create_checkout_session():
+    # If a free user tries to check out, make sure they are logged in first
     checkout_session = stripe.checkout.Session.create(
         payment_method_types=['card'],
         line_items=[{
@@ -1401,6 +1405,23 @@ def account():
         return redirect(url_for('account'))
 
     return render_template('account.html')
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    # Check what URL the user was trying to access
+    requested_path = request.path
+    
+    # If it's an AJAX request or a background endpoint expecting JSON
+    if request.is_json or 'save_deck' in requested_path:
+        return {'success': False, 'message': 'Please log in to perform this action.'}, 401
+
+    # For standard sensitive pages (Stripe checkout, Account/Password/Email updates)
+    if 'create-checkout-session' in requested_path or 'account' in requested_path:
+        flash('Please log in to access this secure feature.', 'warning')
+        return redirect(url_for('login', next=request.url))
+        
+    # Default fallback redirect for anything else protected
+    return redirect(url_for('login'))
 
 @app.route("/forgot-password", methods=['GET', 'POST'])
 @csrf.exempt

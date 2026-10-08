@@ -151,9 +151,9 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Clean 2-Column Paired Mobile Layout --- */
+        /* --- Clean Mobile Layout (Icon & Button Safe) --- */
         @media screen and (max-width: 768px) {
-            /* Reset header container structure */
+            /* Header container wrapper */
             header, .header-container, .top-nav {
                 display: flex !important;
                 flex-direction: column !important;
@@ -165,7 +165,7 @@
                 overflow-x: hidden !important;
             }
 
-            /* Force button and action rows into exact 2-column grids */
+            /* Force button and action rows into 2-column grids */
             header div, .top-nav div {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
@@ -182,28 +182,33 @@
                 text-align: center !important;
                 width: 100% !important;
                 margin: 0 0 6px 0 !important;
-                font-size: 22px !important;
+                font-size: 20px !important;
                 word-break: break-word !important;
             }
 
-            /* Uniform button formatting so they never overflow */
-            header a, header button, .top-nav a, .top-nav button, .pill-btn, .account-pill, 
+            /* Target TEXT buttons and links only, leaving standalone icons untouched */
+            header a.btn, header button, .top-nav a.btn, .top-nav button, .pill-btn, .account-pill, 
             a.btn, button.btn, .btn-pricing, .btn-toggle, .btn-dashboard {
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 38px !important;
+                min-height: 38px !important;
                 margin: 0 !important;
-                padding: 0 4px !important;
+                padding: 6px 8px !important;
                 font-size: 12px !important;
                 text-align: center !important;
                 box-sizing: border-box !important;
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
+                white-space: normal !important;
                 border-radius: 8px !important;
+            }
+
+            /* Keep standalone icons or small inline elements from getting clipped */
+            header svg, .top-nav svg, .icon, img {
+                max-width: 100% !important;
+                height: auto !important;
+                flex-shrink: 0 !important;
             }
         }
 
