@@ -115,29 +115,37 @@
             }
         }
 
-        /* --- Strict Mobile Stack & Overflow Fix --- */
+        /* --- Split Mobile Grid Fix (Half Left, Half Right) --- */
         @media screen and (max-width: 768px) {
-            /* Force any flex container near the top/header to wrap and stack */
+            /* Turn top header/button containers into a 2-column grid layout */
             header div, .top-nav div, div[style*="display: flex"], div[style*="display:flex"] {
-                flex-direction: column !important;
-                flex-wrap: wrap !important;
-                align-items: stretch !important;
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important; /* Creates two equal columns */
+                gap: 8px !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 box-sizing: border-box !important;
-                gap: 8px !important;
             }
 
-            /* Force all buttons, pills, and links inside navigation to fill the width nicely */
+            /* Make buttons and links fit evenly into the grid slots */
             header a, header button, .top-nav a, .top-nav button, .pill-btn, .account-pill, 
             a.btn, button.btn, .btn-pricing, .btn-toggle, .btn-dashboard {
                 display: block !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                margin: 4px 0 !important;
+                margin: 0 !important;
                 text-align: center !important;
                 box-sizing: border-box !important;
-                white-space: normal !important; /* Prevents text from forcing horizontal overflow */
+                white-space: normal !important;
+                font-size: 12px !important; /* Slightly tighter text size for split columns */
+                padding: 8px 4px !important;
+            }
+
+            /* Optional: If you have elements like titles or banners that shouldn't be split into two columns, 
+            you can let them span across both columns like this: */
+            header h2, header h3, .account-title {
+                grid-column: span 2 !important;
+                text-align: center;
             }
         }
 

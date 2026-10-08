@@ -547,21 +547,28 @@ def login():
             if not device_token:
                 device_token = str(uuid.uuid4())
                 
-            # Look up token globally to prevent unique constraint crashes
-            existing_device = TrustedDevice.query.filter_by(device_token=device_token).first()
+            # Look up token specifically for THIS user first
+            existing_device = TrustedDevice.query.filter_by(user_id=user.id, device_token=device_token).first()
             
             if existing_device:
-                # If the token exists, re-bind it to the current logging-in user
-                existing_device.user_id = user.id
-                db.session.commit()
+                # Device belongs to this user. Check if it's awaiting approval.
+                if not existing_device.is_approved and user.role != 'admin':
+                    flash('This device is pending approval from your account settings.', 'warning')
+                    return render_template('login.html')
             else:
+                # Check if this token belongs to another user globally to prevent unique constraint crashes
+                global_device = TrustedDevice.query.filter_by(device_token=device_token).first()
+                if global_device:
+                    db.session.delete(global_device)
+                    db.session.commit()
+
                 total_devices = TrustedDevice.query.filter_by(user_id=user.id, is_approved=True).count()
                 if total_devices >= max_devices and user.role != 'admin':
                     logger.warning("Device limit reached for user: '%s'", username)
                     flash('Access denied: Free accounts are limited to 1 trusted device. Upgrade to Pro.', 'danger')
                     return render_template('login.html')
                 
-                # Register as pending approval if user already has an active session elsewhere
+                # Register as pending approval if user already has trusted devices
                 is_first_ever = (TrustedDevice.query.filter_by(user_id=user.id).count() == 0)
                 is_admin_user = (user.role == 'admin')
                 
@@ -569,7 +576,7 @@ def login():
                     user_id=user.id,
                     device_token=device_token,
                     device_name=f"{(request.user_agent.platform or 'Unknown').capitalize()} - {(request.user_agent.browser or 'Unknown').capitalize()}",
-                    is_approved=(is_first_ever or is_admin_user) # Auto-approve admins or first-ever devices
+                    is_approved=(is_first_ever or is_admin_user)
                 )
                 db.session.add(new_dev)
                 db.session.commit()
@@ -577,11 +584,6 @@ def login():
                 if not is_first_ever and not is_admin_user:
                     flash('New device login detected. Please approve this login from your active Account page within 30 seconds.', 'warning')
                     return render_template('login.html')
-
-            # Check if pending approval
-            if existing_device and not existing_device.is_approved and user.role != 'admin':
-                flash('This device is pending approval from your account settings.', 'warning')
-                return render_template('login.html')
 
             login_user(user)
             next_page = request.args.get('next')
