@@ -151,9 +151,20 @@
             letter-spacing: 0.5px;
         }
 
-        /* Default desktop view can remain as you like, but force mobile layout on smaller screens */
+        /* By default, hide the mobile-specific container on desktop screens */
+        .dashboard-mobile-container {
+            display: none !important;
+        }
+
+        /* Force mobile layout on smaller screens */
         @media (max-width: 768px) {
-            .dashboard-header-wrapper {
+            /* Hide the desktop header elements so they don't cause duplicate overflow */
+            .desktop-dashboard-header {
+                display: none !important;
+            }
+
+            /* Show and style our clean stacked mobile container */
+            .dashboard-mobile-container {
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
@@ -164,18 +175,20 @@
             }
             
             .dashboard-logo-img {
-                width: 90px !important;
-                height: 90px !important;
+                width: 80px !important;
+                height: 80px !important;
                 object-fit: contain !important;
-                margin-bottom: 8px !important;
+                margin-bottom: 6px !important;
+                border-radius: 8px !important;
             }
 
             .dashboard-user-info {
                 display: flex !important;
                 justify-content: center !important;
                 align-items: center !important;
-                gap: 8px !important;
-                margin-bottom: 12px !important;
+                gap: 6px !important;
+                margin-bottom: 10px !important;
+                flex-wrap: wrap !important;
             }
 
             .dashboard-mobile-buttons {
@@ -190,6 +203,12 @@
             .dashboard-mobile-buttons button {
                 width: 100% !important;
                 text-align: center !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Make the logout button span both columns at the bottom */
+            .dashboard-mobile-logout {
+                grid-column: span 2 !important;
             }
         }
 
