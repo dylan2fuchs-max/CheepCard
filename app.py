@@ -1638,9 +1638,10 @@ try:
             db.session.commit()
         else:
             new_admin = User(
+                username='admin',  # 👈 Added required username field here!
                 email=admin_email,
                 password_hash=generate_password_hash('TempPassword123!'),
-                role='admin'  # 👈 Use role instead of is_admin
+                role='admin'
             )
             db.session.add(new_admin)
             db.session.commit()
