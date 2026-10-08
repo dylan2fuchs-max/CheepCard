@@ -562,7 +562,7 @@ def login():
                 new_dev = TrustedDevice(
                     user_id=user.id,
                     device_token=device_token,
-                    device_name=f"{request.user_agent.platform.capitalize()} - {request.user_agent.browser.capitalize()}",
+                    device_name=f"{(request.user_agent.platform or 'Unknown').capitalize()} - {(request.user_agent.browser or 'Unknown').capitalize()}",  # 👈 Added trailing comma here!
                     is_approved=is_first_ever # Auto-approve if it's their absolute first device ever
                 )
                 db.session.add(new_dev)
