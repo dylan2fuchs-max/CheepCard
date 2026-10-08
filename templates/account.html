@@ -500,18 +500,6 @@
         </div>
     </div>
 
-    <div style="display: flex; gap: 10px; align-items: center;">
-        {% if current_user.is_authenticated and current_user.role == 'free' %}
-        <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
-            <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
-        </a>
-        {% endif %}
-        <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
-        <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
-            <button style="background-color: #7f8c8d; width: auto;">← Dashboard</button>
-        </a>
-    </div>
-
     <script>
         function toggleTheme() {
             const isDark = document.body.classList.toggle('dark-mode');
