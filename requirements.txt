@@ -30,6 +30,7 @@ numpy==2.5.1
 openpyxl==3.1.5
 pandas==3.0.5
 propcache==0.5.2
+psycopg[binary]
 pyasn1==0.6.4
 pyasn1_modules==0.4.2
 pycparser==3.1
