@@ -17,7 +17,7 @@ load_dotenv()
 
 from itsdangerous import URLSafeTimedSerializer as Serializer
 from flask_mail import Mail, Message
-from flask import Flask, request, render_template, session, jsonify, abort, redirect, url_for, flash
+from flask import Flask, request, render_template, session, jsonify, abort, redirect, url_for, flash, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf.csrf import CSRFProtect
