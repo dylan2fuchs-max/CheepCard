@@ -596,7 +596,7 @@ def check_pending_device():
         TrustedDevice.user_id == current_user.id,
         TrustedDevice.is_approved == False,
         TrustedDevice.created_at >= thirty_seconds_ago
-    .first()
+    ).first()
     
     if pending:
         return jsonify({
