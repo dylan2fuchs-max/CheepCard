@@ -48,24 +48,20 @@ app.secret_key = secret_key
 
 # --- Database Configuration ---
 database_url = os.environ.get('DATABASE_URL')
-print(f"🔍 DEBUG: Raw DATABASE_URL from env: {repr(database_url)}")
-
-if database_url and database_url.strip():
+if database_url:
     database_url = database_url.strip()
     if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        database_url = database_url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     basedir = os.path.abspath(os.path.dirname(__file__))
     os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
-    fallback_url = f"sqlite:///{os.path.join(basedir, 'instance', 'cheepcards.db')}"
-    app.config['SQLALCHEMY_DATABASE_URI'] = fallback_url
-    print(f"⚠️ WARNING: DATABASE_URL was empty/missing! Using fallback: {fallback_url}")
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'instance', 'cheepcards.db')}"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Print final URI to verify before Flask-SQLAlchemy touches it
-print(f"📌 FINAL SQLALCHEMY_DATABASE_URI: {repr(app.config.get('SQLALCHEMY_DATABASE_URI'))}")
 
 db.init_app(app)
 
