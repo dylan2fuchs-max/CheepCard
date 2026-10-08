@@ -115,6 +115,44 @@
             }
         }
 
+        /* --- Mobile Responsive Enhancements --- */
+        @media screen and (max-width: 768px) {
+            /* Container padding adjustments for mobile screens */
+            body {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            /* Make panels, cards, and wrappers fit comfortably inside mobile viewports */
+            .panel-box, .container, .card, form {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 15px !important;
+                box-sizing: border-box !important;
+                margin: 5px auto !important;
+            }
+
+            /* Stack buttons vertically on mobile so they don't overflow */
+            div[style*="display: flex"] {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+
+            /* Make modals fit nicely on smaller screens */
+            .approval-modal .modal-content {
+                width: 95% !important;
+                padding: 20px !important;
+                margin: 0 auto;
+            }
+
+            /* Ensure tables or device lists scroll horizontally or wrap cleanly */
+            .device-item {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px;
+            }
+        }
+
         .panel-box {
             background: var(--box-bg);
             padding: 25px;
@@ -161,6 +199,43 @@
             padding: 10px 0;
             border-bottom: 1px solid var(--border-color);
             font-size: 14px;
+        }
+
+        /* Modal Backdrop Overlay */
+        .approval-modal {
+            display: none; /* Hidden by default; turn to 'flex' via JS when active */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Dark dimmed background */
+            z-index: 9999; /* Ensures it stays on top of everything */
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Modal Box Content */
+        .approval-modal .modal-content {
+            background-color: #1e1e1e; /* Matches your dark theme style */
+            color: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        /* Optional button styling */
+        .approval-modal button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         .flash-message {
@@ -364,6 +439,19 @@
                         <p style="font-size: 13px; opacity: 0.7; text-align: center;">No registered devices recorded yet.</p>
                     {% endif %}
                 </div>
+                
+                <!-- Hidden by default, pops up when triggered -->
+                <div id="approval-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 9999; justify-content: center; align-items: center;">
+                    <div style="background-color: #1e1e1e; color: #ffffff; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5); text-align: center; border: 1px solid #333;">
+                        <h3 style="color: #f39c12; margin-top: 0;">🚨 New Device Login Request</h3>
+                        <p id="modal-device-text" style="font-size: 14px; margin-bottom: 15px;"></p>
+                        <p style="font-size: 12px; color: #e74c3c; font-weight: bold;">Expires in <span id="modal-timer">30</span> seconds</p>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button id="approve-btn" style="background-color: #27ae60; flex: 1; padding: 10px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer;">Approve</button>
+                            <button id="deny-btn" style="background-color: #e74c3c; flex: 1; padding: 10px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer;">Deny</button>
+                        </div>
+                    </div>
+                </div>
             
             <div class="panel-box">
                 <h2>🎒 Saved Decks</h2>
@@ -418,6 +506,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            // 1. Theme Initialization
             const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
             const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark-mode';
 
@@ -434,6 +523,7 @@
                 themeSelect.value = serverTheme;
             }
 
+            // 2. Deck Actions (Load, Copy, Export)
             document.querySelectorAll('.load-deck-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const deckName = btn.getAttribute('data-name');
@@ -481,19 +571,20 @@
                     window.URL.revokeObjectURL(url);
                 });
             });
-        
-            // --- REAL-TIME 30-SECOND APPROVAL POLLING LOOP ---
+
+            // 3. Paw Security - Real-Time 30-Second Approval Polling Loop
             let activePendingId = null;
             let countdownInterval = null;
 
-            setInterval(async () => {
+            const pollInterval = setInterval(async () => {
                 if (activePendingId !== null) return; // Already showing a prompt
                 try {
                     const res = await fetch('/account/check-pending-device');
                     const data = await res.json();
+                    
                     if (data.pending) {
                         activePendingId = data.device_id;
-                        document.getElementById('modal-device-text').innerText = `A new login attempt was made from: "${data.device_name}". Do you want to authorize this device?`;
+                        document.getElementById('modal-device-text').innerText = `Device trying to log in: ${data.device_name}`;
                         document.getElementById('approval-modal').style.display = 'flex';
 
                         let timeLeft = 30;
@@ -507,15 +598,18 @@
                                 closeApprovalModal();
                                 fetch(`/account/deny-device/${activePendingId}`, { method: 'POST' });
                                 activePendingId = null;
+                                location.reload();
                             }
                         }, 1000);
                     }
-                } catch (err) {}
-            }, 4000); // Checks every 4 seconds
+                } catch (err) {
+                    console.error("Error checking pending device:", err);
+                }
+            }, 2000); // Poll every 2 seconds
 
             function closeApprovalModal() {
                 document.getElementById('approval-modal').style.display = 'none';
-                clearInterval(countdownInterval);
+                if (countdownInterval) clearInterval(countdownInterval);
             }
 
             document.getElementById('approve-btn').addEventListener('click', async () => {
@@ -541,6 +635,7 @@
                 closeApprovalModal();
                 activePendingId = null;
                 alert("Device login denied.");
+                location.reload();
             });
         });
     </script>

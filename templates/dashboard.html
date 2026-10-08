@@ -151,6 +151,44 @@
             letter-spacing: 0.5px;
         }
 
+        /* --- Mobile Responsive Enhancements --- */
+        @media screen and (max-width: 768px) {
+            /* Container padding adjustments for mobile screens */
+            body {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            /* Make panels, cards, and wrappers fit comfortably inside mobile viewports */
+            .panel-box, .container, .card, form {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 15px !important;
+                box-sizing: border-box !important;
+                margin: 5px auto !important;
+            }
+
+            /* Stack buttons vertically on mobile so they don't overflow */
+            div[style*="display: flex"] {
+                flex-direction: column !important;
+                gap: 10px !important;
+            }
+
+            /* Make modals fit nicely on smaller screens */
+            .approval-modal .modal-content {
+                width: 95% !important;
+                padding: 20px !important;
+                margin: 0 auto;
+            }
+
+            /* Ensure tables or device lists scroll horizontally or wrap cleanly */
+            .device-item {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 8px;
+            }
+        }
+
         /* Dynamic Hover & Pulsing Effects for Special Tags */
         .theme-btn.user-tag.tag-gold,
         .theme-btn.user-tag.tag-copper,

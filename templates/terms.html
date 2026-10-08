@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CheepCards - Terms of Service</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* 🌟 NEW: Global box-sizing fix */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* 🌟 NEW: Mobile responsive header and container adjustments */
+        @media (max-width: 600px) {
+            header {
+                flex-wrap: wrap;
+                justify-content: center !important;
+                gap: 15px;
+                padding: 15px !important;
+                text-align: center;
+            }
+            .policy-container {
+                margin: 20px 10px !important;
+                padding: 20px !important;
+            }
+        }
+    </style>
 </head>
 <body class="dark-mode" style="background-color: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0;">
 
