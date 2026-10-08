@@ -564,27 +564,27 @@ def login():
 
                 total_devices = TrustedDevice.query.filter_by(user_id=user.id, is_approved=True).count()
                 
-                # Pro and Admin users should never be blocked from adding devices within reason
+                # Free users are capped at 1 device
                 if total_devices >= max_devices and active_role == 'free':
                     logger.warning("Device limit reached for user: '%s'", username)
                     flash('Access denied: Free accounts are limited to 1 trusted device. Upgrade to Pro.', 'danger')
                     return render_template('login.html')
                 
-                # Register device
+                # Register new device as PENDING (unless it's literally their very first device ever)
                 is_first_ever = (TrustedDevice.query.filter_by(user_id=user.id).count() == 0)
-                is_unrestricted_role = (active_role in ['pro', 'admin'])
                 
                 new_dev = TrustedDevice(
                     user_id=user.id,
                     device_token=device_token,
                     device_name=f"{(request.user_agent.platform or 'Unknown').capitalize()} - {(request.user_agent.browser or 'Unknown').capitalize()}",
-                    is_approved=(is_first_ever or is_unrestricted_role) # Pro/Admin devices auto-approve instantly!
+                    is_approved=is_first_ever # Only the very first device auto-approves. All subsequent Pro devices require approval!
                 )
                 db.session.add(new_dev)
                 db.session.commit()
                 
-                if not is_first_ever and not is_unrestricted_role:
-                    flash('New device login detected. Please approve this login from your active Account page within 30 seconds.', 'warning')
+                # If it's not their first device, force them to wait for approval and warn them
+                if not is_first_ever:
+                    flash('New device login detected. Please approve this login from your active Account page.', 'warning')
                     return render_template('login.html')
 
             login_user(user)

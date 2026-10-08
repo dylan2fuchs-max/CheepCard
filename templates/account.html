@@ -361,14 +361,16 @@
                 <h2>⚙️ Settings & Security</h2>
                 
                 <!-- Account Status Badges & Subscription Control -->
-                <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 12px; border-radius: 6px;">
+                <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+                    
+                    <!-- Left Side: Label & Badge -->
                     <div style="display: flex; flex-direction: column; justify-content: center;">
-                        <div style="font-size: 11px; color: var(--border-color); margin-bottom: 2px; text-transform: uppercase; font-weight: bold;">Membership</div>
+                        <div style="font-size: 11px; color: var(--border-color, #888); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             {% if current_user.role == 'admin' %}
-                                <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
+                                <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
                             {% elif current_user.role == 'pro' %}
-                                <span class="status-badge badge-pro" style="margin-bottom: 0;">⭐ Pro Subscriber</span>
+                                <span class="status-badge badge-pro" style="margin-bottom: 0; background-color: #f39c12; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">⭐ Pro Subscriber</span>
                                 {% if current_user.pro_expires_at %}
                                 <span style="font-size: 11px; opacity: 0.8;">(Until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }})</span>
                                 {% endif %}
@@ -378,17 +380,17 @@
                         </div>
                     </div>
                     
+                    <!-- Right Side: Action Button Centered Vertically -->
                     <div style="display: flex; align-items: center;">
                         {% if current_user.role == 'free' %}
                         <form action="/create-checkout-session" method="POST" style="margin: 0;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px;">⭐ Upgrade to Pro</button>
+                            <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 4px; color: white; cursor: pointer;">⭐ Upgrade to Pro</button>
                         </form>
                         {% elif current_user.role == 'pro' %}
-                        <!-- Double-Confirmation Cancellation Button perfectly centered -->
                         <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 12px; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel Pro</button>
+                            <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel Pro</button>
                         </form>
                         {% endif %}
                     </div>
@@ -482,6 +484,11 @@
                             <p style="color: var(--text-color); font-size: 13px; text-align: center; margin-top: 40px;">You haven't saved any decks to your account yet.</p>
                         {% endif %}
                     </div>
+                    {% if current_user.is_authenticated and current_user.role == 'free' %}
+                    <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
+                        <button style="background-color: #f39c12; color: white; border: none; border-radius: 6px; padding: 8px; font-size: 11px; font-weight: bold;">⭐ Pricing</button>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -499,6 +506,91 @@
             </div>
         </div>
     </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let pollInterval = null;
+        let countdownInterval = null;
+        let currentPendingId = null;
+
+        function checkPendingDevices() {
+            fetch('/api/pending-devices')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.pending && data.pending.length > 0) {
+                        let device = data.pending[0]; // Get the latest pending request
+                        currentPendingId = device.id;
+                        
+                        // Update modal text with device info
+                        document.getElementById('modal-device-text').innerHTML = 
+                            `New login request from <b>${device.browser || 'Unknown Browser'}</b> (${device.ip_address || 'Unknown IP'})`;
+                        
+                        // Show modal
+                        document.getElementById('approval-modal').style.display = 'flex';
+                        
+                        // Start 30-second countdown
+                        let timeLeft = 30;
+                        document.getElementById('modal-timer').innerText = timeLeft;
+                        
+                        if (countdownInterval) clearInterval(countdownInterval);
+                        countdownInterval = setInterval(() => {
+                            timeLeft--;
+                            document.getElementById('modal-timer').innerText = timeLeft;
+                            if (timeLeft <= 0) {
+                                clearInterval(countdownInterval);
+                                closeModal();
+                                denyDevice(currentPendingId); // Auto-deny or timeout
+                            }
+                        }, 1000);
+
+                        // Stop polling while modal is active
+                        if (pollInterval) clearInterval(pollInterval);
+                    }
+                })
+                .catch(err => console.error("Error checking pending devices:", err));
+        }
+
+        function closeModal() {
+            document.getElementById('approval-modal').style.display = 'none';
+            if (countdownInterval) clearInterval(countdownInterval);
+            // Resume polling every 5 seconds
+            if (!pollInterval) {
+                pollInterval = setInterval(checkPendingDevices, 5000);
+            }
+        }
+
+        function approveDevice(id) {
+            fetch(`/api/approve-device/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Device approved successfully!");
+                    }
+                    closeModal();
+                });
+        }
+
+        function denyDevice(id) {
+            fetch(`/api/deny-device/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                .then(res => res.json())
+                .then(data => {
+                    closeModal();
+                });
+        }
+
+        // Attach button events
+        document.getElementById('approve-btn').addEventListener('click', function() {
+            if (currentPendingId) approveDevice(currentPendingId);
+        });
+
+        document.getElementById('deny-btn').addEventListener('click', function() {
+            if (currentPendingId) denyDevice(currentPendingId);
+        });
+
+        // Start polling every 5 seconds when account page loads
+        pollInterval = setInterval(checkPendingDevices, 5000);
+    });
+    </script>
 
     <script>
         function toggleTheme() {
