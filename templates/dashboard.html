@@ -151,37 +151,54 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Split Mobile Grid Fix (Half Left, Half Right) --- */
+        /* --- Clean & Polished Mobile Header Grid Fix --- */
         @media screen and (max-width: 768px) {
-            /* Turn top header/button containers into a 2-column grid layout */
-            header div, .top-nav div, div[style*="display: flex"], div[style*="display:flex"] {
+            /* 1. Reset header container to a clean, balanced grid */
+            header, .header-container, .top-nav {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                width: 100% !important;
+                padding: 10px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* 2. Target any button groups or action rows inside the header and turn them into a tight 2-column grid */
+            header div, .top-nav div {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr !important; /* Creates two equal columns */
+                grid-template-columns: 1fr 1fr !important;
                 gap: 8px !important;
                 width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
+                margin-top: 6px !important;
+                margin-bottom: 6px !important;
             }
 
-            /* Make buttons and links fit evenly into the grid slots */
+            /* 3. Make titles/logos span full width across the top */
+            header h1, header h2, header .logo-container, .account-title-wrapper {
+                grid-column: span 2 !important;
+                text-align: center !important;
+                width: 100% !important;
+                margin: 0 0 8px 0 !important;
+            }
+
+            /* 4. Style all buttons and pills uniformly so they fit side-by-side perfectly */
             header a, header button, .top-nav a, .top-nav button, .pill-btn, .account-pill, 
             a.btn, button.btn, .btn-pricing, .btn-toggle, .btn-dashboard {
-                display: block !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
                 width: 100% !important;
-                max-width: 100% !important;
+                height: 38px !important; /* Uniform height keeps rows perfectly aligned */
                 margin: 0 !important;
+                padding: 0 8px !important;
+                font-size: 13px !important;
+                font-weight: 500 !important;
                 text-align: center !important;
                 box-sizing: border-box !important;
-                white-space: normal !important;
-                font-size: 12px !important; /* Slightly tighter text size for split columns */
-                padding: 8px 4px !important;
-            }
-
-            /* Optional: If you have elements like titles or banners that shouldn't be split into two columns, 
-            you can let them span across both columns like this: */
-            header h2, header h3, .account-title {
-                grid-column: span 2 !important;
-                text-align: center;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                border-radius: 8px !important;
             }
         }
 

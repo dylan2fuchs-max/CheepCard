@@ -1143,8 +1143,31 @@ def pricing():
     return render_template('pricing.html')
 
 @app.route('/success')
+@login_required
 def success():
-    flash("🎉 Welcome to Pro! Your subscription was successful.", "success")
+    session_id = request.args.get('session_id')
+    
+    if session_id:
+        try:
+            stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+            # Retrieve the checkout session from Stripe
+            checkout_session = stripe.checkout.Session.retrieve(session_id)
+            
+            # Update current user's role and save their subscription ID
+            current_user.role = 'pro'
+            current_user.stripe_subscription_id = checkout_session.subscription
+            db.session.commit()
+            
+            flash("🎉 Welcome to Pro! Your subscription was successful.", "success")
+        except Exception as e:
+            logger.error(f"Error processing Stripe success session for user {current_user.username}: {e}")
+            flash("Subscription processed, but we encountered an issue updating your account role. Please contact support.", "warning")
+    else:
+        # Fallback if accessed without session_id but user is logged in
+        current_user.role = 'pro'
+        db.session.commit()
+        flash("🎉 Welcome to Pro! Your subscription was successful.", "success")
+        
     return redirect(url_for('account'))
 
 @app.route('/cancel')
@@ -1518,21 +1541,23 @@ def stripe_webhook():
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         customer_email = session.get("customer_details", {}).get("email")
+        subscription_id = session.get("subscription") # 👈 Capture the Stripe Subscription ID!
         
         if customer_email:
             user = User.query.filter_by(email=customer_email).first()
             if user:
                 now = datetime.utcnow()
-                # If they already have an active expiration date in the future, stack/add 30 days to it. 
-                # Otherwise, start counting 30 days from right now.
+                
+                # Expiration calculation
                 if user.pro_expires_at and user.pro_expires_at > now:
                     user.pro_expires_at = user.pro_expires_at + timedelta(days=30)
                 else:
                     user.pro_expires_at = now + timedelta(days=30)
                 
                 user.role = 'pro'
+                user.stripe_subscription_id = subscription_id # 👈 Save it here so cancellation works!
                 db.session.commit()
-                print(f"⭐ Upgraded user {customer_email} to Pro! Expires: {user.pro_expires_at}")
+                print(f"⭐ Upgraded user {customer_email} to Pro! Subscription ID: {subscription_id}")
 
     return '', 200
 
