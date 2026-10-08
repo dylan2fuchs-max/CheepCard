@@ -1110,6 +1110,34 @@ def create_checkout_session():
     )
     return redirect(checkout_session.url, code=303)
 
+@app.route("/cancel-subscription", methods=['POST'])
+@login_required
+def cancel_subscription():
+    try:
+        # Check if the user has a subscription ID stored
+        if not current_user.stripe_subscription_id:
+            flash('No active Stripe subscription found for this account.', 'danger')
+            return redirect(url_for('account'))
+
+        # Set your Stripe API key
+        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+
+        # Tell Stripe to cancel at the end of the current billing cycle
+        stripe.Subscription.modify(
+            current_user.stripe_subscription_id,
+            cancel_at_period_end=True
+        )
+
+        # Update their status locally (you can choose to keep them 'pro' until the period ends, 
+        # or update a subscription_status field)
+        flash('Your Pro subscription has been successfully canceled. You will retain access until the end of your billing cycle.', 'success')
+        
+    except Exception as e:
+        logger.error(f"Error canceling subscription for user {current_user.username}: {e}")
+        flash('An error occurred while communicating with Stripe. Please try again.', 'danger')
+
+    return redirect(url_for('account'))
+
 @app.route('/pricing')
 def pricing():
     return render_template('pricing.html')
