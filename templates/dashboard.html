@@ -151,41 +151,36 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Mobile Responsive Enhancements --- */
+        /* --- Mobile Header & Top Button Fixes --- */
         @media screen and (max-width: 768px) {
-            /* Container padding adjustments for mobile screens */
-            body {
-                padding: 10px;
-                font-size: 14px;
+            /* Target top-right action button containers or header button groups */
+            header, .top-nav, .header-buttons, div[style*="position: absolute"], div[style*="float: right"] {
+                position: relative !important;
+                float: none !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                width: 100% !important;
+                margin-bottom: 15px !important;
+                right: auto !important;
+                top: auto !important;
             }
 
-            /* Make panels, cards, and wrappers fit comfortably inside mobile viewports */
-            .panel-box, .container, .card, form {
+            /* Style the floating action pills on the right side so they stack cleanly */
+            .btn, button, .pill-btn, .account-pill {
                 width: 100% !important;
                 max-width: 100% !important;
-                padding: 15px !important;
+                margin: 4px 0 !important;
                 box-sizing: border-box !important;
-                margin: 5px auto !important;
+                text-align: center !important;
+                font-size: 13px !important;
+                padding: 8px 12px !important;
             }
 
-            /* Stack buttons vertically on mobile so they don't overflow */
-            div[style*="display: flex"] {
-                flex-direction: column !important;
-                gap: 10px !important;
-            }
-
-            /* Make modals fit nicely on smaller screens */
-            .approval-modal .modal-content {
-                width: 95% !important;
-                padding: 20px !important;
-                margin: 0 auto;
-            }
-
-            /* Ensure tables or device lists scroll horizontally or wrap cleanly */
-            .device-item {
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                gap: 8px;
+            /* Adjust main titles so they don't crash into the top buttons */
+            h2, h3, .account-title {
+                font-size: 20px !important;
+                word-break: break-word;
             }
         }
 
