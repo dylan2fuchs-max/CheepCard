@@ -1119,22 +1119,33 @@ def create_checkout_session():
 @login_required
 def cancel_subscription():
     try:
-        # Check if the user has a subscription ID stored
-        if not current_user.stripe_subscription_id:
-            flash('No active Stripe subscription found for this account.', 'danger')
+        # Check if the user has a Stripe customer ID stored
+        if not current_user.stripe_customer_id:
+            flash('No active Stripe customer found for this account.', 'danger')
             return redirect(url_for('account'))
 
         # Set your Stripe API key
         stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
+        # Dynamically list active subscriptions for this customer from Stripe
+        subscriptions = stripe.Subscription.list(
+            customer=current_user.stripe_customer_id,
+            status='active',
+            limit=1
+        )
+
+        if not subscriptions.data:
+            flash('No active Stripe subscription found to cancel.', 'warning')
+            return redirect(url_for('account'))
+
+        sub_id = subscriptions.data[0].id
+
         # Tell Stripe to cancel at the end of the current billing cycle
         stripe.Subscription.modify(
-            current_user.stripe_subscription_id,
+            sub_id,
             cancel_at_period_end=True
         )
 
-        # Update their status locally (you can choose to keep them 'pro' until the period ends, 
-        # or update a subscription_status field)
         flash('Your Pro subscription has been successfully canceled. You will retain access until the end of your billing cycle.', 'success')
         
     except Exception as e:
