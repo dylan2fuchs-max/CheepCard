@@ -225,6 +225,9 @@ class User(UserMixin, db.Model):
     
     decks = db.relationship('SavedDeck', backref='owner', lazy=True)
 
+    # Add this line right here:
+    trusted_devices = db.relationship('TrustedDevice', backref='user', cascade='all, delete-orphan', lazy=True)
+
 class TrustedDevice(db.Model):
     __tablename__ = 'trusted_device'
     id = db.Column(db.Integer, primary_key=True)
@@ -1404,7 +1407,10 @@ def account():
         flash('Account settings successfully updated!', 'success')
         return redirect(url_for('account'))
 
-    return render_template('account.html')
+    # Fetch all trusted devices for this user so they display on GET requests
+    devices = TrustedDevice.query.filter_by(user_id=current_user.id).all()
+    
+    return render_template('account.html', devices=devices)
 
 @login_manager.unauthorized_handler
 def unauthorized():
