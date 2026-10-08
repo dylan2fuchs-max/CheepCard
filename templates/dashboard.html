@@ -151,48 +151,53 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Clean & Polished Mobile Header Grid Fix --- */
+        /* --- Clean 2-Column Paired Mobile Layout --- */
         @media screen and (max-width: 768px) {
-            /* 1. Reset header container to a clean, balanced grid */
+            /* Reset header container structure */
             header, .header-container, .top-nav {
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: stretch !important;
                 width: 100% !important;
-                padding: 10px !important;
+                max-width: 100% !important;
+                padding: 8px !important;
                 box-sizing: border-box !important;
+                overflow-x: hidden !important;
             }
 
-            /* 2. Target any button groups or action rows inside the header and turn them into a tight 2-column grid */
+            /* Force button and action rows into exact 2-column grids */
             header div, .top-nav div {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
                 gap: 8px !important;
                 width: 100% !important;
-                margin-top: 6px !important;
-                margin-bottom: 6px !important;
+                max-width: 100% !important;
+                margin: 4px 0 !important;
+                box-sizing: border-box !important;
             }
 
-            /* 3. Make titles/logos span full width across the top */
-            header h1, header h2, header .logo-container, .account-title-wrapper {
+            /* Full-width header titles or logos */
+            header h1, header h2, .account-title-wrapper {
                 grid-column: span 2 !important;
                 text-align: center !important;
                 width: 100% !important;
-                margin: 0 0 8px 0 !important;
+                margin: 0 0 6px 0 !important;
+                font-size: 22px !important;
+                word-break: break-word !important;
             }
 
-            /* 4. Style all buttons and pills uniformly so they fit side-by-side perfectly */
+            /* Uniform button formatting so they never overflow */
             header a, header button, .top-nav a, .top-nav button, .pill-btn, .account-pill, 
             a.btn, button.btn, .btn-pricing, .btn-toggle, .btn-dashboard {
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 width: 100% !important;
-                height: 38px !important; /* Uniform height keeps rows perfectly aligned */
+                max-width: 100% !important;
+                height: 38px !important;
                 margin: 0 !important;
-                padding: 0 8px !important;
-                font-size: 13px !important;
-                font-weight: 500 !important;
+                padding: 0 4px !important;
+                font-size: 12px !important;
                 text-align: center !important;
                 box-sizing: border-box !important;
                 white-space: nowrap !important;

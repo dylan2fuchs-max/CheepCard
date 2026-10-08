@@ -75,18 +75,30 @@ def feedback_page():
         message = request.form.get('message', '').strip()
         
         if message:
-            logs = load_feedback_logs()
-            new_feedback = {
-                "id": max([f["id"] for f in logs], default=0) + 1,
-                "email": "Anonymous", 
-                "message": message,
-                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "viewed": False,
-                "viewed_by": None
-            }
-            logs.insert(0, new_feedback)
-            save_feedback_logs(logs) # 👈 Safely written to disk!
-            flash("Thank you! Your feedback has been logged successfully.", "success")
+            try:
+                logs = load_feedback_logs()
+                
+                # Safely calculate next ID avoiding any KeyError or list comprehension traps
+                next_id = 1
+                if logs and isinstance(logs, list):
+                    valid_ids = [f.get("id", 0) for f in logs if isinstance(f, dict)]
+                    if valid_ids:
+                        next_id = max(valid_ids) + 1
+
+                new_feedback = {
+                    "id": next_id,
+                    "email": getattr(current_user, 'email', 'Anonymous') if current_user.is_authenticated else "Anonymous", 
+                    "message": message,
+                    "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "viewed": False,
+                    "viewed_by": None
+                }
+                logs.insert(0, new_feedback)
+                save_feedback_logs(logs)
+                flash("Thank you! Your feedback has been logged successfully.", "success")
+            except Exception as e:
+                current_app.logger.error(f"Failed to save feedback: {e}")
+                flash("An error occurred while saving your feedback. Please try again.", "danger")
         else:
             flash("Feedback message cannot be empty.", "danger")
             
