@@ -1094,8 +1094,6 @@ def reroll_card():
 
     return jsonify({'success': True, 'new_card': new_card_data})
 
-STRIPE_PRICE_ID = "price_1UD8xLFptxxDBwjmVmE8DV1W"
-
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     checkout_session = stripe.checkout.Session.create(
