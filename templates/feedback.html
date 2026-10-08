@@ -39,6 +39,8 @@
             <p style="margin-bottom: 20px; color: #cbd5e0;">If you are running into any trouble, have suggestions, or want to share feedback, drop a message below! I'd love to hear from you.</p>
 
             <form method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                 <div>
                     <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: #cbd5e0;">Your Message / Issue:</label>
                     <textarea name="message" rows="5" required style="width: 100%; padding: 12px; background: #121418; border: 1px solid #4a5568; color: #fff; border-radius: 6px; resize: vertical; box-sizing: border-box;" placeholder="Type your feedback here..."></textarea>

@@ -1071,6 +1071,8 @@
                 document.getElementById('active-deck-name').innerText = deckName;
             }
 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
             // Send the entire rich array (currentDeck) instead of stripping it down to text!
             try {
                 const response = await fetch('/save_deck', {
@@ -1100,6 +1102,8 @@
             buttonElem.disabled = true;
             const originalText = buttonElem.innerText;
             buttonElem.innerText = '🎲 ...';
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             try {
                 const response = await fetch('/reroll', {

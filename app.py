@@ -8,6 +8,8 @@ import json
 import stripe
 import requests
 import logging
+import sys
+import uuid
 from datetime import date, datetime
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from dotenv import load_dotenv  # <--- Load environment variables first!
@@ -23,6 +25,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from Excel_Manager import ExcelManager
 from Card_Filter import db, Card
 from synergy_engine import run_synergy_analysis
+from webauthn import (
+    generate_registration_options,
+    verify_registration_response,
+    options_to_json,
+)
 from puzzle_engine import (
     get_random_puzzle, 
     validate_user_sequence, 
@@ -86,6 +93,24 @@ SEARCH_CLUSTERS = {}
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+
+# Configure professional logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout) # Ensures logs go straight to Render's console
+    ]
+)
+logger = logging.getLogger('cheepcards')
+
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+    # Logs the full traceback automatically when an unhandled exception occurs
+    logger.exception("CRITICAL UNHANDLED EXCEPTION: %s", error)
+    
+    # Return a clean user-facing error or let Flask handle the 500 page
+    return "An unexpected error occurred. Our team has been notified.", 500
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -199,6 +224,18 @@ class User(UserMixin, db.Model):
     last_search_date = db.Column(db.Date, nullable=True)
     
     decks = db.relationship('SavedDeck', backref='owner', lazy=True)
+
+class TrustedDevice(db.Model):
+    __tablename__ = 'trusted_device'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    device_token = db.Column(db.String(128), unique=True, nullable=False)
+    device_name = db.Column(db.String(128), nullable=False, default="Trusted Browser")
+    is_approved = db.Column(db.Boolean, default=True)  # False if pending approval
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Establish the relationship on your User model if not already present:
+# devices = db.relationship('TrustedDevice', backref='user', lazy=True, cascade='all, delete-orphan')
 
 class SavedDeck(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -495,21 +532,104 @@ def home():
     return render_template("home.html", budget_card=budget_card)
 
 @app.route("/login", methods=['GET', 'POST'])
-@csrf.exempt
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
         user = User.query.filter_by(username=username).first()
+        
         if user and check_password_hash(user.password_hash, password):
+            device_token = request.cookies.get('device_token')
+            active_role = get_active_role() if 'get_active_role' in globals() else user.role
+            max_devices = 999 if active_role in ['pro', 'admin'] else 1
+            
+            if not device_token:
+                device_token = str(uuid.uuid4())
+                
+            existing_device = TrustedDevice.query.filter_by(user_id=user.id, device_token=device_token).first()
+            
+            if not existing_device:
+                total_devices = TrustedDevice.query.filter_by(user_id=user.id, is_approved=True).count()
+                if total_devices >= max_devices:
+                    logger.warning("Device limit reached for user: '%s'", username)
+                    flash('Access denied: Free accounts are limited to 1 trusted device. Upgrade to Pro.', 'danger')
+                    return render_template('login.html')
+                
+                # Register as pending approval if user already has an active session elsewhere
+                is_first_ever = (TrustedDevice.query.filter_by(user_id=user.id).count() == 0)
+                
+                new_dev = TrustedDevice(
+                    user_id=user.id,
+                    device_token=device_token,
+                    device_name=f"{request.user_agent.platform.capitalize()} - {request.user_agent.browser.capitalize()}",
+                    is_approved=is_first_ever # Auto-approve if it's their absolute first device ever
+                )
+                db.session.add(new_dev)
+                db.session.commit()
+                
+                if not is_first_ever:
+                    flash('New device login detected. Please approve this login from your active Account page within 30 seconds.', 'warning')
+                    return render_template('login.html')
+
+            # Check if pending approval
+            if existing_device and not existing_device.is_approved:
+                flash('This device is pending approval from your account settings.', 'warning')
+                return render_template('login.html')
+
             login_user(user)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('home'))
+            response = make_response(redirect(next_page if next_page else url_for('home')))
+            response.set_cookie('device_token', device_token, max_age=60*60*24*365*2, httponly=True, secure=True, samesite='Lax')
+            return response
         else:
             flash('Please check your login details and try again.', 'danger')
             
     return render_template('login.html')
+
+@app.route('/account/check-pending-device', methods=['GET'])
+@login_required
+def check_pending_device():
+    # Look for any unapproved devices for this user created in the last 30 seconds
+    thirty_seconds_ago = datetime.utcnow() - timedelta(seconds=30)
+    pending = TrustedDevice.query.filter(
+        TrustedDevice.user_id == current_user.id,
+        TrustedDevice.is_approved == False,
+        TrustedDevice.created_at >= thirty_seconds_ago
+    .first()
+    
+    if pending:
+        return jsonify({
+            "pending": True,
+            "device_id": pending.id,
+            "device_name": pending.device_name
+        })
+    return jsonify({"pending": False})
+
+@app.route('/account/approve-device/<int:device_id>', methods=['POST'])
+@login_required
+def approve_device(device_id):
+    device = TrustedDevice.query.filter_by(id=device_id, user_id=current_user.id).first_or_404()
+    device.is_approved = True
+    db.session.commit()
+    return jsonify({"success": True})
+
+@app.route('/account/deny-device/<int:device_id>', methods=['POST'])
+@login_required
+def deny_device(device_id):
+    device = TrustedDevice.query.filter_by(id=device_id, user_id=current_user.id).first_or_404()
+    db.session.delete(device)
+    db.session.commit()
+    return jsonify({"success": True})
+
+@app.route('/account/device/revoke/<int:device_id>', methods=['POST'])
+@login_required
+def revoke_device(device_id):
+    device = TrustedDevice.query.filter_by(id=device_id, user_id=current_user.id).first_or_404()
+    db.session.delete(device)
+    db.session.commit()
+    flash("Device successfully removed.", "success")
+    return redirect(url_for('account'))
 
 @app.route('/logout')
 @login_required
@@ -1195,19 +1315,34 @@ def inject_active_role():
 @login_required
 def account():
     if request.method == 'POST':
-        email_input = request.form.get('email', '').strip()
-        current_user.email = email_input if email_input else None
-        current_user.default_theme = request.form.get('default_theme')
-        current_user.name_tag_color = request.form.get('name_tag_color')
-        
+        new_email = request.form.get('email')
+        new_theme = request.form.get('default_theme')
+        new_tag_color = request.form.get('name_tag_color')
         new_password = request.form.get('new_password')
-        if new_password:
-            current_user.password_hash = generate_password_hash(new_password, method='pbkdf2:sha256')
-            
-        db.session.commit()
-        flash('Account settings updated successfully!')
-        return redirect(url_for('account'))
         
+        # 1. Check if the email is already taken by a DIFFERENT user
+        if new_email and new_email != current_user.email:
+            email_exists = User.query.filter_by(email=new_email).first()
+            if email_exists:
+                flash('That email address is already in use by another account.', 'danger')
+                return redirect(url_for('account'))
+            current_user.email = new_email
+
+        # 2. Update preferences
+        if new_theme:
+            current_user.default_theme = new_theme
+        if new_tag_color:
+            current_user.name_tag_color = new_tag_color
+
+        # 3. Update password securely if provided
+        if new_password and new_password.strip() != "":
+            current_user.password_hash = generate_password_hash(new_password)
+            logger.info("Password updated for user: '%s'", current_user.username)
+
+        db.session.commit()
+        flash('Account settings successfully updated!', 'success')
+        return redirect(url_for('account'))
+
     return render_template('account.html')
 
 @app.route("/forgot-password", methods=['GET', 'POST'])

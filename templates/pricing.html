@@ -215,6 +215,7 @@
         </div>
 
                 <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn-primary">Upgrade to CheepCards Pro ($7/mo)</button>
                 </form>
             </div>

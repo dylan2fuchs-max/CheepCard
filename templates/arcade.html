@@ -401,7 +401,10 @@
             try {
                 const response = await fetch('/arcade/submit', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': "{{ csrf_token() }}"
+                    },
                     body: JSON.stringify({ sequence: sequence })
                 });
                 const result = await response.json();

@@ -120,6 +120,7 @@ REVIEW_TEMPLATE = """
         <span>Reviewing Class: <strong>{{ target_class }}</strong> | Remaining Unranked: {{ remaining_count }}</span>
         {% if staged_count and staged_count > 0 %}
         <form action="{{ url_for('review_save_all') }}" method="POST" style="margin: 0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn-save-all" style="padding: 5px 12px; font-size: 12px;">💾 Save All ({{ staged_count }} staged)</button>
         </form>
         {% endif %}
@@ -131,6 +132,7 @@ REVIEW_TEMPLATE = """
         </div>
         
         <form action="{{ url_for('review_submit') }}" method="POST" class="controls" id="reviewForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="card_idx" value="{{ card_idx }}">
             <input type="hidden" name="target_class" value="{{ target_class }}">
             

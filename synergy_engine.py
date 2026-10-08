@@ -1,8 +1,18 @@
 import re
+import logging
 from collections import Counter
 from auto_filler_words import AUTO_FILLER_WORDS
 from Card_Filter import Card
 from theme_engine import ThemeEngine
+
+logger = logging.getLogger('cheepcards')
+
+# Example usage in a login route or database block:
+try:
+    # Your database or logic here...
+    logger.info("Database initialized successfully.")
+except Exception as e:
+    logger.error("Failed to initialize database: %s", e)
 
 PROTECTED_TYPES = {
     'human', 'wizard', 'warrior', 'soldier', 'spirit', 'zombie', 'cleric',

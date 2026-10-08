@@ -339,7 +339,32 @@
                 </form>
             </div>
 
-            <!-- Right Panel: Saved Decks -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="panel-box">
+                    <h2>🛡️ Trusted Security Devices</h2>
+                    <p style="font-size: 12px; color: var(--border-color); margin-bottom: 12px;">
+                        Your account is protected by silent device binding. Free accounts can bind 1 device; Pro & Admin members can bind multiple devices. Any new device login requires a live 30-second approval right here on this page.
+                    </p>
+                    {% if current_user.trusted_devices %}
+                        <div style="max-height: 180px; overflow-y: auto;">
+                            {% for device in current_user.trusted_devices %}
+                            <div class="device-item">
+                                <div>
+                                    <strong>{{ device.device_name }}</strong><br>
+                                    <small style="opacity: 0.7;">Added: {{ device.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" style="padding: 4px 8px; font-size: 11px; background-color: #e74c3c; width: auto; cursor: pointer;">Revoke</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="font-size: 13px; opacity: 0.7; text-align: center;">No registered devices recorded yet.</p>
+                    {% endif %}
+                </div>
+            
             <div class="panel-box">
                 <h2>🎒 Saved Decks</h2>
                 {% if current_user.decks %}
@@ -364,6 +389,18 @@
                 {% else %}
                     <p style="color: var(--text-color); font-size: 13px; text-align: center; margin-top: 40px;">You haven't saved any decks to your account yet.</p>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div id="approval-modal">
+        <div class="modal-content">
+            <h3 style="color: #f39c12; margin-top: 0;">🚨 New Device Login Request</h3>
+            <p id="modal-device-text" style="font-size: 14px; margin-bottom: 15px;"></p>
+            <p style="font-size: 12px; color: #e74c3c; font-weight: bold;">Expires in <span id="modal-timer">30</span> seconds</p>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="approve-btn" style="background-color: #27ae60; flex: 1;">Approve</button>
+                <button id="deny-btn" style="background-color: #e74c3c; flex: 1;">Deny</button>
             </div>
         </div>
     </div>
@@ -443,6 +480,67 @@
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                 });
+            });
+        
+            // --- REAL-TIME 30-SECOND APPROVAL POLLING LOOP ---
+            let activePendingId = null;
+            let countdownInterval = null;
+
+            setInterval(async () => {
+                if (activePendingId !== null) return; // Already showing a prompt
+                try {
+                    const res = await fetch('/account/check-pending-device');
+                    const data = await res.json();
+                    if (data.pending) {
+                        activePendingId = data.device_id;
+                        document.getElementById('modal-device-text').innerText = `A new login attempt was made from: "${data.device_name}". Do you want to authorize this device?`;
+                        document.getElementById('approval-modal').style.display = 'flex';
+
+                        let timeLeft = 30;
+                        document.getElementById('modal-timer').innerText = timeLeft;
+                        
+                        countdownInterval = setInterval(() => {
+                            timeLeft--;
+                            document.getElementById('modal-timer').innerText = timeLeft;
+                            if (timeLeft <= 0) {
+                                clearInterval(countdownInterval);
+                                closeApprovalModal();
+                                fetch(`/account/deny-device/${activePendingId}`, { method: 'POST' });
+                                activePendingId = null;
+                            }
+                        }, 1000);
+                    }
+                } catch (err) {}
+            }, 4000); // Checks every 4 seconds
+
+            function closeApprovalModal() {
+                document.getElementById('approval-modal').style.display = 'none';
+                clearInterval(countdownInterval);
+            }
+
+            document.getElementById('approve-btn').addEventListener('click', async () => {
+                if (!activePendingId) return;
+                const csrfToken = "{{ csrf_token() }}";
+                await fetch(`/account/approve-device/${activePendingId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                closeApprovalModal();
+                activePendingId = null;
+                alert("Device successfully approved and trusted!");
+                location.reload();
+            });
+
+            document.getElementById('deny-btn').addEventListener('click', async () => {
+                if (!activePendingId) return;
+                const csrfToken = "{{ csrf_token() }}";
+                await fetch(`/account/deny-device/${activePendingId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }
+                });
+                closeApprovalModal();
+                activePendingId = null;
+                alert("Device login denied.");
             });
         });
     </script>
