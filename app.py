@@ -70,7 +70,6 @@ print("STRIPE KEY CHECK:", os.getenv("STRIPE_SECRET_KEY"))
 # Reads 'True' or 'False' from your environment variables
 MAINTENANCE_MODE = os.getenv('MAINTENANCE_MODE', 'False').lower() == 'true'
 
-db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
