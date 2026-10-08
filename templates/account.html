@@ -115,36 +115,29 @@
             }
         }
 
-        /* --- Mobile Header & Top Button Fixes --- */
+        /* --- Strict Mobile Stack & Overflow Fix --- */
         @media screen and (max-width: 768px) {
-            /* Target top-right action button containers or header button groups */
-            header, .top-nav, .header-buttons, div[style*="position: absolute"], div[style*="float: right"] {
-                position: relative !important;
-                float: none !important;
-                display: flex !important;
+            /* Force any flex container near the top/header to wrap and stack */
+            header div, .top-nav div, div[style*="display: flex"], div[style*="display:flex"] {
                 flex-direction: column !important;
+                flex-wrap: wrap !important;
                 align-items: stretch !important;
                 width: 100% !important;
-                margin-bottom: 15px !important;
-                right: auto !important;
-                top: auto !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                gap: 8px !important;
             }
 
-            /* Style the floating action pills on the right side so they stack cleanly */
-            .btn, button, .pill-btn, .account-pill {
+            /* Force all buttons, pills, and links inside navigation to fill the width nicely */
+            header a, header button, .top-nav a, .top-nav button, .pill-btn, .account-pill, 
+            a.btn, button.btn, .btn-pricing, .btn-toggle, .btn-dashboard {
+                display: block !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 margin: 4px 0 !important;
-                box-sizing: border-box !important;
                 text-align: center !important;
-                font-size: 13px !important;
-                padding: 8px 12px !important;
-            }
-
-            /* Adjust main titles so they don't crash into the top buttons */
-            h2, h3, .account-title {
-                font-size: 20px !important;
-                word-break: break-word;
+                box-sizing: border-box !important;
+                white-space: normal !important; /* Prevents text from forcing horizontal overflow */
             }
         }
 
