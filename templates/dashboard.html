@@ -414,6 +414,7 @@
         <div class="result-box">
             <h2>📈 Synergy Evaluator</h2>
             <form method="POST" action="/synergy">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <p>Paste deck array list below (One card per line):</p>
 
                 <textarea name="decklist" id="deckTextArea" placeholder="1 Timber Gorge&#10;1 Game Trail" {% if not current_user.is_authenticated or get_active_role() == 'free' %}disabled style="background-color: #95a5a6; cursor: not-allowed;"{% endif %}>{{ deck_input }}</textarea>

@@ -903,8 +903,8 @@ def search():
         else:
             class_results = Card.query.filter(
                 db.or_(
-                    db.func.lower(Card.card_class_1).contains(clean_target_class),
-                    db.func.lower(Card.card_class_2).contains(clean_target_class)
+                    db.func.lower(Card._card_class_1).contains(clean_target_class),
+                    db.func.lower(Card._card_class_2).contains(clean_target_class)
                 )
             ).all()
 
