@@ -1113,6 +1113,7 @@ def search():
     )
 
 @app.route('/reroll', methods=['POST'])
+@csrf.exempt
 def reroll_card():
     if current_user.is_authenticated and current_user.role == 'free':
         used_rerolls = session.get('current_rerolls', 0)
