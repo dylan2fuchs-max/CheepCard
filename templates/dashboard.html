@@ -151,41 +151,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* 🖥️ Desktop Header Layout: Perfectly aligned to 1200px grid */
-        .header-container { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            width: 100%;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            box-sizing: border-box;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Match role badges to button heights/padding */
-        .header-container .role-badge {
-            height: 38px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 0 14px !important;
-            border-radius: 20px !important;
-            font-size: 13px !important;
-            font-weight: bold !important;
-            color: white !important;
-            box-sizing: border-box !important;
-        }
-
         /* 📱 Mobile Header Overflow Fix & Strict 2-Column Grid */
         @media (max-width: 768px) {
             body {
@@ -400,7 +365,7 @@
         <div style="display: flex; align-items: center; gap: 15px;">
             <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 15px; text-decoration: none;">
                 <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 50px; width: auto;">
-                <h1 style="margin: 0; font-size: 24px; color: #f1c40f; text-shadow: 1px 1px 2px black;">CheepCard</h1>
+                <h1 style="margin: 0; font-size: 24px; color: #f1c40f; text-shadow: 1px 1px 2px black;">CheepCards</h1>
             </a>
         </div>
             <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">

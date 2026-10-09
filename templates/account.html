@@ -331,13 +331,12 @@
         }
     </style>
 </head>
-<body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
-    <div class="header-container" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: flex-end; gap: 10px;">
-            👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span>
+<div class="header-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h1 style="margin: 0; color: var(--title-color); display: inline-flex; align-items: center; gap: 10px; font-size: 24px;">
+            👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}" style="display: inline-flex; align-items: center;">{{ current_user.username }}</span>
         </h1>
         
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 10px;">
             {% if current_user.is_authenticated and get_active_role() == 'free' %}
                 <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
                     <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
@@ -346,7 +345,7 @@
             
             <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()" style="cursor: pointer;">🌓 Toggle Mode</button>
             
-            <a href="{{ url_for('dashboard') }}" style="text-decoration: none; margin-left: auto;">
+            <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
                 <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">← Dashboard</button>
             </a>
         </div>
@@ -370,8 +369,8 @@
             <h2>⚙️ Settings & Security</h2>
             
             <!-- Account Status Badges & Subscription Control -->
-            <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
-                <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;">
+            <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
                     <div style="display: flex; align-items: center; gap: 8px; margin: 0;">
                         {% if current_user.role == 'admin' %}
@@ -435,7 +434,7 @@
 
                 <label>New Password (Leave blank to keep current)</label>
                 <div style="position: relative; margin-bottom: 5px;">
-                    <input type="password" id="new_password_field" name="new_password" placeholder="Enter new password" style="flex: 1; margin-bottom: 0; box-sizing: border-box; height: 40px; padding: 10px 12px;">
+                    <input type="password" id="new_password_field" name="new_password" placeholder="Enter new password" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 40px; padding: 10px 35px 10px 12px;">
                     <span onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;" title="Toggle Password Visibility">👁️</span>
                 </div>
 
@@ -595,10 +594,8 @@
         
         function togglePasswordVisibility() {
             const passwordInput = document.getElementById('new_password_field');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-            } else {
-                passwordInput.type = 'password';
+            if (passwordInput) {
+                passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
             }
         }
 
