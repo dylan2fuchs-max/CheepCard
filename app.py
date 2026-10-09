@@ -1218,10 +1218,6 @@ def cancel_subscription():
 
     return redirect(url_for('account'))
 
-@app.route('/pricing')
-def pricing():
-    return render_template('pricing.html')
-
 @app.route('/success')
 @login_required
 def success():
