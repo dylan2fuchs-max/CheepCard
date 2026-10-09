@@ -371,7 +371,7 @@
             
             <!-- Account Status Badges & Subscription Control -->
             <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         {% if current_user.role == 'admin' %}
@@ -387,7 +387,7 @@
                     </div>
                 </div>
                 
-                <div>
+                <div style="display: flex; align-items: center;">
                     {% if current_user.role == 'free' %}
                     <form action="/create-checkout-session" method="POST" style="margin: 0;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -471,11 +471,11 @@
                                 </small>
                             </div>
                             
-                            <!-- Perfectly Aligned Device Action Forms -->
-                            <div style="display: flex; gap: 6px; align-items: center;">
+                            <!-- Perfectly Centered Device Action Forms -->
+                            <div style="display: flex; gap: 6px; align-items: center; margin: 0;">
                                 <form action="{{ url_for('rename_device', device_id=device.id) }}" method="POST" style="display: flex; gap: 4px; align-items: center; margin: 0;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 0 6px; font-size: 11px; width: 90px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; height: 28px;">
+                                    <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 0 6px; font-size: 11px; width: 90px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; height: 28px; margin: 0;">
                                     <button type="submit" style="padding: 0 10px; font-size: 11px; background-color: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; height: 28px; line-height: 28px; white-space: nowrap; box-sizing: border-box;">Rename</button>
                                 </form>
 
