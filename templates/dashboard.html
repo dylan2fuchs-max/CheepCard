@@ -160,15 +160,17 @@
             max-width: 1200px; 
             margin-left: auto; 
             margin-right: auto; 
+            padding-left: 20px;  /* Match your main content's side padding */
+            padding-right: 20px; /* Match your main content's side padding */
             box-sizing: border-box;
             width: 100%;
         }
-        
+
         .header-actions {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-left: auto;
+            /* Removed margin-left: auto; because space-between handles the separation */
         }
 
         /* 📱 Mobile Header Overflow Fix & Strict 2-Column Grid */

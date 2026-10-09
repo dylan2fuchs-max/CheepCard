@@ -344,7 +344,7 @@
                 </a>
             {% endif %}
             
-            <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()" style="cursor: pointer;">🌓 Toggle Mode</button>
+            <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()" style="background-color: #f39c12; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">🌓 Toggle Mode</button>
             <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
                 <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">← Dashboard</button>
             </a>
@@ -361,9 +361,11 @@
         {% endif %}
     {% endwith %}
 
-    <div class="account-grid">
-        <!-- Left Panel: Account Settings -->
-        <div class="panel-box">
+    <!-- Two-Column Side-by-Side Grid Layout -->
+    <div class="account-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+        
+        <!-- Left Column: Account Settings -->
+        <div class="panel-box" style="margin-bottom: 0;">
             <h2>⚙️ Settings & Security</h2>
             
             <!-- Account Status Badges & Subscription Control -->
@@ -439,89 +441,88 @@
                     <button type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()" style="background-color: #555; color: white; border: none; border-radius: 4px; padding: 0 14px; cursor: pointer; font-size: 13px; white-space: nowrap; box-sizing: border-box; height: 40px;">👁️ Show</button>
                 </div>
 
-                <button type="submit" style="background-color: #27ae60; margin-top: 15px; cursor: pointer;">💾 Save Changes</button>
+                <button type="submit" style="background-color: #27ae60; margin-top: 15px; cursor: pointer; width: 100%;">💾 Save Changes</button>
             </form>
         </div> 
-    </div>
 
-    <div>
-        <div>
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div class="panel-box">
-                    <h2>🛡️ Trusted Security Devices</h2>
-                    <p style="font-size: 12px; color: var(--border-color); margin-bottom: 12px;">
-                        Your account is protected by silent device binding. Free accounts can bind 1 device; Pro & Admin members can bind multiple devices. Any new device login requires a live 30-second approval right here on this page.
-                    </p>
-                    
-                    {% if current_user.trusted_devices %}
-                        <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-                            {% for device in current_user.trusted_devices %}
-                            <div class="device-item" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; border: 1px solid #333;">
-                                <div>
-                                    <strong style="color: var(--title-color); font-size: 13px;">💻 {{ device.device_name }}</strong>
-                                    {% if device.device_token == request.cookies.get('device_token') %}
-                                        <span style="background-color: #27ae60; color: white; font-size: 9px; padding: 2px 5px; border-radius: 4px; margin-left: 6px;">Current Device</span>
+        <!-- Right Column: Trusted Security Devices & Saved Decks Stack -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Trusted Security Devices Panel -->
+            <div class="panel-box" style="margin-bottom: 0;">
+                <h2>🛡️ Trusted Security Devices</h2>
+                <p style="font-size: 12px; color: var(--border-color); margin-bottom: 12px;">
+                    Your account is protected by silent device binding. Free accounts can bind 1 device; Pro & Admin members can bind multiple devices. Any new device login requires a live 30-second approval right here on this page.
+                </p>
+                
+                {% if current_user.trusted_devices %}
+                    <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                        {% for device in current_user.trusted_devices %}
+                        <div class="device-item" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; border: 1px solid #333;">
+                            <div>
+                                <strong style="color: var(--title-color); font-size: 13px;">💻 {{ device.device_name }}</strong>
+                                {% if device.device_token == request.cookies.get('device_token') %}
+                                    <span style="background-color: #27ae60; color: white; font-size: 9px; padding: 2px 5px; border-radius: 4px; margin-left: 6px;">Current Device</span>
+                                {% endif %}
+                                <br>
+                                <small style="opacity: 0.7; font-size: 11px;">Added: {{ device.created_at.strftime('%Y-%m-%d') }} | Status: 
+                                    {% if device.is_approved %}
+                                        <span style="color: #27ae60; font-weight: bold;">Approved</span>
+                                    {% else %}
+                                        <span style="color: #f39c12; font-weight: bold;">Pending</span>
                                     {% endif %}
-                                    <br>
-                                    <small style="opacity: 0.7; font-size: 11px;">Added: {{ device.created_at.strftime('%Y-%m-%d') }} | Status: 
-                                        {% if device.is_approved %}
-                                            <span style="color: #27ae60; font-weight: bold;">Approved</span>
-                                        {% else %}
-                                            <span style="color: #f39c12; font-weight: bold;">Pending</span>
-                                        {% endif %}
-                                    </small>
-                                </div>
-                                
-                                <div style="display: flex; gap: 6px; align-items: center;">
-                                    <!-- Quick Rename Form -->
-                                    <form action="{{ url_for('rename_device', device_id=device.id) }}" method="POST" style="display: flex; gap: 4px; margin: 0;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 3px 6px; font-size: 11px; width: 90px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
-                                        <button type="submit" style="padding: 4px 6px; font-size: 11px; background-color: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer;">Rename</button>
-                                    </form>
+                                </small>
+                            </div>
+                            
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <!-- Quick Rename Form -->
+                                <form action="{{ url_for('rename_device', device_id=device.id) }}" method="POST" style="display: flex; gap: 4px; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 4px 6px; font-size: 11px; width: 85px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; height: 26px;">
+                                    <button type="submit" style="padding: 0 8px; font-size: 11px; background-color: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; height: 26px; white-space: nowrap;">Rename</button>
+                                </form>
 
-                                    <!-- Revoke Form -->
-                                    <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="margin: 0;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <button type="submit" style="padding: 4px 6px; font-size: 11px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">Revoke</button>
-                                    </form>
-                                </div>
+                                <!-- Revoke Form -->
+                                <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" style="padding: 0 8px; font-size: 11px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; height: 26px; white-space: nowrap;">Revoke</button>
+                                </form>
                             </div>
-                            {% endfor %}
                         </div>
-                    {% else %}
-                        <p style="font-size: 13px; opacity: 0.7; text-align: center; margin-top: 15px;">No registered devices recorded yet.</p>
-                    {% endif %}
-                </div>
-            
-                <div class="panel-box">
-                        <h2>🎒 Saved Decks</h2>
-                        {% if current_user.decks %}
-                            <div style="max-height: 300px; overflow-y: auto;">
-                                {% for deck in current_user.decks %}
-                                <div class="deck-item">
-                                    <div>
-                                        <strong>{{ deck.name }}</strong>
-                                    </div>
-                                    <div style="display: flex; gap: 6px; align-items: center;">
-                                        <button type="button" class="load-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data }}" style="padding: 4px 8px; font-size: 11px; background-color: #3498db; width: auto; cursor: pointer;">Edit</button>
-                                        <button type="button" class="copy-deck-btn" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #007bff; width: auto; cursor: pointer;">Copy</button>
-                                        <button type="button" class="export-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #27ae60; width: auto; cursor: pointer;">Export</button>
-                                        <form action="{{ url_for('delete_deck', deck_id=deck.id) }}" method="POST" style="margin: 0;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                            <button type="submit" style="padding: 4px 8px; font-size: 11px; background-color: #e74c3c; width: auto; cursor: pointer;">Delete</button>
-                                        </form>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p style="color: var(--text-color); font-size: 13px; text-align: center; margin-top: 40px;">You haven't saved any decks to your account yet.</p>
-                        {% endif %}
+                        {% endfor %}
                     </div>
-                </div>
+                {% else %}
+                    <p style="font-size: 13px; opacity: 0.7; text-align: center; margin-top: 15px;">No registered devices recorded yet.</p>
+                {% endif %}
+            </div>
+        
+            <!-- Saved Decks Panel -->
+            <div class="panel-box" style="margin-bottom: 0;">
+                <h2>🎒 Saved Decks</h2>
+                {% if current_user.decks %}
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for deck in current_user.decks %}
+                        <div class="deck-item" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; border: 1px solid #333;">
+                            <div>
+                                <strong style="font-size: 13px;">{{ deck.name }}</strong>
+                            </div>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <button type="button" class="load-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data }}" style="padding: 4px 8px; font-size: 11px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">Edit</button>
+                                <button type="button" class="copy-deck-btn" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Copy</button>
+                                <button type="button" class="export-deck-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data | tojson }}" style="padding: 4px 8px; font-size: 11px; background-color: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">Export</button>
+                                <form action="{{ url_for('delete_deck', deck_id=deck.id) }}" method="POST" style="margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" style="padding: 4px 8px; font-size: 11px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-color); font-size: 13px; text-align: center; margin-top: 15px;">You haven't saved any decks to your account yet.</p>
+                {% endif %}
             </div>
         </div>
+
     </div>
 
     <!-- Re-authentication Modal for Sensitive Changes -->
