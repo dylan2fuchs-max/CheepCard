@@ -57,7 +57,7 @@
             justify-content: space-between; 
             align-items: center; 
             margin-bottom: 20px; 
-            max-width: 1200px; 
+            max-width: 1050px; 
             margin-left: auto; 
             margin-right: auto; 
             box-sizing: border-box;
@@ -255,7 +255,14 @@
         .flash-success { background-color: #2ecc71; }
         .flash-error { background-color: #e74c3c; }
 
-        .workspace-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .workspace-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 20px; 
+            max-width: 1050px; /* <--- Added */
+            margin-left: auto;   /* <--- Added */
+            margin-right: auto;  /* <--- Added */
+        }
         @media (min-width: 768px) { .workspace-grid { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
 
         @media (max-width: 768px) {
