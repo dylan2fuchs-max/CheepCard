@@ -361,10 +361,10 @@
                 <h2>⚙️ Settings & Security</h2>
                 
                 <!-- Account Status Badges & Subscription Control -->
-                <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+                <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
                     
                     <!-- Left Side: Label & Badge -->
-                    <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <div style="display: flex; flex-direction: column; justify-content: flex-end;">
                         <div style="font-size: 11px; color: var(--border-color, #888); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             {% if current_user.role == 'admin' %}
@@ -380,8 +380,8 @@
                         </div>
                     </div>
                     
-                    <!-- Right Side: Action Button Centered Vertically -->
-                    <div style="display: flex; align-items: center;">
+                    <!-- Right Side: Action Button Aligned at Bottom -->
+                    <div style="display: flex; align-items: flex-end;">
                         {% if current_user.role == 'free' %}
                         <form action="/create-checkout-session" method="POST" style="margin: 0;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -439,23 +439,45 @@
                     <p style="font-size: 12px; color: var(--border-color); margin-bottom: 12px;">
                         Your account is protected by silent device binding. Free accounts can bind 1 device; Pro & Admin members can bind multiple devices. Any new device login requires a live 30-second approval right here on this page.
                     </p>
+                    
                     {% if current_user.trusted_devices %}
-                        <div style="max-height: 180px; overflow-y: auto;">
+                        <div style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
                             {% for device in current_user.trusted_devices %}
-                            <div class="device-item">
+                            <div class="device-item" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; border: 1px solid #333;">
                                 <div>
-                                    <strong>{{ device.device_name }}</strong><br>
-                                    <small style="opacity: 0.7;">Added: {{ device.created_at.strftime('%Y-%m-%d') }}</small>
+                                    <strong style="color: var(--title-color); font-size: 13px;">💻 {{ device.device_name }}</strong>
+                                    {% if device.device_token == request.cookies.get('device_token') %}
+                                        <span style="background-color: #27ae60; color: white; font-size: 9px; padding: 2px 5px; border-radius: 4px; margin-left: 6px;">Current Device</span>
+                                    {% endif %}
+                                    <br>
+                                    <small style="opacity: 0.7; font-size: 11px;">Added: {{ device.created_at.strftime('%Y-%m-%d') }} | Status: 
+                                        {% if device.is_approved %}
+                                            <span style="color: #27ae60; font-weight: bold;">Approved</span>
+                                        {% else %}
+                                            <span style="color: #f39c12; font-weight: bold;">Pending</span>
+                                        {% endif %}
+                                    </small>
                                 </div>
-                                <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="margin: 0;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <button type="submit" style="padding: 4px 8px; font-size: 11px; background-color: #e74c3c; width: auto; cursor: pointer;">Revoke</button>
-                                </form>
+                                
+                                <div style="display: flex; gap: 6px; align-items: center;">
+                                    <!-- Quick Rename Form -->
+                                    <form action="{{ url_for('rename_device', device_id=device.id) }}" method="POST" style="display: flex; gap: 4px; margin: 0;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 3px 6px; font-size: 11px; width: 90px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff;">
+                                        <button type="submit" style="padding: 3px 6px; font-size: 11px; background-color: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer;">Rename</button>
+                                    </form>
+
+                                    <!-- Revoke Form -->
+                                    <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="margin: 0;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" style="padding: 4px 6px; font-size: 11px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">Revoke</button>
+                                    </form>
+                                </div>
                             </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p style="font-size: 13px; opacity: 0.7; text-align: center;">No registered devices recorded yet.</p>
+                        <p style="font-size: 13px; opacity: 0.7; text-align: center; margin-top: 15px;">No registered devices recorded yet.</p>
                     {% endif %}
                 </div>
             

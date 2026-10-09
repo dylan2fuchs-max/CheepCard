@@ -527,6 +527,41 @@ def render_mana_pips(identity_str):
 
 app.jinja_env.filters['mana_pips'] = render_mana_pips
 
+# --- Put the helper function here in app.py ---
+def get_clean_device_name():
+    ua = request.user_agent
+    platform = ua.platform or "Desktop/Device"
+    browser = ua.browser or "Web Browser"
+    
+    # Capitalize nicely
+    platform_str = platform.capitalize()
+    browser_str = browser.capitalize()
+    
+    # If both are default/unknown, try parsing string manually from header
+    if platform_str == 'Unknown' and browser_str == 'Unknown':
+        user_agent_string = request.headers.get('User-Agent', '')
+        if 'Windows' in user_agent_string:
+            platform_str = 'Windows PC'
+        elif 'Macintosh' in user_agent_string or 'Mac OS' in user_agent_string:
+            platform_str = 'Mac'
+        elif 'iPhone' in user_agent_string:
+            platform_str = 'iPhone'
+        elif 'Android' in user_agent_string:
+            platform_str = 'Android'
+        elif 'Linux' in user_agent_string:
+            platform_str = 'Linux'
+            
+        if 'Chrome' in user_agent_string:
+            browser_str = 'Chrome'
+        elif 'Safari' in user_agent_string and 'Chrome' not in user_agent_string:
+            browser_str = 'Safari'
+        elif 'Firefox' in user_agent_string:
+            browser_str = 'Firefox'
+        elif 'Edge' in user_agent_string:
+            browser_str = 'Edge'
+
+    return f"{platform_str} - {browser_str}"
+
 # --- APPLICATION ROUTES ---
 
 @app.route("/")
@@ -579,8 +614,8 @@ def login():
                 new_dev = TrustedDevice(
                     user_id=user.id,
                     device_token=device_token,
-                    device_name=f"{(request.user_agent.platform or 'Unknown').capitalize()} - {(request.user_agent.browser or 'Unknown').capitalize()}",
-                    is_approved=is_first_ever # Only the very first device auto-approves. All subsequent Pro devices require approval!
+                    device_name=get_clean_device_name(),
+                    is_approved=is_first_ever
                 )
                 db.session.add(new_dev)
                 db.session.commit()
@@ -651,6 +686,21 @@ def logout():
     logout_user()
     flash("Logged out successfully.")
     return redirect(url_for('home'))
+
+@app.route('/account/device/rename/<int:device_id>', methods=['POST'])
+@login_required
+def rename_device(device_id):
+    device = TrustedDevice.query.filter_by(id=device_id, user_id=current_user.id).first_or_404()
+    new_name = request.form.get('device_name')
+    
+    if new_name and new_name.strip():
+        device.device_name = new_name.strip()[:128] # cap at 128 chars
+        db.session.commit()
+        flash('Device nickname updated successfully.', 'success')
+    else:
+        flash('Invalid device name.', 'danger')
+        
+    return redirect(url_for('account'))
 
 @app.route("/dashboard", methods=['GET', 'POST'])
 @login_required
