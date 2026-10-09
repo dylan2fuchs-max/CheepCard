@@ -331,9 +331,9 @@
         }
     </style>
 </head>
-<div class="header-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-        <h1 style="margin: 0; color: var(--title-color); display: inline-flex; align-items: center; gap: 10px; font-size: 24px;">
-            👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}" style="display: inline-flex; align-items: center;">{{ current_user.username }}</span>
+    <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: center; gap: 8px; font-size: 24px;">
+            👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}" style="display: inline-flex; align-items: center; margin: 0; vertical-align: baseline;">{{ current_user.username }}</span>
         </h1>
         
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -372,7 +372,7 @@
             <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
                 <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 0; min-height: 28px;">
                         {% if current_user.role == 'admin' %}
                             <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
                         {% elif current_user.role == 'pro' %}
@@ -435,7 +435,7 @@
                 <label>New Password (Leave blank to keep current)</label>
                 <div style="position: relative; margin-bottom: 5px;">
                     <input type="password" id="new_password_field" name="new_password" placeholder="Enter new password" style="width: 100%; margin-bottom: 0; box-sizing: border-box; height: 40px; padding: 10px 35px 10px 12px;">
-                    <span onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;" title="Toggle Password Visibility">👁️</span>
+                    <span id="togglePasswordBtn" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;" title="Toggle Password Visibility">👁️</span>
                 </div>
 
                 <button type="submit" style="background-color: #27ae60; margin-top: 15px; cursor: pointer; width: 100%;">💾 Save Changes</button>
@@ -593,9 +593,11 @@
         }
         
         function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('new_password_field');
-            if (passwordInput) {
-                passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+            const passwordInput = document.getElementById('passwordInput');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+            } else {
+                passwordInput.type = 'password';
             }
         }
 
