@@ -1656,26 +1656,39 @@ def stripe_webhook():
     except stripe.error.SignatureVerificationError:
         return 'Invalid signature', 400
 
+    # 1. Handle successful checkout / subscription start
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         customer_email = session.get("customer_details", {}).get("email")
-        subscription_id = session.get("subscription") # 👈 Capture the Stripe Subscription ID!
+        subscription_id = session.get("subscription")
         
         if customer_email:
             user = User.query.filter_by(email=customer_email).first()
             if user:
                 now = datetime.utcnow()
-                
-                # Expiration calculation
                 if user.pro_expires_at and user.pro_expires_at > now:
                     user.pro_expires_at = user.pro_expires_at + timedelta(days=30)
                 else:
                     user.pro_expires_at = now + timedelta(days=30)
                 
                 user.role = 'pro'
-                user.stripe_subscription_id = subscription_id # 👈 Save it here so cancellation works!
+                user.stripe_subscription_id = subscription_id
                 db.session.commit()
                 print(f"⭐ Upgraded user {customer_email} to Pro! Subscription ID: {subscription_id}")
+
+    # 2. Handle subscription cancellation / deletion
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription = event['data']['object']
+        subscription_id = subscription.get('id')
+        
+        # Find the user by their saved subscription ID
+        user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+        if user:
+            user.role = 'free'
+            user.pro_expires_at = None
+            user.stripe_subscription_id = None
+            db.session.commit()
+            print(f"🚫 Subscription canceled. Reverted user {user.email} to Free.")
 
     return '', 200
 
