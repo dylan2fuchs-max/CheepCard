@@ -151,41 +151,55 @@
             letter-spacing: 0.5px;
         }
 
-        /* Mobile-only strict grid for dashboard header and controls */
+        /* 🖥️ Desktop Header Layout: Logo left, Actions right */
+        .header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            max-width: 1200px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            box-sizing: border-box;
+            width: 100%;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        /* 📱 Mobile Header Overflow Fix & Strict 2-Column Grid */
         @media (max-width: 768px) {
-            .dashboard-mobile-wrapper {
-                display: flex !important;
+            body {
+                padding: 10px !important;
+            }
+            .header-container {
                 flex-direction: column !important;
                 align-items: center !important;
-                width: 100% !important;
-                padding: 8px !important;
-                box-sizing: border-box !important;
+                gap: 12px !important;
                 text-align: center !important;
             }
-            .dashboard-mobile-wrapper h2 {
-                font-size: 15px !important; /* Shrunk title for mobile */
+            .header-container > div:first-child {
+                justify-content: center !important;
+                width: 100% !important;
             }
-            .dashboard-mobile-grid {
+            .header-actions {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
                 gap: 6px !important;
                 width: 100% !important;
-                max-width: 100% !important;
-                margin-top: 8px !important;
+                margin-left: 0 !important;
+                justify-content: center !important;
             }
-            .dashboard-mobile-grid a, 
-            .dashboard-mobile-grid button {
+            .header-actions a,
+            .header-actions button,
+            .header-actions .theme-btn {
                 width: 100% !important;
+                min-width: unset !important;
                 box-sizing: border-box !important;
-            }
-        }
-        /* On desktop, keep your normal layout style if needed */
-        @media (min-width: 769px) {
-            .dashboard-mobile-wrapper {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                flex-wrap: wrap;
             }
         }
 

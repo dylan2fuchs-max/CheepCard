@@ -1152,34 +1152,49 @@ def reroll_card():
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
-    # If a free user tries to check out, make sure they are logged in first
-    checkout_session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=[{
-            'price': STRIPE_PRICE_ID,
-            'quantity': 1,
-        }],
-        mode='subscription',
-        success_url=url_for('success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url=url_for('cancel', _external=True),
-    )
-    return redirect(checkout_session.url, code=303)
+    try:
+        # Create Stripe Checkout Session for Pro subscription with pre-filled user email
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=current_user.email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': STRIPE_PRICE_ID,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=url_for('success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=url_for('cancel', _external=True),
+        )
+        return redirect(checkout_session.url, code=303)
+    except Exception as e:
+        logger.error(f"Error creating checkout session for user {current_user.username}: {e}")
+        flash('Unable to initiate checkout. Please try again later.', 'danger')
+        return redirect(url_for('account'))
 
 @app.route("/cancel-subscription", methods=['POST'])
 @login_required
 def cancel_subscription():
     try:
-        # Check if the user has a Stripe customer ID stored
-        if not current_user.stripe_customer_id:
-            flash('No active Stripe customer found for this account.', 'danger')
+        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+        
+        customer_id = current_user.stripe_customer_id
+
+        # Fallback: If stripe_customer_id isn't saved on the user model, look them up by email in Stripe
+        if not customer_id and current_user.email:
+            customers = stripe.Customer.list(email=current_user.email, limit=1)
+            if customers.data:
+                customer_id = customers.data[0].id
+                # Optionally save it back so you don't have to look it up next time
+                current_user.stripe_customer_id = customer_id
+                db.session.commit()
+
+        if not customer_id:
+            flash('No active Stripe customer profile found for this account email.', 'danger')
             return redirect(url_for('account'))
 
-        # Set your Stripe API key
-        stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-
-        # Dynamically list active subscriptions for this customer from Stripe
+        # Now list active subscriptions using the resolved customer ID
         subscriptions = stripe.Subscription.list(
-            customer=current_user.stripe_customer_id,
+            customer=customer_id,
             status='active',
             limit=1
         )
@@ -1190,7 +1205,6 @@ def cancel_subscription():
 
         sub_id = subscriptions.data[0].id
 
-        # Tell Stripe to cancel at the end of the current billing cycle
         stripe.Subscription.modify(
             sub_id,
             cancel_at_period_end=True
@@ -1440,11 +1454,24 @@ def inject_active_role():
 @login_required
 def account():
     if request.method == 'POST':
+        current_password_input = request.form.get('current_password', '')
         new_email = request.form.get('email')
         new_theme = request.form.get('default_theme')
         new_tag_color = request.form.get('name_tag_color')
         new_password = request.form.get('new_password')
         
+        # Check if sensitive fields (email or password) are being modified
+        is_changing_sensitive_data = (
+            (new_email and new_email != current_user.email) or 
+            (new_password and new_password.strip() != "")
+        )
+
+        # Require current password validation for any sensitive account changes
+        if is_changing_sensitive_data:
+            if not current_password_input or not check_password_hash(current_user.password_hash, current_password_input):
+                flash('Please enter your correct current password to update your email or password.', 'danger')
+                return redirect(url_for('account'))
+
         # 1. Check if the email is already taken by a DIFFERENT user
         if new_email and new_email != current_user.email:
             email_exists = User.query.filter_by(email=new_email).first()
@@ -1646,6 +1673,18 @@ def stripe_webhook():
                 print(f"⭐ Upgraded user {customer_email} to Pro! Subscription ID: {subscription_id}")
 
     return '', 200
+
+@app.route('/pricing', methods=['GET'])
+@login_required
+def pricing():
+    # Use get_active_role() if available, otherwise fallback to current_user.role
+    active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
+    
+    if active_role != 'free':
+        flash('You are already a Pro or Administrator!', 'info')
+        return redirect(url_for('dashboard'))
+        
+    return render_template('pricing.html')
 
 @app.route("/admin/dashboard")
 @login_required

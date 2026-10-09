@@ -334,10 +334,13 @@
 <body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
     <div class="header-container">
             <h1 style="margin: 0; color: var(--title-color);">👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span></h1>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
-                    <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
-                </a>
+            {% if current_user.is_authenticated and get_active_role() == 'free' %}
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
+                        <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
+                    </a>
+                </div>
+            {% endif %}
                 <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
                 <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
                     <button style="background-color: #7f8c8d; width: auto;">← Dashboard</button>
@@ -364,7 +367,7 @@
                 <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
                     
                     <!-- Left Side: Label & Badge -->
-                    <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
                         <div style="font-size: 11px; color: var(--border-color, #888); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             {% if current_user.role == 'admin' %}
@@ -381,7 +384,7 @@
                     </div>
                     
                     <!-- Right Side: Action Button Aligned at Bottom -->
-                    <div style="display: flex; align-items: flex-end;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
                         {% if current_user.role == 'free' %}
                         <form action="/create-checkout-session" method="POST" style="margin: 0;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -506,12 +509,22 @@
                             <p style="color: var(--text-color); font-size: 13px; text-align: center; margin-top: 40px;">You haven't saved any decks to your account yet.</p>
                         {% endif %}
                     </div>
-                    {% if current_user.is_authenticated and current_user.role == 'free' %}
-                    <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
-                        <button style="background-color: #f39c12; color: white; border: none; border-radius: 6px; padding: 8px; font-size: 11px; font-weight: bold;">⭐ Pricing</button>
-                    </a>
-                    {% endif %}
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-authentication Modal for Sensitive Changes -->
+    <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: var(--box-bg, #1e1e1e); padding: 25px; border-radius: 8px; width: 350px; border: 1px solid #444; color: var(--text-color);">
+            <h3 style="margin-top: 0; color: var(--title-color);">🔒 Security Confirmation</h3>
+            <p style="font-size: 13px; opacity: 0.8;">Please enter your current password to authorize these changes.</p>
+            
+            <input type="password" id="modalCurrentPassword" placeholder="Current Password" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff;">
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closePasswordModal()" style="background: #7f8c8d; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; color: white;">Cancel</button>
+                <button type="button" onclick="submitAccountForm()" style="background: #27ae60; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; color: white;">Confirm & Save</button>
             </div>
         </div>
     </div>
@@ -624,6 +637,47 @@
             if (themeSelect) {
                 themeSelect.value = themeChoice;
             }
+        }
+
+        // 🔒 Security Modal Logic for Sensitive Account Updates (Email / Password)
+        function interceptAccountSave(event) {
+            const emailInput = document.querySelector('input[name="email"]');
+            const passwordInput = document.querySelector('input[name="new_password"]');
+            
+            const currentEmail = emailInput ? emailInput.getAttribute('data-original') || "" : "";
+            const newEmail = emailInput ? emailInput.value : "";
+            const newPassword = passwordInput ? passwordInput.value : "";
+            
+            const changingSensitive = (newEmail && newEmail !== currentEmail) || (newPassword && newPassword.trim() !== "");
+
+            if (changingSensitive) {
+                event.preventDefault(); // Pause form submission
+                const modal = document.getElementById('passwordModal');
+                if (modal) modal.style.display = 'flex'; // Show security pop-up
+            }
+        }
+
+        function closePasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function submitAccountForm() {
+            const modalPassword = document.getElementById('modalCurrentPassword').value;
+            if (!modalPassword) {
+                alert('Current password is required to update sensitive information.');
+                return;
+            }
+            
+            // Inject current password into form as hidden input
+            let hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'current_password';
+            hiddenInput.value = modalPassword;
+            
+            const form = document.querySelector('form#accountForm') || document.querySelector('form');
+            form.appendChild(hiddenInput);
+            form.submit();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
