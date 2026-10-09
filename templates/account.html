@@ -345,11 +345,12 @@
             {% endif %}
             
             <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()" style="background-color: #f39c12; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">🌓 Toggle Mode</button>
-            <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
+    
+            <!-- Dashboard pinned to the far right using margin-left: auto -->
+            <a href="{{ url_for('dashboard') }}" style="text-decoration: none; margin-left: auto;">
                 <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">← Dashboard</button>
             </a>
         </div>
-    </div>
 
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -372,9 +373,9 @@
             <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
                 
                 <!-- Left Side: Label & Badge -->
-                <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; flex-direction: column; gap: 4px; justify-content: center;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         {% if current_user.role == 'admin' %}
                             <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
                         {% elif current_user.role == 'pro' %}
@@ -389,16 +390,16 @@
                 </div>
                 
                 <!-- Right Side: Action Button -->
-                <div>
+                <div style="display: flex; align-items: center;">
                     {% if current_user.role == 'free' %}
-                    <form action="/create-checkout-session" method="POST" style="margin: 0;">
+                    <form action="/create-checkout-session" method="POST" style="margin: 0; display: flex; align-items: center;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 4px; color: white; cursor: pointer;">⭐ Upgrade to Pro</button>
+                        <button type="submit" style="background-color: #f39c12; width: auto; height: 36px; padding: 0 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 4px; color: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">⭐ Upgrade to Pro</button>
                     </form>
                     {% elif current_user.role == 'pro' %}
-                    <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0;">
+                    <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0; display: flex; align-items: center;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel Pro</button>
+                        <button type="submit" style="background-color: #c0392b; width: auto; height: 36px; padding: 0 14px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">Cancel Pro</button>
                     </form>
                     {% endif %}
                 </div>
@@ -436,9 +437,9 @@
                 </select>
 
                 <label>New Password (Leave blank to keep current)</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
+                <div style="display: flex; gap: 8px; align-items: stretch; width: 100%;">
                     <input type="password" id="new_password_field" name="new_password" placeholder="Enter new password" style="flex: 1; margin-bottom: 0; padding: 10px 12px; box-sizing: border-box; height: 40px;">
-                    <button type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()" style="background-color: #555; color: white; border: none; border-radius: 4px; padding: 0 14px; cursor: pointer; font-size: 13px; white-space: nowrap; box-sizing: border-box; height: 40px;">👁️ Show</button>
+                    <button type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()" style="background-color: #555; color: white; border: none; border-radius: 4px; padding: 0 14px; cursor: pointer; font-size: 13px; white-space: nowrap; box-sizing: border-box; height: 40px; display: inline-flex; align-items: center; justify-content: center;">👁️ Show</button>
                 </div>
 
                 <button type="submit" style="background-color: #27ae60; margin-top: 15px; cursor: pointer; width: 100%;">💾 Save Changes</button>
@@ -475,14 +476,14 @@
                             
                             <div style="display: flex; gap: 6px; align-items: center;">
                                 <!-- Quick Rename Form -->
-                                <form action="{{ url_for('rename_device', device_id=device.id) }}" method="POST" style="display: flex; gap: 4px; margin: 0;">
+                                <form action="{{ url_for('rename_device', device_id=device.id) }}" method="POST" style="display: flex; gap: 4px; align-items: center; margin: 0;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 4px 6px; font-size: 11px; width: 85px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; height: 26px;">
+                                    <input type="text" name="device_name" placeholder="Nickname..." required style="padding: 4px 6px; font-size: 11px; width: 85px; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; height: 26px; line-height: 26px;">
                                     <button type="submit" style="padding: 0 8px; font-size: 11px; background-color: #2980b9; color: white; border: none; border-radius: 4px; cursor: pointer; height: 26px; white-space: nowrap;">Rename</button>
                                 </form>
 
                                 <!-- Revoke Form -->
-                                <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="margin: 0;">
+                                <form action="{{ url_for('revoke_device', device_id=device.id) }}" method="POST" style="display: flex; align-items: center; margin: 0;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <button type="submit" style="padding: 0 8px; font-size: 11px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; height: 26px; white-space: nowrap;">Revoke</button>
                                 </form>

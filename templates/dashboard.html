@@ -151,28 +151,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* 🖥️ Desktop Header Layout: Logo left, Actions right */
-        .header-container { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            max-width: 1200px; 
-            margin-left: auto; 
-            margin-right: auto; 
-            padding-left: 20px;  /* Match your main content's side padding */
-            padding-right: 20px; /* Match your main content's side padding */
-            box-sizing: border-box;
-            width: 100%;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            /* Removed margin-left: auto; because space-between handles the separation */
-        }
-
         /* 📱 Mobile Header Overflow Fix & Strict 2-Column Grid */
         @media (max-width: 768px) {
             body {
