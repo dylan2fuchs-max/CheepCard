@@ -151,6 +151,41 @@
             letter-spacing: 0.5px;
         }
 
+        /* 🖥️ Desktop Header Layout: Perfectly aligned to 1200px grid */
+        .header-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+            width: 100%;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Match role badges to button heights/padding */
+        .header-container .role-badge {
+            height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 14px !important;
+            border-radius: 20px !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            color: white !important;
+            box-sizing: border-box !important;
+        }
+
         /* 📱 Mobile Header Overflow Fix & Strict 2-Column Grid */
         @media (max-width: 768px) {
             body {
@@ -364,16 +399,16 @@
             <div class="header-actions" style="display: flex; gap: 10px; align-items: center;">
                 {% if current_user.is_authenticated %}
                     
-                    <!-- 🏷️ Paste the active role badge code right here! -->
+                    <!-- 🏷️ Active role badge matching button dimensions -->
                     {% if get_active_role() == 'admin' %}
-                        <span style="background: #e74c3c; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">ADMIN</span>
+                        <span style="background-color: #e74c3c; color: white; height: 38px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; padding: 0 14px !important; border-radius: 20px !important; font-size: 13px !important; font-weight: bold !important; box-sizing: border-box !important;">ADMIN</span>
                         <a href="{{ url_for('admin_dashboard') }}" style="text-decoration: none;">
                             <button class="theme-btn" style="background-color: #8e44ad;">🛠️ Admin Panel</button>
                         </a>
                     {% elif get_active_role() == 'pro' %}
-                        <span style="background: #27ae60; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">PRO</span>
+                        <span style="background-color: #27ae60; color: white; height: 38px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; padding: 0 14px !important; border-radius: 20px !important; font-size: 13px !important; font-weight: bold !important; box-sizing: border-box !important;">PRO</span>
                     {% else %}
-                        <span style="background: #7f8c8d; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">FREE</span>
+                        <span style="background-color: #7f8c8d; color: white; height: 38px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; padding: 0 14px !important; border-radius: 20px !important; font-size: 13px !important; font-weight: bold !important; box-sizing: border-box !important;">FREE</span>
                     {% endif %}
 
                     <a href="{{ url_for('account') }}" style="text-decoration: none; display: inline-flex; align-items: center;">
