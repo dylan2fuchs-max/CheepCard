@@ -332,21 +332,23 @@
     </style>
 </head>
 <body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
-    <div class="header-container">
-        <h1 style="margin: 0; color: var(--title-color);">👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span></h1>
+    <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: center; gap: 10px;">
+            👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span>
+        </h1>
         
-        {% if current_user.is_authenticated and get_active_role() == 'free' %}
-            <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            {% if current_user.is_authenticated and get_active_role() == 'free' %}
                 <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
                     <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
                 </a>
-            </div>
-        {% endif %}
-        
-        <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
-        <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
-            <button style="background-color: #7f8c8d; width: auto;">← Dashboard</button>
-        </a>
+            {% endif %}
+            
+            <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()" style="cursor: pointer;">🌓 Toggle Mode</button>
+            <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
+                <button style="background-color: #7f8c8d; width: auto; cursor: pointer;">← Dashboard</button>
+            </a>
+        </div>
     </div>
 
     {% with messages = get_flashed_messages() %}
@@ -354,7 +356,7 @@
             <div class="flash-message">
                 {% for message in messages %}
                     {{ message }}
-                {% endfor %}
+                {% for message in messages %}
             </div>
         {% endif %}
     {% endwith %}
@@ -365,10 +367,10 @@
             <h2>⚙️ Settings & Security</h2>
             
             <!-- Account Status Badges & Subscription Control -->
-            <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+            <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
                 
                 <!-- Left Side: Label & Badge -->
-                <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         {% if current_user.role == 'admin' %}
@@ -376,96 +378,72 @@
                         {% elif current_user.role == 'pro' %}
                             <span class="status-badge badge-pro" style="margin-bottom: 0; background-color: #f39c12; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">⭐ Pro Subscriber</span>
                             {% if current_user.pro_expires_at %}
-                                <span style="font-size: 11px; opacity: 0.8;">(Until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }})</span>
+                            <span style="font-size: 11px; opacity: 0.8;">(Until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }})</span>
                             {% endif %}
                         {% else %}
                             <span class="status-badge badge-free" style="margin-bottom: 0;">Free Tier</span>
                         {% endif %}
                     </div>
                 </div>
-
-            </div>
-        </div>
-
-        <div class="account-grid">
-            <!-- Left Panel: Account Settings -->
-            <div class="panel-box">
-                <h2>⚙️ Settings & Security</h2>
                 
-                <!-- Account Status Badges & Subscription Control -->
-                <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+                <!-- Right Side: Action Button -->
+                <div>
+                    {% if current_user.role == 'free' %}
+                    <form action="/create-checkout-session" method="POST" style="margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 4px; color: white; cursor: pointer;">⭐ Upgrade to Pro</button>
+                    </form>
+                    {% elif current_user.role == 'pro' %}
+                    <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel Pro</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('account') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <label>Email Address (For Password Recovery)</label>
+                <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
+
+                <label>Background Theme Preference</label>
+                <select name="default_theme">
+                    <option value="light" {% if current_user.default_theme == 'light' %}selected{% endif %}>Light Mode</option>
+                    <option value="dark-mode" {% if current_user.default_theme == 'dark-mode' or not current_user.default_theme %}selected{% endif %}>Dark Mode</option>
+                </select>
+
+                <label>Name Tag Style</label>
+                <select name="name_tag_color">
+                    <option value="blue" {% if current_user.name_tag_color == 'blue' or not current_user.name_tag_color %}selected{% endif %}>Blue</option>
+                    <option value="green" {% if current_user.name_tag_color == 'green' %}selected{% endif %}>Green</option>
+                    <option value="red" {% if current_user.name_tag_color == 'red' %}selected{% endif %}>Red</option>
                     
-                    <!-- Left Side: Label & Badge -->
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <div style="font-size: 11px; color: var(--border-color, #888); margin-bottom: 4px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            {% if current_user.role == 'admin' %}
-                                <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
-                            {% elif current_user.role == 'pro' %}
-                                <span class="status-badge badge-pro" style="margin-bottom: 0; background-color: #f39c12; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">⭐ Pro Subscriber</span>
-                                {% if current_user.pro_expires_at %}
-                                <span style="font-size: 11px; opacity: 0.8;">(Until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }})</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="status-badge badge-free" style="margin-bottom: 0;">Free Tier</span>
-                            {% endif %}
-                        </div>
-                    </div>
+                    {% if current_user.copper_completed %}
+                    <option value="copper" {% if current_user.name_tag_color == 'copper' %}selected{% endif %}>🥉 Brushed Copper (Found a Penny)</option>
+                    {% endif %}
                     
-                    <!-- Right Side: Action Button Aligned at Bottom -->
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        {% if current_user.role == 'free' %}
-                        <form action="/create-checkout-session" method="POST" style="margin: 0;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 4px; color: white; cursor: pointer;">⭐ Upgrade to Pro</button>
-                        </form>
-                        {% elif current_user.role == 'pro' %}
-                        <form action="{{ url_for('cancel_subscription') }}" method="POST" onsubmit="return confirm('⚠️ FIRST CONFIRMATION: Are you sure you want to cancel your Pro subscription?') && confirm('🚨 FINAL WARNING: Your auto-renewal will be stopped, but you will retain full access until your expiration date. Proceed?');" style="margin: 0;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" style="background-color: #c0392b; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel Pro</button>
-                        </form>
-                        {% endif %}
-                    </div>
+                    {% if current_user.gold_completed %}
+                    <option value="gold" {% if current_user.name_tag_color == 'gold' %}selected{% endif %}>✨ 24K Sovereign Gold (Found the Ultimate Card)</option>
+                    {% endif %}
+
+                    {% if current_user.bonus_completed %}
+                    <option value="onyx" {% if current_user.name_tag_color == 'onyx' %}selected{% endif %}>🖤 Onyx Shadow (Speedrun Reward)</option>
+                    {% endif %}
+                </select>
+
+                <label>New Password (Leave blank to keep current)</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="password" id="new_password_field" name="new_password" placeholder="Enter new password" style="flex: 1; margin-bottom: 0;">
+                    <button type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()" style="background-color: #555; color: white; border: none; border-radius: 4px; padding: 10px 12px; cursor: pointer; font-size: 13px; white-space: nowrap;">👁️ Show</button>
                 </div>
 
-                <form method="POST" action="{{ url_for('account') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <label>Email Address (For Password Recovery)</label>
-                    <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
+                <button type="submit" style="background-color: #27ae60; margin-top: 15px; cursor: pointer;">💾 Save Changes</button>
+            </form>
+        </div>
 
-                    <label>Background Theme Preference</label>
-                    <select name="default_theme">
-                        <option value="light" {% if current_user.default_theme == 'light' %}selected{% endif %}>Light Mode</option>
-                        <option value="dark-mode" {% if current_user.default_theme == 'dark-mode' or not current_user.default_theme %}selected{% endif %}>Dark Mode</option>
-                    </select>
-
-                    <label>Name Tag Style</label>
-                    <select name="name_tag_color">
-                        <option value="blue" {% if current_user.name_tag_color == 'blue' or not current_user.name_tag_color %}selected{% endif %}>Blue</option>
-                        <option value="green" {% if current_user.name_tag_color == 'green' %}selected{% endif %}>Green</option>
-                        <option value="red" {% if current_user.name_tag_color == 'red' %}selected{% endif %}>Red</option>
-                        
-                        {% if current_user.copper_completed %}
-                        <option value="copper" {% if current_user.name_tag_color == 'copper' %}selected{% endif %}>🥉 Brushed Copper (Found a Penny)</option>
-                        {% endif %}
-                        
-                        {% if current_user.gold_completed %}
-                        <option value="gold" {% if current_user.name_tag_color == 'gold' %}selected{% endif %}>✨ 24K Sovereign Gold (Found the Ultimate Card)</option>
-                        {% endif %}
-
-                        {% if current_user.bonus_completed %}
-                        <option value="onyx" {% if current_user.name_tag_color == 'onyx' %}selected{% endif %}>🖤 Onyx Shadow (Speedrun Reward)</option>
-                        {% endif %}
-                    </select>
-
-                    <label>New Password (Leave blank to keep current)</label>
-                    <input type="password" name="new_password" placeholder="Enter new password">
-                    <span onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;" title="Toggle Password Visibility">👁️</span>
-
-                    <button type="submit" style="background-color: #27ae60; margin-top: 10px;">💾 Save Changes</button>
-                </form>
-            </div>
-
+        <div>
             <div style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="panel-box">
                     <h2>🛡️ Trusted Security Devices</h2>
@@ -613,6 +591,18 @@
                     }
                 })
                 .catch(err => console.error("Error checking pending devices:", err));
+        }
+        
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('new_password_field');
+            const toggleBtn = document.getElementById('togglePasswordBtn');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.textContent = '🔒 Hide';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.textContent = '👁️ Show';
+            }
         }
 
         function closeModal() {
