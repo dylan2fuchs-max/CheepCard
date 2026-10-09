@@ -768,7 +768,7 @@ def feedback():
     if request.method == 'POST':
         message = request.form.get('message')
         
-        if not message:
+        if not message or not message.strip():
             flash("Please enter a feedback message.", "error")
             return redirect(url_for('feedback'))
             
@@ -776,14 +776,21 @@ def feedback():
         email = getattr(current_user, 'email', None) or "guest@cheepcards.local"
         category = "General"
         
-        new_feedback = Feedback(
-            username=username,
-            email=email,
-            category=category,
-            message=message
-        )
-        db.session.add(new_feedback)
-        db.session.commit()
+        try:
+            new_feedback = Feedback(
+                username=username,
+                email=email,
+                category=category,
+                message=message.strip(),
+                viewed=False  # Ensure new feedback is marked as unread
+            )
+            db.session.add(new_feedback)
+            db.session.commit()
+        except Exception as db_err:
+            db.session.rollback()
+            print(f"Database error saving feedback: {db_err}")
+            flash("An error occurred while saving your feedback. Please try again.", "error")
+            return redirect(url_for('feedback'))
         
         # Optional: Send email notification if SMTP environment variables are set
         try:

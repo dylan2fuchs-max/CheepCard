@@ -333,30 +333,59 @@
 </head>
 <body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
     <div class="header-container">
-            <h1 style="margin: 0; color: var(--title-color);">👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span></h1>
-            {% if current_user.is_authenticated and get_active_role() == 'free' %}
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
-                        <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
-                    </a>
-                </div>
-            {% endif %}
-                <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
-                <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
-                    <button style="background-color: #7f8c8d; width: auto;">← Dashboard</button>
+        <h1 style="margin: 0; color: var(--title-color);">👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span></h1>
+        
+        {% if current_user.is_authenticated and get_active_role() == 'free' %}
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="{{ url_for('pricing') }}" style="text-decoration: none;">
+                    <button style="background-color: #f39c12; width: auto; color: white; border: none; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: bold; font-size: 14px;">⭐ Pricing</button>
                 </a>
             </div>
-        </div>
+        {% endif %}
+        
+        <button id="themeToggle" class="theme-toggle-btn" onclick="toggleTheme()">🌓 Toggle Mode</button>
+        <a href="{{ url_for('dashboard') }}" style="text-decoration: none;">
+            <button style="background-color: #7f8c8d; width: auto;">← Dashboard</button>
+        </a>
+    </div>
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="flash-message">
-                    {% for message in messages %}
-                        {{ message }}
-                    {% endfor %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="account-grid">
+        <!-- Left Panel: Account Settings -->
+        <div class="panel-box">
+            <h2>⚙️ Settings & Security</h2>
+            
+            <!-- Account Status Badges & Subscription Control -->
+            <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+                
+                <!-- Left Side: Label & Badge -->
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        {% if current_user.role == 'admin' %}
+                            <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
+                        {% elif current_user.role == 'pro' %}
+                            <span class="status-badge badge-pro" style="margin-bottom: 0; background-color: #f39c12; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">⭐ Pro Subscriber</span>
+                            {% if current_user.pro_expires_at %}
+                                <span style="font-size: 11px; opacity: 0.8;">(Until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }})</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="status-badge badge-free" style="margin-bottom: 0;">Free Tier</span>
+                        {% endif %}
+                    </div>
                 </div>
-            {% endif %}
-        {% endwith %}
+
+            </div>
+        </div>
 
         <div class="account-grid">
             <!-- Left Panel: Account Settings -->
@@ -431,6 +460,7 @@
 
                     <label>New Password (Leave blank to keep current)</label>
                     <input type="password" name="new_password" placeholder="Enter new password">
+                    <span onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 16px; user-select: none;" title="Toggle Password Visibility">👁️</span>
 
                     <button type="submit" style="background-color: #27ae60; margin-top: 10px;">💾 Save Changes</button>
                 </form>
