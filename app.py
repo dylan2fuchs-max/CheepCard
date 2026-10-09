@@ -1853,6 +1853,33 @@ try:
 except Exception as e:
     print(f"⚠️ Database initialization note: {e}")
 
+with app.app_context():
+    db.create_all()
+    
+    # 🟢 Auto-seed PostgreSQL if the cards table is empty
+    if Card.query.count() == 0 and hasattr(manager, 'card_pool') and manager.card_pool:
+        print("🌱 Seeding PostgreSQL database with cards from Excel pool...")
+        for card_data in manager.card_pool:
+            existing = Card.query.filter_by(_name=card_data.name).first()
+            if not existing:
+                new_card = Card(
+                    name=card_data.name,
+                    identity=card_data.identity,
+                    mana_cost=card_data.mana_cost,
+                    raw_type=card_data.raw_type,
+                    price=card_data.price,
+                    card_class_1=card_data.card_class_1,
+                    card_class_2=card_data.card_class_2,
+                    ranking_1=card_data.ranking_1_word,
+                    ranking_2=card_data.ranking_2_word,
+                    rarity=card_data.rarity,
+                    image_url=card_data.image_url,
+                    oracle_text=card_data.oracle_text
+                )
+                db.session.add(new_card)
+        db.session.commit()
+        print(f"✅ Successfully seeded {Card.query.count()} cards into PostgreSQL!")
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
 

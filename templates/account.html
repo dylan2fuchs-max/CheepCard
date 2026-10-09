@@ -695,6 +695,18 @@
             }
         }
 
+        function closePasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            // Clear the password field for security when canceled
+            const pwdInput = document.getElementById('modalCurrentPassword');
+            if (pwdInput) {
+                pwdInput.value = '';
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             // 1. Theme Initialization
             const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
