@@ -579,36 +579,37 @@ def login():
         
         if user and check_password_hash(user.password_hash, password):
             device_token = request.cookies.get('device_token')
-            active_role = user.role # Direct check to ensure role accuracy
+            active_role = user.role 
             max_devices = 999 if active_role in ['pro', 'admin'] else 1
             
             if not device_token:
                 device_token = str(uuid.uuid4())
-                
-            # Look up token specifically for THIS user first
+            
+            # Check if this exact device token already exists for this user
             existing_device = TrustedDevice.query.filter_by(user_id=user.id, device_token=device_token).first()
             
             if existing_device:
-                # Device belongs to this user. Check if it's awaiting approval.
+                # Device is recognized! If it's not approved and not admin, prompt them.
                 if not existing_device.is_approved and active_role != 'admin':
                     flash('This device is pending approval from your account settings.', 'warning')
                     return render_template('login.html')
             else:
-                # Check if this token belongs to another user globally to prevent unique constraint crashes
+                # Brand new device token for this user. 
+                # Clean up any global token collision safely
                 global_device = TrustedDevice.query.filter_by(device_token=device_token).first()
                 if global_device:
                     db.session.delete(global_device)
                     db.session.commit()
 
-                total_devices = TrustedDevice.query.filter_by(user_id=user.id, is_approved=True).count()
+                total_approved_devices = TrustedDevice.query.filter_by(user_id=user.id, is_approved=True).count()
                 
-                # Free users are capped at 1 device
-                if total_devices >= max_devices and active_role == 'free':
+                # Free users are capped at 1 approved device
+                if total_approved_devices >= max_devices and active_role == 'free':
                     logger.warning("Device limit reached for user: '%s'", username)
                     flash('Access denied: Free accounts are limited to 1 trusted device. Upgrade to Pro.', 'danger')
                     return render_template('login.html')
                 
-                # Register new device as PENDING (unless it's literally their very first device ever)
+                # Determine if it's their first device ever (auto-approve if so)
                 is_first_ever = (TrustedDevice.query.filter_by(user_id=user.id).count() == 0)
                 
                 new_dev = TrustedDevice(
@@ -620,11 +621,12 @@ def login():
                 db.session.add(new_dev)
                 db.session.commit()
                 
-                # If it's not their first device, force them to wait for approval and warn them
+                # If it's not their first device, require approval once
                 if not is_first_ever:
                     flash('New device login detected. Please approve this login from your active Account page.', 'warning')
                     return render_template('login.html')
 
+            # Successfully logged in — ensure cookie persists for 2 years securely
             login_user(user)
             next_page = request.args.get('next')
             response = make_response(redirect(next_page if next_page else url_for('home')))

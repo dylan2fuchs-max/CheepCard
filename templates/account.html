@@ -332,8 +332,8 @@
     </style>
 </head>
 <body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
-    <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
-        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: center; gap: 10px;">
+    <div class="header-container" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: flex-end; gap: 10px;">
             👤 Account: <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">{{ current_user.username }}</span>
         </h1>
         
@@ -370,10 +370,10 @@
             <h2>⚙️ Settings & Security</h2>
             
             <!-- Account Status Badges & Subscription Control -->
-            <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
-                <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+            <div style="margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 15px; background: rgba(0,0,0,0.03); padding: 14px 16px; border-radius: 6px;">
+                <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 0;">
                         {% if current_user.role == 'admin' %}
                             <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
                         {% elif current_user.role == 'pro' %}
@@ -387,7 +387,7 @@
                     </div>
                 </div>
                 
-                <div style="display: flex; align-items: center;">
+                <div style="display: flex; align-items: center; margin: 0;">
                     {% if current_user.role == 'free' %}
                     <form action="/create-checkout-session" method="POST" style="margin: 0;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -402,7 +402,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ url_for('account') }}">
+            <form method="POST" action="{{ url_for('account') }}" onsubmit="interceptAccountSave(event)">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
                 <label>Email Address (For Password Recovery)</label>
@@ -594,7 +594,7 @@
         }
         
         function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('passwordInput');
+            const passwordInput = document.getElementById('new_password_field');
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
             } else {
@@ -674,11 +674,6 @@
             }
         }
 
-        function closePasswordModal() {
-            const modal = document.getElementById('passwordModal');
-            if (modal) modal.style.display = 'none';
-        }
-
         function submitAccountForm() {
             const modalPassword = document.getElementById('modalCurrentPassword').value;
             if (!modalPassword) {
@@ -692,9 +687,13 @@
             hiddenInput.name = 'current_password';
             hiddenInput.value = modalPassword;
             
-            const form = document.querySelector('form#accountForm') || document.querySelector('form');
-            form.appendChild(hiddenInput);
-            form.submit();
+            const form = document.querySelector('form[action*="account"]');
+            if (form) {
+                form.appendChild(hiddenInput);
+                form.submit();
+            } else {
+                alert('Form not found.');
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
