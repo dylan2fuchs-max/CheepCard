@@ -467,6 +467,9 @@
             </div>
 
             <form method="POST" action="/search">
+                <!-- Add the CSRF token right here -->
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
                 <div class="filter-section-title">📝 Rules Text Keyword Search</div>
                 <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
 
