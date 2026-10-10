@@ -5,8 +5,6 @@ import pandas as pd
 import urllib.parse
 import requests
 import time
-import re
-from collections import Counter
 from Card_Filter import Card
 
 class ExcelManager:
@@ -112,7 +110,6 @@ class ExcelManager:
                 card_type = get_row_val(row, "type", "card_type", default="")
                 rarity = get_row_val(row, "rarity", default="Common")
                 oracle_text = get_row_val(row, "text", "oracle_text", default="")
-                set_name = get_row_val(row, "set", "set_name", default="")
 
                 clean_name = card_name.split("//")[0].strip()
                 encoded_name = urllib.parse.quote(clean_name)
@@ -149,7 +146,6 @@ class ExcelManager:
         return []
 
     def _create_timestamped_backup(self):
-        """Step 1: Creates a timestamped backup copy of the Excel sheet as a fall-safe fallback."""
         if not os.path.exists(self.file_path):
             return None
         
@@ -167,8 +163,79 @@ class ExcelManager:
         print(f"🛡️ Backup created successfully: backups/{backup_filename}")
         return backup_path
 
+    def update_all_card_prices(self) -> bool:
+        """
+        DEDICATED PRICE UPDATER:
+        1. Creates a safety backup of your spreadsheet.
+        2. Loops through every card and queries Scryfall for its exact current USD price.
+        3. Updates ONLY the price column in the spreadsheet. Does not add/remove cards or touch other data.
+        """
+        try:
+            self._create_timestamped_backup()
+            
+            print("Safely reading spreadsheet data for price updates...")
+            df = pd.read_excel(self.file_path, engine="openpyxl")
+            
+            # Standardize column headers for matching
+            df.columns = (
+                df.columns.astype(str)
+                .str.replace('\xa0', ' ', regex=False)
+                .str.strip()
+                .str.lower()
+                .str.replace(r'\s+', '_', regex=True)
+            )
+            
+            name_col = next((c for c in df.columns if c.strip().lower() in ['name', 'card_name', 'title']), 'name')
+            price_col = next((c for c in df.columns if c.strip().lower() in ['price', 'usd']), 'price')
+            
+            session = requests.Session()
+            session.headers.update({
+                "User-Agent": "CheepCardsApp/1.0",
+                "Accept": "application/json"
+            })
+            exact_url = "https://api.scryfall.com/cards/named"
+            
+            total_cards = len(df)
+            print(f"Starting price-only update for {total_cards} cards...")
+            updated_count = 0
+
+            for index, (idx, row_data) in enumerate(df.iterrows(), 1):
+                card_name = row_data.get(name_col)
+                if pd.isna(card_name) or not str(card_name).strip():
+                    continue
+                
+                clean_name = str(card_name).strip().split(" // ")[0].strip()
+                print(f"[{index}/{total_cards}] Updating price for: {clean_name}...", end="\r")
+                
+                time.sleep(0.08)
+                
+                resp = self._make_safe_request(session, exact_url, {"exact": clean_name})
+                
+                if resp and resp.status_code == 200:
+                    card_json = resp.json()
+                    live_price = card_json.get("prices", {}).get("usd")
+                    
+                    if live_price is not None and price_col in df.columns:
+                        try:
+                            df.at[idx, price_col] = float(live_price)
+                            updated_count += 1
+                        except ValueError:
+                            pass
+                else:
+                    print(f"⚠️ Could not fetch price for '{clean_name}'")
+
+            df.to_excel(self.file_path, index=False, engine="openpyxl")
+            print(f"\n--- [PRICE UPDATE SUCCESS] Successfully updated prices for {updated_count} cards! ---")
+            
+            self.load_cards()
+            return True
+            
+        except Exception as err:
+            print(f"Critical error during price update: {err}")
+            return False
+
     def apply_class_judgement(self, df):
-        """Step 5: Class Judgement check assigning classes based on Oracle text keywords if empty."""
+        """Class Judgement check assigning classes based on Oracle text keywords if empty."""
         text_col = next((c for c in df.columns if c.strip().lower() in ['text', 'oracle_text']), None)
         class1_col = next((c for c in df.columns if c.strip().lower() in ['class_1', 'class1']), None)
         
@@ -226,14 +293,6 @@ class ExcelManager:
 
             today_str = datetime.now().strftime("%Y-%m-%d")
             existing_names = {str(n).strip().lower() for n in df[name_col].dropna().tolist()}
-            ...
-            for card in data.get("data", []):
-                full_name = card.get("name", "")
-                clean_name = full_name.split(" // ")[0].strip()
-                
-                # If the card is already in your spreadsheet, skip it!
-                if clean_name.lower() in existing_names:
-                    continue
             
             sets_to_fetch = ["set:hob", "set:fra", "set:frc"]
             new_cards_buffer = []
@@ -286,7 +345,7 @@ class ExcelManager:
                 df = pd.concat([df, new_df], ignore_index=True)
                 print(f"✅ Successfully imported {len(new_cards_buffer)} new cards!")
             else:
-                print("ℹ️️ No new cards found to import.")
+                print("ℹ No new cards found to import.")
 
             df = self.apply_class_judgement(df)
             df.to_excel(self.file_path, index=False, engine="openpyxl")
@@ -401,7 +460,6 @@ class ExcelManager:
             print("Safely reading spreadsheet data for full sync...")
             df = pd.read_excel(self.file_path, engine="openpyxl")
             
-            # --- STANDARDIZE COLUMNS TO PREVENT SHIFTING ---
             df.columns = (
                 df.columns.astype(str)
                 .str.replace('\xa0', ' ', regex=False)
@@ -466,7 +524,7 @@ class ExcelManager:
                         mana_cost = data.get("mana_cost", "{0}")
                         card_type = data.get("type_line", "")
                         rarity = data.get("rarity", "common").capitalize()
-                        oracle_text = self._extract_oracle_text(data)  # <--- Uses the multi-face helper
+                        oracle_text = self._extract_oracle_text(data)
                         color_identity = "".join([f"{{{c}}}" for c in data.get("color_identity", [])]) or "{COLORLESS}"
 
                         matching_rows = df[df[name_col].astype(str).str.strip().str.lower() == clean_name.lower()]
@@ -482,7 +540,7 @@ class ExcelManager:
                                     pass
 
                             if oracle_text:
-                                df.at[idx, text_col] = oracle_text  # <-- Make sure it has the 't' here!
+                                df.at[idx, text_col] = oracle_text
                             
                             existing_date = str(df.at[idx, date_col]).strip()
                             if not existing_date or existing_date.lower() in ['nan', 'none', '']:
@@ -554,4 +612,4 @@ class ExcelManager:
 
 if __name__ == "__main__":
     manager = ExcelManager()
-    manager.import_hobbit_and_reality_fracture_only()
+    manager.update_all_card_prices()
