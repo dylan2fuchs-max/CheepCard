@@ -1,6 +1,8 @@
 import os
 import time
 import pandas as pd
+import shutil
+import tempfile
 from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
@@ -11,6 +13,34 @@ app_cache = {
     "start_time": None,
     "completed_count": 0
 }
+
+def save_to_disk():
+    df = app_cache["df"]
+    if df is not None:
+        directory = os.path.dirname(FILE_PATH)
+        os.makedirs(directory, exist_ok=True)
+        
+        # 1. Automatically keep a rotating backup before overwriting
+        bak_path = FILE_PATH + ".bak"
+        if os.path.exists(FILE_PATH):
+            try:
+                shutil.copy(FILE_PATH, bak_path)
+            except Exception:
+                pass
+
+        # 2. Write to a temporary file first in the same directory (Atomic Write)
+        with tempfile.NamedTemporaryFile('w', dir=directory, delete=False, suffix='.xlsx') as tmp:
+            temp_path = tmp.name
+
+        try:
+            df.to_excel(temp_path, index=False, engine="openpyxl")
+            # 3. Atomically replace the target file
+            os.replace(temp_path, FILE_PATH)
+            print(f"💾 INSTANT AUTO-SAFE-SAVE: Progress written to {FILE_PATH}!")
+        except Exception as e:
+            print(f"❌ Error during save: {e}")
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
 def load_and_clean_df():
     if not os.path.exists(FILE_PATH):
@@ -45,13 +75,6 @@ def get_cached_df():
             app_cache["start_time"] = time.time()
             app_cache["completed_count"] = 0
     return app_cache["df"]
-
-def save_to_disk():
-    df = app_cache["df"]
-    if df is not None:
-        # Save directly to disk preserving exact column layout
-        df.to_excel(FILE_PATH, index=False, engine="openpyxl")
-        print(f"💾 INSTANT AUTO-SAVE: Progress written to {FILE_PATH}!")
 
 TEMPLATE = """
 <!DOCTYPE html>
