@@ -1928,7 +1928,16 @@ except Exception as e:
 with app.app_context():
     db.create_all()
     
-    # 🟢 Auto-seed PostgreSQL if the cards table is empty
+    # 🌟 1. Ensure columns exist in live PostgreSQL before querying or seeding
+    try:
+        db.session.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
+        db.session.execute(db.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"⚠️ Schema patch note: {e}")
+
+    # 🟢 2. Auto-seed PostgreSQL if the cards table is empty
     if Card.query.count() == 0 and hasattr(manager, 'card_pool') and manager.card_pool:
         print("🌱 Seeding PostgreSQL database with cards from Excel pool...")
         for card_data in manager.card_pool:
@@ -1939,7 +1948,7 @@ with app.app_context():
                     identity=card_data.identity,
                     mana_cost=card_data.mana_cost,
                     raw_type=card_data.raw_type,
-                    set_name=card_set,
+                    set_name=getattr(card_data, 'set_name', ''),  # 🌟 Fixed: pull from card_data safely
                     price=card_data.price,
                     card_class_1=card_data.card_class_1,
                     card_class_2=card_data.card_class_2,
