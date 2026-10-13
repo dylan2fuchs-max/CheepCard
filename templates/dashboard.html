@@ -312,6 +312,31 @@
             th, td {
                 padding: 6px 4px !important;
             }
+            /* Force the results output box to match the exact width of the search box */
+            .result-box.full-width {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding: 12px !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Ensure the scrollable table container stays contained inside the box */
+            .scrollable-table {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                box-sizing: border-box !important;
+            }
+
+            /* Force the table to behave nicely so it doesn't push bounds */
+            .result-box table {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
         }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; table-layout: fixed; }
