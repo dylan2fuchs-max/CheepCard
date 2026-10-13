@@ -1926,18 +1926,20 @@ except Exception as e:
     print(f"⚠️ Database initialization note: {e}")
 
 with app.app_context():
-    db.create_all()
-    
-    # 🌟 1. Ensure columns exist in live PostgreSQL before querying or seeding
+    # 🌟 1. Force-patch PostgreSQL schema FIRST before any models or queries are evaluated
     try:
         db.session.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
         db.session.execute(db.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
         db.session.commit()
+        print("✅ Database schema successfully verified and patched.")
     except Exception as e:
         db.session.rollback()
         print(f"⚠️ Schema patch note: {e}")
 
-    # 🟢 2. Auto-seed PostgreSQL if the cards table is empty
+    # 🌟 2. Create any missing tables
+    db.create_all()
+
+    # 🟢 3. Auto-seed PostgreSQL if the cards table is empty
     if Card.query.count() == 0 and hasattr(manager, 'card_pool') and manager.card_pool:
         print("🌱 Seeding PostgreSQL database with cards from Excel pool...")
         for card_data in manager.card_pool:
@@ -1948,7 +1950,7 @@ with app.app_context():
                     identity=card_data.identity,
                     mana_cost=card_data.mana_cost,
                     raw_type=card_data.raw_type,
-                    set_name=getattr(card_data, 'set_name', ''),  # 🌟 Fixed: pull from card_data safely
+                    set_name=getattr(card_data, 'set_name', ''),
                     price=card_data.price,
                     card_class_1=card_data.card_class_1,
                     card_class_2=card_data.card_class_2,
