@@ -65,13 +65,6 @@ PUZZLE_POOL = [
             "Goals": ["Griselbrand"]
         },
         "rules": {
-            "mana_costs": {
-                "Dark Ritual": { "cost": { "B": 1 }, "produces": { "B": 3 } },
-                "Raven's Crime": { "cost": { "B": 1 } },
-                "Lightning Greaves": { "cost": { "Generic": 2 } },
-                "Swamp": { "produces": { "B": 1 } },
-                "Lotus Petal": { "produces": { "B": 1 } }
-            },
             "slots": [
                 ["Swamp", "Lotus Petal"],
                 ["Lotus Petal", "Dark Ritual", "Raven's Crime"],

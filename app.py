@@ -886,6 +886,21 @@ def search():
     price_tier = str(request.form.get("price_tier", "all")).strip().lower()
     custom_price = request.form.get("custom_price", "").strip()
     keyword = request.form.get("keyword", "").strip().lower()
+
+    try:
+        log_entry = SearchLog(
+            card_name=keyword if keyword else None,  # Logs keyword/card query if present
+            colors=", ".join(colors) if colors else None,
+            classes=", ".join(classes) if classes else None,
+            rank_searched=rank if rank else None,
+            category=classes[0] if classes else None,
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(log_entry)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"⚠️ Search log error: {e}")
     
     search_reports = []
     SEARCH_CLUSTERS.clear() 
