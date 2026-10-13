@@ -22,6 +22,7 @@ class Card(db.Model):
     _mana_cost = db.Column("mana_cost", db.String(50))
     _raw_type = db.Column("raw_type", db.String(150))  # 🌟 Added raw_type column
     _price = db.Column("price", db.Float, default=0.00)
+    _set_name = db.Column("set_name", db.String(100), index=True, nullable=True)
     
     _card_class_1 = db.Column("card_class_1", db.String(50), index=True)
     _card_class_2 = db.Column("card_class_2", db.String(50))
@@ -36,7 +37,8 @@ class Card(db.Model):
     def __init__(self, name: str = "Unknown Card", identity: str = "{COLORLESS}", mana_cost: str = "{0}", 
                  price: float = 0.00, ranking_1="none", ranking_2="none", 
                  card_class_1="none", card_class_2="none", rarity: str = "Common",
-                 image_url: str = "", oracle_text: str = "", raw_type: str = "", **kwargs):
+                 image_url: str = "", oracle_text: str = "", raw_type: str = "",
+                 set_name: str = "", **kwargs)
         
         self.name = str(name).strip() if name and not pd.isna(name) else "Unknown Card"
         
@@ -48,6 +50,7 @@ class Card(db.Model):
             
         self.mana_cost = str(mana_cost).strip() if mana_cost and not pd.isna(mana_cost) else "{0}"
         self.raw_type = str(raw_type).strip() if raw_type and not pd.isna(raw_type) else ""
+        self.set_name = str(set_name).strip() if set_name and not pd.isna(set_name) else ""
 
         try:
             clean_price = float(str(price).replace('$', '').strip())
@@ -98,6 +101,14 @@ class Card(db.Model):
     def raw_type(self): return self._raw_type
     @raw_type.setter
     def raw_type(self, val): self._raw_type = val
+
+    @property
+    def set_name(self): return self._set_name
+    @set_name.setter
+    def set_name(self, val): self._set_name = val
+
+    @property
+    def set(self): return self._set_name
 
     @property
     def price(self): return self._price
@@ -190,6 +201,7 @@ class Card(db.Model):
             "identity": self.identity,
             "mana_cost": self.mana_cost,
             "raw_type": self.raw_type,
+            "set_name": self.set_name,
             "price": self.price,
             "card_class_1": self.card_class_1,
             "card_class_2": self.card_class_2,

@@ -256,6 +256,7 @@
                         <button type="submit" style="width: auto; padding: 6px 12px; background: #2980b9; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Filter</button>
                     </form>
 
+                    <!-- Top Searched Cards -->
                     <div style="margin-bottom: 15px;">
                         <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">🔥 Top Searched Cards</h4>
                         <ul style="padding-left: 18px; margin: 5px 0 0 0; font-size: 13px;">
@@ -267,37 +268,40 @@
                         </ul>
                     </div>
 
-                    <div style="margin-top: 15px;">
-                        <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">🎨 Top Searched Colors</h4>
-                        <p style="font-size: 14px; margin: 5px 0 0 0;">
-                            {% if top_colors %}
-                            <strong>{{ top_colors[0] }}</strong> <span style="opacity: 0.7;">({{ top_colors[1] }} hits)</span>
-                            {% else %}
-                            <span style="color: #888;">No data available</span>
-                            {% endif %}
-                        </p>
-                    </div>
-
+                    <!-- Top Searched Colors -->
                     <div style="margin-bottom: 15px;">
-                        <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">📂 Most Searched Category</h4>
-                        <p style="font-size: 14px; margin: 5px 0 0 0;">
-                            {% if top_category %}
-                            <strong>{{ top_category[0] }}</strong> <span style="opacity: 0.7;">({{ top_category[1] }} hits)</span>
+                        <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">🎨 Top Searched Colors</h4>
+                        <ul style="padding-left: 18px; margin: 5px 0 0 0; font-size: 13px;">
+                            {% for color, count in top_colors %}
+                            <li style="margin-bottom: 3px;"><strong>{{ color }}</strong> <span style="opacity: 0.7;">({{ count }} hits)</span></li>
                             {% else %}
-                            <span style="color: #888;">No data available</span>
-                            {% endif %}
-                        </p>
+                            <li style="color: #888; list-style: none; margin-left: -18px;">No data available</li>
+                            {% endfor %}
+                        </ul>
                     </div>
 
-                    <div>
-                        <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">🏆 Most Searched Rank</h4>
-                        <p style="font-size: 14px; margin: 5px 0 0 0;">
-                            {% if top_rank %}
-                            <strong>{{ top_rank[0] }}</strong> <span style="opacity: 0.7;">({{ top_rank[1] }} hits)</span>
+                    <!-- Most Searched Category -->
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">📂 Top Searched Categories</h4>
+                        <ul style="padding-left: 18px; margin: 5px 0 0 0; font-size: 13px;">
+                            {% for cat, count in top_category %}
+                            <li style="margin-bottom: 3px;"><strong>{{ cat }}</strong> <span style="opacity: 0.7;">({{ count }} hits)</span></li>
                             {% else %}
-                            <span style="color: #888;">No data available</span>
-                            {% endif %}
-                        </p>
+                            <li style="color: #888; list-style: none; margin-left: -18px;">No data available</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <!-- Most Searched Rank -->
+                    <div>
+                        <h4 style="color: #f1c40f; margin-bottom: 5px; border-bottom: 1px solid #444; padding-bottom: 4px;">🏆 Top Searched Ranks</h4>
+                        <ul style="padding-left: 18px; margin: 5px 0 0 0; font-size: 13px;">
+                            {% for rnk, count in top_rank %}
+                            <li style="margin-bottom: 3px;"><strong>{{ rnk }}</strong> <span style="opacity: 0.7;">({{ count }} hits)</span></li>
+                            {% else %}
+                            <li style="color: #888; list-style: none; margin-left: -18px;">No data available</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
 

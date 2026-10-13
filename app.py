@@ -253,12 +253,14 @@ class BudgetCardHistory(db.Model):
 
 class SearchLog(db.Model):
     __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     card_name = db.Column(db.String(100), nullable=True)
     colors = db.Column(db.String(50), nullable=True)
     classes = db.Column(db.String(100), nullable=True)
     rank_searched = db.Column(db.String(50), nullable=True)
     category = db.Column(db.String(50), nullable=True)
+    set_searched = db.Column(db.String(100), nullable=True)  # 🌟 ADD THIS LINE
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Feedback(db.Model):
@@ -886,18 +888,26 @@ def search():
     price_tier = str(request.form.get("price_tier", "all")).strip().lower()
     custom_price = request.form.get("custom_price", "").strip()
     keyword = request.form.get("keyword", "").strip().lower()
+    
+    # 🌟 1. Capture the Set Filter from the form
+    selected_set = str(request.form.get("set_name", "")).strip()
 
     try:
+        # 1. Log the overall search filter event
         log_entry = SearchLog(
-            card_name=keyword if keyword else None,  # Logs keyword/card query if present
+            card_name=keyword if keyword else None, 
             colors=", ".join(colors) if colors else None,
             classes=", ".join(classes) if classes else None,
             rank_searched=rank if rank else None,
             category=classes[0] if classes else None,
+            set_searched=selected_set if selected_set else None,
             timestamp=datetime.utcnow()
         )
         db.session.add(log_entry)
-        db.session.commit()
+        
+        # 2. 🌟 ALSO log each individual card that appeared in the final search results / bulk pull
+        # (This ensures cards like "Evolving Wilds" get counted for your Top Searched Cards metric)
+        # Note: We'll evaluate search_reports after results are generated, or log them right after building results.
     except Exception as e:
         db.session.rollback()
         print(f"⚠️ Search log error: {e}")
@@ -912,16 +922,22 @@ def search():
     for target_class in target_classes:
         clean_target_class = target_class.strip().lower()
         
-        # Query PostgreSQL directly instead of relying solely on ExcelManager memory pool
+        # 🌟 2. Build Query with Set Filtering Support
         if clean_target_class == "all available cards":
-            class_results = Card.query.all()
+            query = Card.query
         else:
-            class_results = Card.query.filter(
+            query = Card.query.filter(
                 db.or_(
                     db.func.lower(Card._card_class_1).contains(clean_target_class),
                     db.func.lower(Card._card_class_2).contains(clean_target_class)
                 )
-            ).all()
+            )
+
+        # Apply Set Filter if the user typed or selected one
+        if selected_set:
+            query = query.filter(db.func.lower(Card._set_name) == selected_set.lower())
+
+        class_results = query.all()
 
         filtered_results = []
         for card in class_results:
@@ -1116,6 +1132,30 @@ def search():
             db.session.commit()
             flash(f"🎉 Secret Achievement Unlocked: {', '.join(unlocked_names)}! Go equip it in your account settings.", "success")
 
+    # 🌟 3. Query all unique set names sorted A-Z for the datalist dropdown
+    all_sets = [r[0] for r in db.session.query(Card._set_name).distinct().filter(Card._set_name != None, Card._set_name != "").order_by(Card._set_name.asc()).all()]
+
+    # 🌟 Log individual cards shown in search results so they populate "Top Searched Cards"
+    try:
+        for report in search_reports:
+            for card in report.get("results", []):
+                card_title = getattr(card, 'name', None)
+                if card_title:
+                    result_log = SearchLog(
+                        card_name=card_title,
+                        colors=", ".join(colors) if colors else None,
+                        classes=", ".join(classes) if classes else None,
+                        rank_searched=rank if rank else None,
+                        category=classes[0] if classes else None,
+                        set_searched=selected_set if selected_set else None,
+                        timestamp=datetime.utcnow()
+                    )
+                    db.session.add(result_log)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"⚠️ Card result log error: {e}")
+
     return render_template(
         "dashboard.html", 
         search_reports=search_reports, 
@@ -1124,7 +1164,9 @@ def search():
         selected_rank=rank,
         price_tier=price_tier,
         custom_price=custom_price,
-        selected_keyword=keyword
+        selected_keyword=keyword,
+        selected_set=selected_set,
+        all_sets=all_sets
     )
 
 @app.route('/reroll', methods=['POST'])
@@ -1745,6 +1787,7 @@ def admin_dashboard():
     free_users = sum(1 for u in all_users if u.role == 'free')
     total_users = len(all_users)
 
+    # 🌟 Top 5 Searched Cards
     top_cards = db.session.query(
         SearchLog.card_name, func.count(SearchLog.card_name).label('total')
     ).filter(
@@ -1753,29 +1796,35 @@ def admin_dashboard():
         SearchLog.card_name != None
     ).group_by(SearchLog.card_name).order_by(func.count(SearchLog.card_name).desc()).limit(5).all()
 
-    top_category = db.session.query(
+    # 🌟 Top 5 Categories
+    top_category_query = db.session.query(
         SearchLog.category, func.count(SearchLog.category).label('total')
     ).filter(
         extract('year', SearchLog.timestamp) == selected_year,
         extract('month', SearchLog.timestamp) == selected_month,
         SearchLog.category != None
-    ).group_by(SearchLog.category).order_by(func.count(SearchLog.category).desc()).first()
+    ).group_by(SearchLog.category).order_by(func.count(SearchLog.category).desc()).limit(5).all()
+    top_category = [(row.category, row.total) for row in top_category_query]
 
-    top_rank = db.session.query(
+    # 🌟 Top 5 Ranks
+    top_rank_query = db.session.query(
         SearchLog.rank_searched, func.count(SearchLog.rank_searched).label('total')
     ).filter(
         extract('year', SearchLog.timestamp) == selected_year,
         extract('month', SearchLog.timestamp) == selected_month,
         SearchLog.rank_searched != None
-    ).group_by(SearchLog.rank_searched).order_by(func.count(SearchLog.rank_searched).desc()).first()
+    ).group_by(SearchLog.rank_searched).order_by(func.count(SearchLog.rank_searched).desc()).limit(5).all()
+    top_rank = [(row.rank_searched, row.total) for row in top_rank_query]
 
-    top_colors = db.session.query(
+    # 🌟 Top 5 Colors
+    top_colors_query = db.session.query(
         SearchLog.colors, func.count(SearchLog.colors).label('total')
     ).filter(
         extract('year', SearchLog.timestamp) == selected_year,
         extract('month', SearchLog.timestamp) == selected_month,
         SearchLog.colors != None
-    ).group_by(SearchLog.colors).order_by(func.count(SearchLog.colors).desc()).first()
+    ).group_by(SearchLog.colors).order_by(func.count(SearchLog.colors).desc()).limit(5).all()
+    top_colors = [(row.colors, row.total) for row in top_colors_query]
 
     return render_template(
         'admin.html',
@@ -1883,6 +1932,7 @@ with app.app_context():
                     identity=card_data.identity,
                     mana_cost=card_data.mana_cost,
                     raw_type=card_data.raw_type,
+                    set_name=getattr(card_data, 'set_name', ''),
                     price=card_data.price,
                     card_class_1=card_data.card_class_1,
                     card_class_2=card_data.card_class_2,
