@@ -20,9 +20,9 @@ PUZZLE_POOL = [
                 ["Swamp", "Lotus Petal", "Mishra's Bauble"],
                 ["Swamp", "Lotus Petal", "Dark Ritual", "Mishra's Bauble"],
                 ["Swamp", "Lotus Petal", "Dark Ritual", "Cabal Ritual", "Mishra's Bauble"],
-                ["Swamp", "Lotus Petal", "Dark Ritual", "Cabal Ritual", "Mishra's Bauble", "Yawgmoth's Will"],
-                ["Swamp", "Lotus Petal", "Dark Ritual", "Cabal Ritual", "Mishra's Bauble", "Yawgmoth's Will"],
-                ["Yawgmoth's Will", "Lotus Petal", "Mishra's Bauble"],
+                ["Swamp", "Lotus Petal", "Dark Ritual", "Cabal Ritual", "Mishra's Bauble"],
+                ["Swamp", "Lotus Petal", "Dark Ritual", "Cabal Ritual", "Mishra's Bauble"],
+                ["Yawgmoth's Will"],
                 ["Tendrils of Agony"]
             ],
             "must_be_before": [
@@ -65,6 +65,13 @@ PUZZLE_POOL = [
             "Goals": ["Griselbrand"]
         },
         "rules": {
+            "mana_costs": {
+                "Dark Ritual": { "cost": { "B": 1 }, "produces": { "B": 3 } },
+                "Raven's Crime": { "cost": { "B": 1 } },
+                "Lightning Greaves": { "cost": { "Generic": 2 } },
+                "Swamp": { "produces": { "B": 1 } },
+                "Lotus Petal": { "produces": { "B": 1 } }
+            },
             "slots": [
                 ["Swamp", "Lotus Petal"],
                 ["Lotus Petal", "Dark Ritual", "Raven's Crime"],
@@ -173,9 +180,9 @@ PUZZLE_POOL = [
             "slots": [
                 ["Island"],
                 ["Sol Ring", "Mana Vault"],
-                ["Sol Ring", "Mana Vault"],
-                ["Arcane Signet"],
-                ["Mox Opal"],
+                ["Sol Ring", "Mana Vault", "Arcane Signet"],
+                ["Arcane Signet", "Sol Ring", "Mox Opal"],
+                ["Mox Opal", "Sol Ring"],
                 ["Turnabout"],
                 ["Nexus of Fate"]
             ]
