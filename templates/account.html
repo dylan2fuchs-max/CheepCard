@@ -332,9 +332,9 @@
     </style>
 </head>
     <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: center; gap: 10px; font-size: 24px;">
+        <h1 style="margin: 0; color: var(--title-color); display: flex; align-items: baseline; gap: 10px; font-size: 24px;">
             👤 Account: 
-            <span class="user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">
+            <span class="theme-btn user-tag tag-{{ current_user.name_tag_color if current_user.is_authenticated and current_user.name_tag_color else 'blue' }}">
                 {{ current_user.username }}
             </span>
         </h1>
@@ -372,24 +372,24 @@
             <h2>⚙️ Settings & Security</h2>
             
             <!-- Account Status Badges & Subscription Control -->
-            <div style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 15px; background: rgba(0,0,0,0.03); padding: 16px; border-radius: 6px;">
-                <div style="display: flex; flex-direction: column; justify-content: center; gap: 6px;">
+            <div style="margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 15px; background: rgba(0,0,0,0.03); padding: 16px; border-radius: 6px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
                     <div style="font-size: 11px; color: var(--border-color, #888); text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Membership</div>
-                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
                         {% if current_user.role == 'admin' %}
-                            <span class="status-badge badge-admin" style="margin-bottom: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
+                            <span class="status-badge badge-admin" style="margin: 0; background-color: #e74c3c; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">🛡️ Administrator</span>
                         {% elif current_user.role == 'pro' %}
-                            <span class="status-badge badge-pro" style="margin-bottom: 0; background-color: #f39c12; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">⭐ Pro Subscriber</span>
+                            <span class="status-badge badge-pro" style="margin: 0; background-color: #f39c12; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">⭐ Pro Subscriber</span>
                             {% if current_user.pro_expires_at %}
                             <span style="font-size: 11px; opacity: 0.8;">(Until: {{ current_user.pro_expires_at.strftime('%Y-%m-%d') }})</span>
                             {% endif %}
                         {% else %}
-                            <span class="status-badge badge-free" style="margin-bottom: 0;">Free Tier</span>
+                            <span class="status-badge badge-free" style="margin: 0;">Free Tier</span>
                         {% endif %}
                     </div>
                 </div>
                 
-                <div style="display: flex; align-items: center; margin: 0;">
+                <div style="display: flex; align-items: center; padding-top: 14px;"> <!-- Pushes button down slightly to align flush with the badge row -->
                     {% if current_user.role == 'free' %}
                     <form action="/create-checkout-session" method="POST" style="margin: 0;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -408,7 +408,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
                 <label>Email Address (For Password Recovery)</label>
-                <input type="email" name="email" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
+                <input type="email" name="email" data-original="{{ current_user.email }}" value="{{ current_user.email or '' }}" placeholder="Enter your email" required>
 
                 <label>Background Theme Preference</label>
                 <select name="default_theme">
@@ -597,11 +597,14 @@
         function togglePasswordVisibility(fieldId = 'new_password_field') {
             const passwordInput = document.getElementById(fieldId);
             if (passwordInput) {
+                // Explicitly flip based on current state
                 if (passwordInput.type === 'password') {
                     passwordInput.type = 'text';
                 } else {
                     passwordInput.type = 'password';
                 }
+                // Force focus to ensure browser redraws the text input layer
+                passwordInput.focus();
             }
         }
 
