@@ -314,7 +314,7 @@
                         <p style="margin: 4px 0;"><strong>Rank:</strong> {{ budget_card.active_rank_word if budget_card.active_rank_word else 'Average' }}</p>
                         <p style="margin: 4px 0;">
                             <strong>Class:</strong> 
-                            {{ budget_card.display_class if budget_card.display_class else 'N/A' }}
+                            {{ budget_card.display_class | capitalize if budget_card.display_class else 'N/A' }}
                         </p>
                     </div>
                 </div>
