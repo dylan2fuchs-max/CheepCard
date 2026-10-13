@@ -1926,20 +1926,22 @@ except Exception as e:
     print(f"⚠️ Database initialization note: {e}")
 
 with app.app_context():
-    # 🌟 1. Force-patch PostgreSQL schema FIRST before any models or queries are evaluated
+    # 🌟 1. Drop and recreate tables if schema is out of sync (or just let create_all handle new columns safely)
+    # If you want to keep existing table data, we can use raw SQL to add the column outside of SQLAlchemy's introspection:
     try:
-        db.session.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
-        db.session.execute(db.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
-        db.session.commit()
-        print("✅ Database schema successfully verified and patched.")
+        # Use a dedicated connection to execute DDL outside of SQLAlchemy transaction caching
+        with db.engine.connect() as connection:
+            import sqlalchemy
+            connection.execute(sqlalchemy.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
+            connection.execute(sqlalchemy.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
+            connection.commit()
+        print("✅ Database schema successfully verified and patched via direct connection.")
     except Exception as e:
-        db.session.rollback()
         print(f"⚠️ Schema patch note: {e}")
 
-    # 🌟 2. Create any missing tables
     db.create_all()
 
-    # 🟢 3. Auto-seed PostgreSQL if the cards table is empty
+    # 🟢 2. Auto-seed PostgreSQL if the cards table is empty
     if Card.query.count() == 0 and hasattr(manager, 'card_pool') and manager.card_pool:
         print("🌱 Seeding PostgreSQL database with cards from Excel pool...")
         for card_data in manager.card_pool:
