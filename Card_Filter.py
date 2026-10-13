@@ -37,8 +37,8 @@ class Card(db.Model):
     def __init__(self, name: str = "Unknown Card", identity: str = "{COLORLESS}", mana_cost: str = "{0}", 
                  price: float = 0.00, ranking_1="none", ranking_2="none", 
                  card_class_1="none", card_class_2="none", rarity: str = "Common",
-                 image_url: str = "", oracle_text: str = "", raw_type: str = "",
-                 set_name: str = "", **kwargs)
+                 image_url: str = "", oracle_text: str = "", raw_type: str = "", 
+                 set_name: str = "", **kwargs):
         
         self.name = str(name).strip() if name and not pd.isna(name) else "Unknown Card"
         
