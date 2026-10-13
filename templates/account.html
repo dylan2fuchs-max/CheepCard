@@ -552,102 +552,94 @@
     </div>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let pollInterval = null;
-        let countdownInterval = null;
-        let currentPendingId = null;
-
-        function checkPendingDevices() {
-            fetch('/api/pending-devices')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.pending && data.pending.length > 0) {
-                        let device = data.pending[0]; // Get the latest pending request
-                        currentPendingId = device.id;
-                        
-                        // Update modal text with device info
-                        document.getElementById('modal-device-text').innerHTML = 
-                            `New login request from <b>${device.browser || 'Unknown Browser'}</b> (${device.ip_address || 'Unknown IP'})`;
-                        
-                        // Show modal
-                        document.getElementById('approval-modal').style.display = 'flex';
-                        
-                        // Start 30-second countdown
-                        let timeLeft = 30;
-                        document.getElementById('modal-timer').innerText = timeLeft;
-                        
-                        if (countdownInterval) clearInterval(countdownInterval);
-                        countdownInterval = setInterval(() => {
-                            timeLeft--;
-                            document.getElementById('modal-timer').innerText = timeLeft;
-                            if (timeLeft <= 0) {
-                                clearInterval(countdownInterval);
-                                closeModal();
-                                denyDevice(currentPendingId); // Auto-deny or timeout
-                            }
-                        }, 1000);
-
-                        // Stop polling while modal is active
-                        if (pollInterval) clearInterval(pollInterval);
-                    }
-                })
-                .catch(err => console.error("Error checking pending devices:", err));
-        }
-        
+        // 🔓 Globally scoped so inline onclick can always find it
         function togglePasswordVisibility(fieldId = 'new_password_field') {
             const passwordInput = document.getElementById(fieldId);
             if (passwordInput) {
-                // Explicitly flip based on current state
                 if (passwordInput.type === 'password') {
                     passwordInput.type = 'text';
                 } else {
                     passwordInput.type = 'password';
                 }
-                // Force focus to ensure browser redraws the text input layer
                 passwordInput.focus();
             }
         }
 
-        function closeModal() {
-            document.getElementById('approval-modal').style.display = 'none';
-            if (countdownInterval) clearInterval(countdownInterval);
-            // Resume polling every 5 seconds
-            if (!pollInterval) {
-                pollInterval = setInterval(checkPendingDevices, 5000);
+        document.addEventListener("DOMContentLoaded", function() {
+            let pollInterval = null;
+            let countdownInterval = null;
+            let currentPendingId = null;
+
+            function checkPendingDevices() {
+                fetch('/api/pending-devices')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.pending && data.pending.length > 0) {
+                            let device = data.pending[0];
+                            currentPendingId = device.id;
+                            
+                            document.getElementById('modal-device-text').innerHTML = 
+                                `New login request from <b>${device.browser || 'Unknown Browser'}</b> (${device.ip_address || 'Unknown IP'})`;
+                            
+                            document.getElementById('approval-modal').style.display = 'flex';
+                            
+                            let timeLeft = 30;
+                            document.getElementById('modal-timer').innerText = timeLeft;
+                            
+                            if (countdownInterval) clearInterval(countdownInterval);
+                            countdownInterval = setInterval(() => {
+                                timeLeft--;
+                                document.getElementById('modal-timer').innerText = timeLeft;
+                                if (timeLeft <= 0) {
+                                    clearInterval(countdownInterval);
+                                    closeModal();
+                                    denyDevice(currentPendingId);
+                                }
+                            }, 1000);
+
+                            if (pollInterval) clearInterval(pollInterval);
+                        }
+                    })
+                    .catch(err => console.error("Error checking pending devices:", err));
             }
-        }
+            
+            function closeModal() {
+                document.getElementById('approval-modal').style.display = 'none';
+                if (countdownInterval) clearInterval(countdownInterval);
+                if (!pollInterval) {
+                    pollInterval = setInterval(checkPendingDevices, 5000);
+                }
+            }
 
-        function approveDevice(id) {
-            fetch(`/api/approve-device/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Device approved successfully!");
-                    }
-                    closeModal();
-                });
-        }
+            function approveDevice(id) {
+                fetch(`/api/approve-device/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert("Device approved successfully!");
+                        }
+                        closeModal();
+                    });
+            }
 
-        function denyDevice(id) {
-            fetch(`/api/deny-device/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-                .then(res => res.json())
-                .then(data => {
-                    closeModal();
-                });
-        }
+            function denyDevice(id) {
+                fetch(`/api/deny-device/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                    .then(res => res.json())
+                    .then(data => {
+                        closeModal();
+                    });
+            }
 
-        // Attach button events
-        document.getElementById('approve-btn').addEventListener('click', function() {
-            if (currentPendingId) approveDevice(currentPendingId);
+            document.getElementById('approve-btn').addEventListener('click', function() {
+                if (currentPendingId) approveDevice(currentPendingId);
+            });
+
+            document.getElementById('deny-btn').addEventListener('click', function() {
+                if (currentPendingId) denyDevice(currentPendingId);
+            });
+
+            pollInterval = setInterval(checkPendingDevices, 5000);
         });
-
-        document.getElementById('deny-btn').addEventListener('click', function() {
-            if (currentPendingId) denyDevice(currentPendingId);
-        });
-
-        // Start polling every 5 seconds when account page loads
-        pollInterval = setInterval(checkPendingDevices, 5000);
-    });
     </script>
 
     <script>
@@ -662,7 +654,6 @@
             }
         }
 
-        // 🔒 Security Modal Logic for Sensitive Account Updates (Email / Password)
         function interceptAccountSave(event) {
             const emailInput = document.querySelector('input[name="email"]');
             const passwordInput = document.querySelector('input[name="new_password"]');
@@ -674,9 +665,9 @@
             const changingSensitive = (newEmail && newEmail !== currentEmail) || (newPassword && newPassword.trim() !== "");
 
             if (changingSensitive) {
-                event.preventDefault(); // Pause form submission
+                event.preventDefault();
                 const modal = document.getElementById('passwordModal');
-                if (modal) modal.style.display = 'flex'; // Show security pop-up
+                if (modal) modal.style.display = 'flex';
             }
         }
 
@@ -687,7 +678,6 @@
                 return;
             }
             
-            // Inject current password into form as hidden input
             let hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'current_password';
@@ -707,7 +697,6 @@
             if (modal) {
                 modal.style.display = 'none';
             }
-            // Clear the password field for security when canceled
             const pwdInput = document.getElementById('modalCurrentPassword');
             if (pwdInput) {
                 pwdInput.value = '';
@@ -715,7 +704,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. Theme Initialization
             const serverTheme = "{{ current_user.default_theme if current_user.is_authenticated and current_user.default_theme else '' }}";
             const savedTheme = serverTheme || localStorage.getItem('theme') || 'dark-mode';
 
@@ -732,7 +720,7 @@
                 themeSelect.value = serverTheme;
             }
 
-            // 2. Deck Actions (Load, Copy, Export)
+            // Deck actions (Load, Copy, Export)
             document.querySelectorAll('.load-deck-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const deckName = btn.getAttribute('data-name');
@@ -781,12 +769,12 @@
                 });
             });
 
-            // 3. Paw Security - Real-Time 30-Second Approval Polling Loop
+            // Paw Security - Real-Time 30-Second Approval Polling Loop
             let activePendingId = null;
             let countdownInterval = null;
 
             const pollInterval = setInterval(async () => {
-                if (activePendingId !== null) return; // Already showing a prompt
+                if (activePendingId !== null) return;
                 try {
                     const res = await fetch('/account/check-pending-device');
                     const data = await res.json();
@@ -814,7 +802,7 @@
                 } catch (err) {
                     console.error("Error checking pending device:", err);
                 }
-            }, 2000); // Poll every 2 seconds
+            }, 2000);
 
             function closeApprovalModal() {
                 document.getElementById('approval-modal').style.display = 'none';
