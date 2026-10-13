@@ -1219,6 +1219,13 @@ def reroll_card():
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 def create_checkout_session():
+    # Verify the password submitted from the modal security check
+    confirmed_password = request.form.get('confirmed_password', '')
+    
+    if not confirmed_password or not current_user.check_password(confirmed_password):
+        flash('Incorrect password. Plan upgrade aborted for security.', 'danger')
+        return redirect(url_for('account'))
+
     try:
         # Create Stripe Checkout Session for Pro subscription with pre-filled user email
         checkout_session = stripe.checkout.Session.create(
@@ -1932,7 +1939,7 @@ with app.app_context():
                     identity=card_data.identity,
                     mana_cost=card_data.mana_cost,
                     raw_type=card_data.raw_type,
-                    set_name=getattr(card_data, 'set_name', ''),
+                    set_name=card_set,
                     price=card_data.price,
                     card_class_1=card_data.card_class_1,
                     card_class_2=card_data.card_class_2,

@@ -6,13 +6,12 @@
     <title>Pricing & Plans - CheepCards</title>
     <style>
         :root {
-            --bg-color: #f4f6f9; 
-            --box-bg: white; 
+            --bg-color: #f4f6f9;
+            --box-bg: white;
             --text-color: #333;
             --title-color: #2c3e50;
             --border-color: #bdc3c7;
         }
-
         body.dark-mode {
             --bg-color: #121212;
             --box-bg: #1e1e1e;
@@ -20,7 +19,6 @@
             --title-color: #f1c40f;
             --border-color: #444;
         }
-
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -29,25 +27,21 @@
             padding: 20px;
             transition: background-color 0.3s, color 0.3s;
         }
-
         .container {
             max-width: 800px;
             margin: 0 auto;
         }
-
-        .header-container { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 30px; 
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
         }
-
         .pricing-grid {
             display: flex;
             justify-content: center;
             gap: 20px;
         }
-
         .panel-box {
             background: var(--box-bg);
             padding: 30px;
@@ -59,12 +53,10 @@
             text-align: center;
             border: 2px solid var(--border-color);
         }
-
         .panel-box.featured {
             border-color: #f39c12;
             position: relative;
         }
-
         .badge-pro-tag {
             background-color: #f39c12;
             color: #2c1800;
@@ -76,39 +68,33 @@
             display: inline-block;
             margin-bottom: 15px;
         }
-
         h2 { color: var(--title-color); margin-top: 0; font-size: 24px; }
         .price { font-size: 36px; font-weight: bold; color: var(--title-color); margin: 15px 0; }
         .price span { font-size: 14px; font-weight: normal; color: var(--text-color); opacity: 0.8; }
-
         ul.features-list {
             text-align: left;
             list-style-type: none;
             padding: 0;
             margin: 20px 0 30px 0;
         }
-
         ul.features-list li {
             padding: 8px 0;
             border-bottom: 1px solid var(--border-color);
             font-size: 14px;
         }
-
-        button { 
-            background-color: #3498db; 
-            color: white; 
-            padding: 12px 20px; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 15px; 
-            font-weight: bold; 
-            width: 100%; 
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            width: 100%;
             transition: 0.2s;
         }
-
         button:hover { background-color: #2980b9; }
-
         .theme-toggle-btn {
             background: #7f8c8d;
             color: white;
@@ -120,7 +106,6 @@
             cursor: pointer;
             width: auto;
         }
-
         .flash-message {
             background-color: #2ecc71;
             color: white;
@@ -130,53 +115,51 @@
             font-weight: bold;
             text-align: center;
         }
-
         /* Extra Dense Right-Side Background Squares */
         body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 8px;
-            height: 8px;
-            z-index: -1;
-            background: #f1c40f;
-            box-shadow: 
-                80px 60px 0 #f1c40f, 250px 120px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #3498db, 1780px 50px 0 #3498db, 2050px 70px 0 #3498db, 2300px 40px 0 #3498db, 2550px 90px 0 #3498db,
-                30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #3498db, 1980px 250px 0 #3498db, 2250px 210px 0 #3498db, 2480px 260px 0 #f1c40f, 2720px 230px 0 #3498db,
-                150px 480px 0 #f1c40f, 420px 450px 0 #3498db, 780px 420px 0 #f1c40f, 1050px 490px 0 #3498db, 1320px 440px 0 #3498db, 1600px 470px 0 #3498db, 1850px 410px 0 #f1c40f, 2100px 460px 0 #3498db, 2350px 430px 0 #3498db, 2600px 450px 0 #f1c40f, 2750px 470px 0 #3498db,
-                70px 680px 0 #3498db, 350px 640px 0 #f1c40f, 600px 690px 0 #3498db, 880px 650px 0 #f1c40f, 1120px 670px 0 #3498db, 1400px 630px 0 #3498db, 1720px 660px 0 #f1c40f, 1950px 610px 0 #f1c40f, 2220px 650px 0 #3498db, 2520px 680px 0 #3498db, 2740px 630px 0 #3498db,
-                200px 880px 0 #f1c40f, 500px 850px 0 #3498db, 820px 890px 0 #f1c40f, 1180px 840px 0 #3498db, 1450px 870px 0 #f1c40f, 1750px 820px 0 #3498db, 2020px 860px 0 #3498db, 2290px 810px 0 #3498db, 2580px 850px 0 #f1c40f, 2780px 880px 0 #3498db,
-                1650px 150px 0 #3498db, 1920px 180px 0 #f1c40f, 2200px 130px 0 #3498db, 2480px 170px 0 #f1c40f, 2750px 140px 0 #3498db,
-                1750px 330px 0 #3498db, 2040px 300px 0 #f1c40f, 2320px 350px 0 #3498db, 2640px 310px 0 #f1c40f,
-                1630px 550px 0 #3498db, 1910px 520px 0 #f1c40f, 2260px 580px 0 #3498db, 2540px 530px 0 #f1c40f, 2760px 560px 0 #3498db,
-                1790px 750px 0 #3498db, 2120px 710px 0 #f1c40f, 2410px 770px 0 #3498db, 2610px 740px 0 #f1c40f, 2790px 720px 0 #3498db,
-                100px 1020px 0 #3498db, 400px 1050px 0 #f1c40f, 750px 1010px 0 #3498db, 1100px 1060px 0 #f1c40f, 1450px 1030px 0 #3498db, 1800px 1050px 0 #f1c40f, 2150px 1020px 0 #f1c40f, 2500px 1040px 0 #f1c40f, 2750px 1020px 0 #3498db,
-                350px 1220px 0 #3498db, 820px 1200px 0 #f1c40f, 1250px 1240px 0 #f1c40f, 1680px 1210px 0 #f1c40f, 2150px 1230px 0 #f1c40f, 2550px 1200px 0 #f1c40f, 2780px 1220px 0 #3498db;
-            opacity: 0.75;
-        }
-
-        body::after {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 8px;
-            height: 8px;
-            z-index: -1;
-            background: #3498db;
-            box-shadow: 
-                180px 140px 0 #f1c40f, 550px 500px 0 #3498db, 820px 160px 0 #f1c40f, 1100px 130px 0 #3498db, 1420px 150px 0 #f1c40f, 1720px 110px 0 #3498db, 2000px 140px 0 #f1c40f, 2300px 110px 0 #3498db, 2580px 150px 0 #f1c40f, 2750px 120px 0 #3498db,
-                90px 360px 0 #f1c40f, 480px 340px 0 #3498db, 720px 380px 0 #f1c40f, 980px 320px 0 #3498db, 1280px 370px 0 #3498db, 1580px 350px 0 #3498db, 1880px 320px 0 #3498db, 2180px 360px 0 #f1c40f, 2450px 330px 0 #3498db, 2690px 350px 0 #3498db,
-                220px 560px 0 #3498db, 580px 530px 0 #f1c40f, 850px 580px 0 #3498db, 1220px 540px 0 #f1c40f, 1500px 570px 0 #3498db, 1820px 530px 0 #3498db, 2080px 560px 0 #3498db, 2380px 540px 0 #3498db, 2620px 570px 0 #3498db, 2780px 520px 0 #3498db,
-                130px 780px 0 #f1c40f, 400px 740px 0 #3498db, 750px 790px 0 #f1c40f, 1020px 730px 0 #3498db, 1350px 770px 0 #f1c40f, 1650px 750px 0 #3498db, 1950px 720px 0 #f1c40f, 2250px 760px 0 #3498db, 2550px 730px 0 #3498db, 2760px 770px 0 #3498db,
-                300px 920px 0 #3498db, 650px 900px 0 #f1c40f, 950px 930px 0 #3498db, 1280px 890px 0 #f1c40f, 1600px 910px 0 #3498db, 1900px 880px 0 #f1c40f, 2200px 920px 0 #3498db, 2500px 890px 0 #f1c40f, 2750px 910px 0 #3498db,
-                200px 1030px 0 #f1c40f, 550px 1060px 0 #3498db, 900px 1020px 0 #f1c40f, 1250px 1050px 0 #3498db, 1620px 1040px 0 #f1c40f, 1980px 1060px 0 #f1c40f, 2320px 1030px 0 #f1c40f, 2680px 1050px 0 #f1c40f,
-                450px 1140px 0 #f1c40f, 850px 1150px 0 #3498db, 1250px 1130px 0 #f1c40f, 1700px 1160px 0 #3498db, 2150px 1140px 0 #f1c40f, 2600px 1150px 0 #3498db,
-                150px 1280px 0 #f1c40f, 600px 1260px 0 #3498db, 1100px 1290px 0 #f1c40f, 1600px 1270px 0 #f1c40f, 2050px 1290px 0 #f1c40f, 2500px 1260px 0 #3498db;
-            opacity: 0.65;
-        }
-    </style>
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        z-index: -1;
+        background: #f1c40f;
+        box-shadow: 
+            80px 60px 0 #f1c40f, 250px 120px 0 #3498db, 480px 100px 0 #f1c40f, 720px 150px 0 #3498db, 950px 90px 0 #f1c40f, 1200px 40px 0 #3498db, 1500px 80px 0 #3498db, 1780px 50px 0 #3498db, 2050px 70px 0 #3498db, 2300px 40px 0 #3498db, 2550px 90px 0 #3498db,
+            30px 280px 0 #3498db, 310px 240px 0 #f1c40f, 650px 210px 0 #f1c40f, 900px 270px 0 #3498db, 1150px 220px 0 #f1c40f, 1420px 260px 0 #3498db, 1680px 200px 0 #3498db, 1980px 250px 0 #3498db, 2250px 210px 0 #3498db, 2480px 260px 0 #f1c40f, 2720px 230px 0 #3498db,
+            150px 480px 0 #f1c40f, 420px 450px 0 #3498db, 780px 420px 0 #f1c40f, 1050px 490px 0 #3498db, 1320px 440px 0 #3498db, 1600px 470px 0 #3498db, 1850px 410px 0 #f1c40f, 2100px 460px 0 #3498db, 2350px 430px 0 #3498db, 2600px 450px 0 #f1c40f, 2750px 470px 0 #f1c40f,
+            70px 680px 0 #3498db, 350px 640px 0 #f1c40f, 600px 690px 0 #3498db, 880px 650px 0 #f1c40f, 1120px 670px 0 #3498db, 1400px 630px 0 #3498db, 1720px 660px 0 #3498db, 1950px 610px 0 #3498db, 2220px 650px 0 #3498db, 2520px 680px 0 #3498db, 2740px 630px 0 #3498db,
+            200px 880px 0 #f1c40f, 500px 850px 0 #3498db, 820px 890px 0 #f1c40f, 1180px 840px 0 #3498db, 1450px 870px 0 #3498db, 1750px 820px 0 #3498db, 2020px 860px 0 #3498db, 2290px 810px 0 #3498db, 2580px 850px 0 #f1c40f, 2780px 880px 0 #3498db,
+            1650px 150px 0 #3498db, 1920px 180px 0 #f1c40f, 2200px 130px 0 #3498db, 2480px 170px 0 #f1c40f, 2750px 140px 0 #3498db,
+            1750px 330px 0 #3498db, 2040px 300px 0 #f1c40f, 2320px 350px 0 #3498db, 2640px 310px 0 #3498db,
+            1630px 550px 0 #3498db, 1910px 520px 0 #f1c40f, 2260px 580px 0 #3498db, 2540px 530px 0 #3498db, 2760px 560px 0 #3498db,
+            1790px 750px 0 #3498db, 2120px 710px 0 #f1c40f, 2410px 770px 0 #3498db, 2610px 740px 0 #f1c40f, 2790px 720px 0 #3498db,
+            100px 1020px 0 #3498db, 400px 1050px 0 #f1c40f, 750px 1010px 0 #3498db, 1100px 1060px 0 #f1c40f, 1450px 1030px 0 #3498db, 1800px 1050px 0 #3498db, 2150px 1020px 0 #3498db, 2500px 1040px 0 #3498db, 2750px 1020px 0 #3498db,
+            350px 1220px 0 #3498db, 820px 1200px 0 #f1c40f, 1250px 1240px 0 #f1c40f, 1680px 1210px 0 #f1c40f, 2150px 1230px 0 #f1c40f, 2550px 1200px 0 #f1c40f, 2780px 1220px 0 #3498db;
+        opacity: 0.75;
+    }
+    body::after {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        z-index: -1;
+        background: #3498db;
+        box-shadow: 
+            180px 140px 0 #f1c40f, 550px 500px 0 #3498db, 820px 160px 0 #f1c40f, 1100px 130px 0 #3498db, 1420px 150px 0 #f1c40f, 1720px 110px 0 #3498db, 2000px 140px 0 #f1c40f, 2300px 110px 0 #3498db, 2580px 150px 0 #f1c40f, 2750px 120px 0 #3498db,
+            90px 360px 0 #f1c40f, 480px 340px 0 #3498db, 720px 380px 0 #f1c40f, 980px 320px 0 #3498db, 1280px 370px 0 #3498db, 1580px 350px 0 #3498db, 1880px 320px 0 #3498db, 2180px 360px 0 #f1c40f, 2450px 330px 0 #3498db, 2690px 350px 0 #3498db,
+            220px 560px 0 #3498db, 580px 530px 0 #f1c40f, 850px 580px 0 #3498db, 1220px 540px 0 #f1c40f, 1500px 570px 0 #3498db, 1820px 530px 0 #3498db, 2080px 560px 0 #3498db, 2380px 540px 0 #3498db, 2620px 570px 0 #3498db, 2780px 520px 0 #3498db,
+            130px 780px 0 #f1c40f, 400px 740px 0 #3498db, 750px 790px 0 #f1c40f, 1020px 730px 0 #3498db, 1350px 770px 0 #3498db, 1650px 750px 0 #3498db, 1950px 720px 0 #3498db, 2250px 760px 0 #3498db, 2550px 730px 0 #3498db, 2760px 770px 0 #3498db,
+            300px 920px 0 #3498db, 650px 900px 0 #f1c40f, 950px 930px 0 #3498db, 1280px 890px 0 #f1c40f, 1600px 910px 0 #3498db, 1900px 880px 0 #3498db, 2200px 920px 0 #3498db, 2500px 890px 0 #3498db, 2750px 910px 0 #3498db,
+            200px 1030px 0 #f1c40f, 550px 1060px 0 #3498db, 900px 1020px 0 #f1c40f, 1250px 1050px 0 #3498db, 1620px 1040px 0 #f1c40f, 1980px 1060px 0 #3498db, 2320px 1030px 0 #3498db, 2680px 1050px 0 #3498db,
+            450px 1140px 0 #f1c40f, 850px 1150px 0 #3498db, 1250px 1130px 0 #f1c40f, 1700px 1160px 0 #3498db, 2150px 1140px 0 #3498db, 2600px 1150px 0 #3498db,
+            150px 1280px 0 #f1c40f, 600px 1260px 0 #3498db, 1100px 1290px 0 #f1c40f, 1600px 1270px 0 #f1c40f, 2050px 1290px 0 #f1c40f, 2500px 1260px 0 #3498db;
+        opacity: 0.65;
+    }
+</style>
 </head>
 <body class="{% if current_user.is_authenticated and current_user.default_theme %}{{ current_user.default_theme }}{% else %}{{ session.get('default_theme', 'dark-mode') }}{% endif %}">
     <div class="container">
@@ -211,13 +194,25 @@
                     <li>✓ Deck tool function to save and track decks</li>
                     <li>✓ Unlimited searches</li>
                 </ul>
+
+                <!-- Upgraded form with password confirmation trigger -->
+                <form id="checkoutForm" action="{{ url_for('create_checkout_session') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="button" onclick="openPasswordModal()" class="btn-primary" style="background-color: #f39c12; color: #2c1800;">Upgrade to CheepCards Pro ($7/mo)</button>
+                </form>
             </div>
         </div>
+    </div>
 
-                <form action="{{ url_for('create_checkout_session') }}" method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn-primary">Upgrade to CheepCards Pro ($7/mo)</button>
-                </form>
+    <!-- Password Confirmation Modal -->
+    <div id="passwordModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 style="color: var(--title-color); margin-top: 0;">🔒 Security Check</h3>
+            <p style="font-size: 13px; opacity: 0.8;">Please confirm your account password to proceed to Stripe checkout.</p>
+            <input type="password" id="confirmPasswordInput" placeholder="Enter your password...">
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closePasswordModal()" style="background: #7f8c8d;">Cancel</button>
+                <button type="button" onclick="verifyAndSubmitCheckout()" style="background: #27ae60;">Confirm & Checkout</button>
             </div>
         </div>
     </div>
@@ -227,6 +222,39 @@
             const isDark = document.body.classList.toggle('dark-mode');
             const themeChoice = isDark ? 'dark-mode' : 'light';
             localStorage.setItem('theme', themeChoice);
+        }
+
+        function openPasswordModal() {
+            document.getElementById('passwordModal').style.display = 'flex';
+            document.getElementById('confirmPasswordInput').focus();
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('confirmPasswordInput').value = '';
+        }
+
+        function verifyAndSubmitCheckout() {
+            const password = document.getElementById('confirmPasswordInput').value;
+            if (!password) {
+                alert("Please enter your password.");
+                return;
+            }
+
+            // Optional: If your backend endpoint expects the password verified via AJAX first, 
+            // or if you pass it along. Alternatively, you can inject a hidden password input into the form:
+            const form = document.getElementById('checkoutForm');
+            let passwordInput = form.querySelector('input[name="confirmed_password"]');
+            if (!passwordInput) {
+                passwordInput = document.createElement('input');
+                passwordInput.type = 'hidden';
+                passwordInput.name = 'confirmed_password';
+                form.appendChild(passwordInput);
+            }
+            passwordInput.value = password;
+
+            // Submit the checkout form securely
+            form.submit();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
