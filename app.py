@@ -716,15 +716,22 @@ def dashboard():
     top_result_card = filtered_results[0].name if filtered_results else None
 
     if selected_colors or selected_classes or selected_rank or top_result_card:
-        new_log = SearchLog(
-            card_name=top_result_card,
-            colors=colors_str,
-            classes=classes_str,
-            rank_searched=selected_rank if selected_rank else None,
-            set_searched=selected_set if selected_set else None
-        )
-        db.session.add(new_log)
-        db.session.commit()
+        try:
+            new_log = SearchLog(
+                card_name=top_result_card,
+                colors=colors_str,
+                classes=classes_str,
+                rank_searched=selected_rank if selected_rank else None,
+                set_searched=selected_set if selected_set else None
+            )
+            db.session.add(new_log)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"⚠️ Dashboard log error: {e}")
+
+    # Query all unique set names sorted A-Z for the datalist dropdown
+    all_sets = [r[0] for r in db.session.query(Card._set_name).distinct().filter(Card._set_name != None, Card._set_name != "").order_by(Card._set_name.asc()).all()]
 
     return render_template(
         "dashboard.html",
@@ -1838,32 +1845,10 @@ def quick_switch_role(new_role):
 
 try:
     with app.app_context():
-        db.create_all()
-        from werkzeug.security import generate_password_hash
-        admin_email = 'ADMIN_EMAIL'
-        existing_user = User.query.filter_by(email=admin_email).first()
-        if existing_user:
-            existing_user.role = 'admin'
-            db.session.commit()
-        else:
-            new_admin = User(
-                username='admin',  # 👈 Added required username field here!
-                email=admin_email,
-                password_hash=generate_password_hash('TempPassword123!'),
-                role='admin'
-            )
-            db.session.add(new_admin)
-            db.session.commit()
-        print("✅ Database tables & Admin User initialized successfully in PostgreSQL!")
-except Exception as e:
-    print(f"⚠️ Database initialization note: {e}")
-
-with app.app_context():
-    # 🌟 1. Force-patch BOTH tables via raw SQL before any queries or logging run
+    # 🌟 1. Force-patch database schema FIRST before creating tables or querying
     try:
         with db.engine.begin() as connection:
             connection.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
-            # Handle both possible table names (search_log or search_logs) just to be safe
             connection.execute(db.text("ALTER TABLE search_log ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
             connection.execute(db.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
         print("✅ Database schema successfully patched for cards and search logs.")
@@ -1873,7 +1858,27 @@ with app.app_context():
     # 🌟 2. Create tables if they don't exist
     db.create_all()
 
-    # 🟢 3. Auto-seed PostgreSQL if the cards table is empty
+    # 🌟 3. Ensure Admin user exists
+    try:
+        admin_email = 'ADMIN_EMAIL'
+        existing_user = User.query.filter_by(email=admin_email).first()
+        if existing_user:
+            existing_user.role = 'admin'
+            db.session.commit()
+        else:
+            new_admin = User(
+                username='admin',
+                email=admin_email,
+                password_hash=generate_password_hash('TempPassword123!'),
+                role='admin'
+            )
+            db.session.add(new_admin)
+            db.session.commit()
+        print("✅ Admin User initialized successfully!")
+    except Exception as e:
+        print(f"⚠️ Admin init note: {e}")
+
+    # 🟢 4. Auto-seed PostgreSQL if the cards table is empty
     if Card.query.count() == 0 and hasattr(manager, 'card_pool') and manager.card_pool:
         print("🌱 Seeding PostgreSQL database with cards from Excel pool...")
         for card_data in manager.card_pool:
