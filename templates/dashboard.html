@@ -546,47 +546,41 @@
                 {% endif %}
             </div>
 
-            <form method="POST" action="/search" class="search-filter-form">
+            <form method="POST" action="/search">
+                <!-- Add the CSRF token right here -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                 <div class="filter-section-title">📝 Rules Text Keyword Search</div>
                 <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
 
-                <!-- 🌟 Side-by-Side Flex Container with Compact Card Set Width -->
-                <div style="display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin: 15px 0;">
-                    
-                    <!-- Color Identity Checkboxes -->
-                    <div style="flex: 1; min-width: 220px;">
-                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">Color Identity</label>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <label><input type="checkbox" name="colors" value="W" {% if 'W' in selected_colors %}checked{% endif %}> White</label>
-                            <label><input type="checkbox" name="colors" value="U" {% if 'U' in selected_colors %}checked{% endif %}> Blue</label>
-                            <label><input type="checkbox" name="colors" value="B" {% if 'B' in selected_colors %}checked{% endif %}> Black</label>
-                            <label><input type="checkbox" name="colors" value="R" {% if 'R' in selected_colors %}checked{% endif %}> Red</label>
-                            <label><input type="checkbox" name="colors" value="G" {% if 'G' in selected_colors %}checked{% endif %}> Green</label>
-                            <label><input type="checkbox" name="colors" value="C" {% if 'C' in selected_colors %}checked{% endif %}> Colorless</label>
-                        </div>
+                <!-- Color Identity Checkboxes -->
+                <div style="margin: 15px 0;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 5px;">Color Identity</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <label><input type="checkbox" name="colors" value="W" {% if 'W' in selected_colors %}checked{% endif %}> White</label>
+                        <label><input type="checkbox" name="colors" value="U" {% if 'U' in selected_colors %}checked{% endif %}> Blue</label>
+                        <label><input type="checkbox" name="colors" value="B" {% if 'B' in selected_colors %}checked{% endif %}> Black</label>
+                        <label><input type="checkbox" name="colors" value="R" {% if 'R' in selected_colors %}checked{% endif %}> Red</label>
+                        <label><input type="checkbox" name="colors" value="G" {% if 'G' in selected_colors %}checked{% endif %}> Green</label>
+                        <label><input type="checkbox" name="colors" value="C" {% if 'C' in selected_colors %}checked{% endif %}> Colorless</label>
                     </div>
+                </div>
 
-                    <!-- 🌟 Card Set Filter (Shrunken & Positioned to the Right) -->
-                    <div style="width: 260px;">
-                        <label for="setSearchInput" style="display: block; font-weight: bold; margin-bottom: 5px;">Card Set Filter</label>
-                        <input type="text"
-                               id="setSearchInput"
-                               name="set_name"
-                               value="{{ selected_set|default('') }}"
-                               list="mtg-sets-list"
-                               autocomplete="off"
-                               placeholder="Type a set name..."
-                               style="width: 100%;">
-                   
-                        <datalist id="mtg-sets-list">
-                            {% for s in all_sets %}
-                                <option value="{{ s }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-
+                <!-- Card Set Filter -->
+                <div style="margin: 15px 0;">
+                    <label for="setSearchInput" style="display: block; font-weight: bold; margin-bottom: 5px;">Card Set Filter</label>
+                    <input type="text"
+                        id="setSearchInput"
+                        name="set_name"
+                        value="{{ selected_set|default('') }}"
+                        list="mtg-sets-list"
+                        placeholder="Type or select a set (e.g. Modern Horizons)...">
+                
+                    <datalist id="mtg-sets-list">
+                        {% for s in all_sets %}
+                            <option value="{{ s }}">
+                        {% endfor %}
+                    </datalist>
                 </div>
             </form>
                 
