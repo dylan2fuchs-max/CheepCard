@@ -3,6 +3,7 @@
 <head>
     <title>CheepCards Workspace Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         :root {
             --bg-color: #f5f6fa; 
@@ -546,17 +547,16 @@
             </div>
 
             <form method="POST" action="/search" class="search-filter-form">
-                <!-- CSRF Token -->
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                 <div class="filter-section-title">📝 Rules Text Keyword Search</div>
                 <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
 
-                <!-- 🌟 Side-by-Side Flex Container with explicit CSS fallback -->
-                <div class="filter-row" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin: 15px 0;">
+                <!-- 🌟 Side-by-Side Flex Container with Compact Card Set Width -->
+                <div style="display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin: 15px 0;">
                     
                     <!-- Color Identity Checkboxes -->
-                    <div style="flex: 1; min-width: 250px;">
+                    <div style="flex: 1; min-width: 220px;">
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">Color Identity</label>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <label><input type="checkbox" name="colors" value="W" {% if 'W' in selected_colors %}checked{% endif %}> White</label>
@@ -568,18 +568,18 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 Set Search with Substring Autocomplete / Datalist -->
-                    <div style="flex: 1; min-width: 250px;">
+                    <!-- 🌟 Card Set Filter (Shrunken & Positioned to the Right) -->
+                    <div style="width: 260px;">
                         <label for="setSearchInput" style="display: block; font-weight: bold; margin-bottom: 5px;">Card Set Filter</label>
-                        <input type="text" 
-                            id="setSearchInput" 
-                            name="set_name" 
-                            value="{{ selected_set|default('') }}" 
-                            list="mtg-sets-list" 
-                            autocomplete="off"
-                            placeholder="Type or select a set (e.g. Modern Horizons)..." 
-                            style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color, #ccc); background: var(--input-bg, #fff); color: var(--text-color, #000);">
-                        
+                        <input type="text"
+                               id="setSearchInput"
+                               name="set_name"
+                               value="{{ selected_set|default('') }}"
+                               list="mtg-sets-list"
+                               autocomplete="off"
+                               placeholder="Type a set name..."
+                               style="width: 100%;">
+                   
                         <datalist id="mtg-sets-list">
                             {% for s in all_sets %}
                                 <option value="{{ s }}">
