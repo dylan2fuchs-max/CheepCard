@@ -707,6 +707,7 @@ def dashboard():
     selected_colors = request.form.getlist('colors') or request.args.getlist('colors')
     selected_classes = request.form.getlist('classes') or request.args.getlist('classes')
     selected_rank = request.form.get('rank') or request.args.get('rank', '')
+    selected_set = request.form.get('set_name') or request.args.get('set_name', '')
 
     filtered_results = []
 
@@ -719,7 +720,8 @@ def dashboard():
             card_name=top_result_card,
             colors=colors_str,
             classes=classes_str,
-            rank_searched=selected_rank if selected_rank else None
+            rank_searched=selected_rank if selected_rank else None,
+            set_searched=selected_set if selected_set else None
         )
         db.session.add(new_log)
         db.session.commit()
@@ -734,7 +736,9 @@ def dashboard():
         selected_rank=selected_rank, 
         price_tier="all", 
         custom_price="", 
-        selected_keyword=""
+        selected_keyword="",
+        selected_set=selected_set,
+        all_sets=all_sets
     )
 
 @app.before_request

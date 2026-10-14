@@ -566,11 +566,11 @@
                         </div>
                     </div>
 
-                    <!-- Card Set Auto-fill Column (Sits right next to colors) -->
+                    <!-- Card Set Search Column (Sits right next to colors) -->
                     <div style="flex: 1; min-width: 250px;">
                         <div class="filter-section-title" style="margin-top: 0;">📦 Card Set Search</div>
-                        <input type="text" name="set_name" list="mtg-sets-list" placeholder="Type set (e.g. mar)..." value="{{ selected_set|default('') }}" style="padding: 10px; border-radius: 4px; background: #121212; color: #fff; border: 1px solid #444; width: 100%; box-sizing: border-box;">
-                        <!-- Datalist providing dynamic auto-fill predictive suggestions -->
+                        <input type="text" id="setSearchInput" name="set_name" list="mtg-sets-list" placeholder="Type set (e.g. eld)..." value="{{ selected_set|default('') }}" autocomplete="off" style="padding: 10px; border-radius: 4px; background: var(--box-bg); color: var(--text-color); border: 2px solid var(--border-color); width: 100%; box-sizing: border-box;">
+                        <!-- Datalist dynamically filtered via JavaScript for substring matching -->
                         <datalist id="mtg-sets-list">
                             {% for s in all_sets %}
                                 <option value="{{ s }}">
@@ -595,7 +595,7 @@
                     <label for="rank_{{ r|lower }}" class="filter-label">{{ r }}</label>
                     {% endfor %}
                 </div>
-                
+
                 <div class="filter-section-title">💵 Market Value Price Tier</div>
                 <div class="btn-cluster">
                     <input type="radio" name="price_tier" value="all" id="price_all" class="filter-input" {% if price_tier == 'all' or not price_tier %}checked{% endif %}>
@@ -1300,6 +1300,30 @@
                 buttonElem.innerText = originalText;
             }
         }
+
+        // Substring Datalist Filter for Set Auto-fill
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('setSearchInput');
+            const datalist = document.getElementById('mtg-sets-list');
+            if (!input || !datalist) return;
+
+            const allOptions = Array.from(datalist.options).map(opt => opt.value);
+
+            input.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                datalist.innerHTML = '';
+
+                if (query.length === 0) return;
+
+                const matches = allOptions.filter(setName => setName.toLowerCase().includes(query));
+
+                matches.slice(0, 20).forEach(match => {
+                    const option = document.createElement('option');
+                    option.value = match;
+                    datalist.appendChild(option);
+                });
+            });
+        });
     </script>
     <!-- 🚨 CLEAN MAX SEARCH ALERT POPUP -->
     {% if show_limit_popup %}
