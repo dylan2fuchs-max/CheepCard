@@ -71,7 +71,6 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app = register_blueprint(news_bp)
 app.register_blueprint(news_bp)
 
 db.init_app(app)
