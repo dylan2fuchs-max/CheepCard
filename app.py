@@ -1843,8 +1843,7 @@ def quick_switch_role(new_role):
             
     return redirect(url_for('account'))
 
-try:
-    with app.app_context():
+with app.app_context():
     # 🌟 1. Force-patch database schema FIRST before creating tables or querying
     try:
         with db.engine.begin() as connection:
