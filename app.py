@@ -1844,7 +1844,10 @@ def quick_switch_role(new_role):
     return redirect(url_for('account'))
 
 with app.app_context():
-    # 🌟 1. Force-patch database schema FIRST before creating tables or querying
+    # 🌟 1. Create tables first so they are guaranteed to exist
+    db.create_all()
+
+    # 🌟 2. THEN patch the schema to add any new columns safely
     try:
         with db.engine.begin() as connection:
             connection.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
@@ -1853,9 +1856,6 @@ with app.app_context():
         print("✅ Database schema successfully patched for cards and search logs.")
     except Exception as e:
         print(f"⚠️ Schema patch note: {e}")
-
-    # 🌟 2. Create tables if they don't exist
-    db.create_all()
 
     # 🌟 3. Ensure Admin user exists
     try:
