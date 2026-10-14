@@ -22,6 +22,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
+from news_blueprint import news_bp
 from Excel_Manager import ExcelManager
 from Card_Filter import db, Card
 from synergy_engine import run_synergy_analysis
@@ -69,6 +70,9 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'instance', 'cheepcards.db')}"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+app = register_blueprint(news_bp)
+app.register_blueprint(news_bp)
 
 db.init_app(app)
 
