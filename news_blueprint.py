@@ -3,70 +3,78 @@ from flask_login import login_required, current_user
 from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 from Card_Filter import db
-import json
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 news_bp = Blueprint('news', __name__)
 
-NEWS_POSTS = [
-    {
-        "id": 1,
-        "title": "Welcome to CheepCards Arcades!",
-        "content": "We've officially launched the Mana Mash-up puzzle engine. Test your sequencing skills and climb the ladder!",
-        "author": "Admin",
-        "date": "2026-08-26",
-        "poll": {
-            "id": 1,
-            "question": "Which puzzle archetype is your favorite?",
-            "options": {"Storm Combos": 12, "Reanimation": 8, "Artifact Loops": 15},
-            "voted": False
-        }
-    }
-]
+# --- DATABASE MODELS FOR NEWS, POLLS & FEEDBACK ---
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(50), nullable=False, default='General')
+    message = db.Column(db.Text, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    viewed = db.Column(db.Boolean, default=False)
+    viewed_by = db.Column(db.String(100), nullable=True)
 
-# --- PERSISTENT FEEDBACK STORAGE HELPERS ---
-FEEDBACK_FILE = os.path.join(os.path.dirname(__file__), 'feedback_store.json')
+class NewsPost(db.Model):
+    __tablename__ = 'news_posts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    author = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(20), nullable=False)
+    
+    # Relationship to poll (one-to-one)
+    poll = db.relationship('Poll', backref='post', uselist=False, cascade='all, delete-orphan')
 
-def load_feedback_logs():
-    if os.path.exists(FEEDBACK_FILE):
-        try:
-            with open(FEEDBACK_FILE, 'r') as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+class Poll(db.Model):
+    __tablename__ = 'polls'
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('news_posts.id'), nullable=False)
+    question = db.Column(db.String(300), nullable=False)
+    # Storing options and vote counts as a JSON dictionary: {"Option A": 5, "Option B": 2}
+    options = db.Column(db.JSON, nullable=False, default=dict)
+    # Stored as a comma-separated string or tracked per user if desired, keeping simple session/voted flag per request or tracking
+    voted = db.Column(db.Boolean, default=False) 
 
-def save_feedback_logs(logs):
-    try:
-        with open(FEEDBACK_FILE, 'w') as f:
-            json.dump(logs, f, indent=4)
-    except Exception as e:
-        print(f"Error saving feedback: {e}")
 
 @news_bp.route('/news')
 def public_news():
     search_query = request.args.get('q', '').strip().lower()
-    filtered_posts = NEWS_POSTS
+    
+    # Query all posts from PostgreSQL, newest first
+    query = NewsPost.query.order_by(NewsPost.id.desc())
+    posts = query.all()
     
     if search_query:
-        filtered_posts = [
-            p for p in NEWS_POSTS 
-            if search_query in p['title'].lower() or search_query in p['content'].lower()
+        posts = [
+            p for p in posts 
+            if search_query in p.title.lower() or search_query in p.content.lower()
         ]
         
-    return render_template('news_public.html', posts=filtered_posts, search_query=request.args.get('q', ''))
+    return render_template('news_public.html', posts=posts, search_query=request.args.get('q', ''))
 
 @news_bp.route('/news/vote/<int:poll_id>', methods=['POST'])
 def vote_poll(poll_id):
     selected_option = request.form.get('option')
-    for post in NEWS_POSTS:
-        if post.get("poll") and post["poll"]["id"] == poll_id:
-            if selected_option in post["poll"]["options"]:
-                post["poll"]["options"][selected_option] += 1
-                post["poll"]["voted"] = True
-                flash("Vote recorded successfully!", "success")
-            else:
-                flash("Invalid poll option selected.", "danger")
+    poll = Poll.query.get_or_404(poll_id)
+    
+    options = dict(poll.options) if poll.options else {}
+    if selected_option in options:
+        options[selected_option] += 1
+        poll.options = options
+        poll.voted = True
+        db.session.commit()
+        flash("Vote recorded successfully!", "success")
+    else:
+        flash("Invalid poll option selected.", "danger")
+        
     return redirect(url_for('news.public_news'))
 
 @news_bp.route('/news/feedback', methods=['GET', 'POST'])
@@ -74,33 +82,50 @@ def feedback_page():
     if request.method == 'POST':
         message = request.form.get('message', '').strip()
         
-        if message:
-            try:
-                logs = load_feedback_logs()
-                
-                # Safely calculate next ID avoiding any KeyError or list comprehension traps
-                next_id = 1
-                if logs and isinstance(logs, list):
-                    valid_ids = [f.get("id", 0) for f in logs if isinstance(f, dict)]
-                    if valid_ids:
-                        next_id = max(valid_ids) + 1
-
-                new_feedback = {
-                    "id": next_id,
-                    "email": getattr(current_user, 'email', 'Anonymous') if current_user.is_authenticated else "Anonymous", 
-                    "message": message,
-                    "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "viewed": False,
-                    "viewed_by": None
-                }
-                logs.insert(0, new_feedback)
-                save_feedback_logs(logs)
-                flash("Thank you! Your feedback has been logged successfully.", "success")
-            except Exception as e:
-                current_app.logger.error(f"Failed to save feedback: {e}")
-                flash("An error occurred while saving your feedback. Please try again.", "danger")
-        else:
+        if not message:
             flash("Feedback message cannot be empty.", "danger")
+            return redirect(url_for('news.feedback_page'))
+            
+        username = current_user.username if current_user.is_authenticated else "Guest User"
+        email = getattr(current_user, 'email', None) or "guest@cheepcards.local"
+        category = "General"
+        
+        try:
+            new_feedback = Feedback(
+                username=username,
+                email=email,
+                category=category,
+                message=message,
+                viewed=False
+            )
+            db.session.add(new_feedback)
+            db.session.commit()
+            
+            # Optional: Email notification logic
+            smtp_server = os.environ.get('MAIL_SERVER')
+            smtp_port = int(os.environ.get('MAIL_PORT', 587))
+            smtp_user = os.environ.get('MAIL_USERNAME')
+            smtp_pass = os.environ.get('MAIL_PASSWORD')
+            admin_email = os.environ.get('ADMIN_EMAIL', smtp_user)
+            
+            if smtp_server and smtp_user and smtp_pass:
+                msg = MIMEMultipart()
+                msg['From'] = smtp_user
+                msg['To'] = admin_email
+                msg['Subject'] = f"New CheepCards Feedback from {username}"
+                body = f"Category: {category}\nUser: {username} ({email})\n\nMessage:\n{message}"
+                msg.attach(MIMEText(body, 'plain'))
+                
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+                    
+            flash("Thank you for your feedback! It has been successfully recorded.", "success")
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to save feedback: {e}")
+            flash("An error occurred while saving your feedback. Please try again.", "danger")
             
         return redirect(url_for('news.public_news'))
         
@@ -117,14 +142,14 @@ def admin_news():
         content = request.form.get('content')
         has_poll = request.form.get('has_poll')
         
-        new_post = {
-            "id": max([p["id"] for p in NEWS_POSTS], default=0) + 1,
-            "title": title,
-            "content": content,
-            "author": getattr(current_user, 'username', 'Admin'),
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "poll": None
-        }
+        new_post = NewsPost(
+            title=title,
+            content=content,
+            author=getattr(current_user, 'username', 'Admin'),
+            date=datetime.now().strftime("%Y-%m-%d")
+        )
+        db.session.add(new_post)
+        db.session.flush() # Flush to get new_post.id for the poll foreign key
         
         if has_poll:
             question = request.form.get('poll_question')
@@ -137,19 +162,22 @@ def admin_news():
             if opt2: options[opt2] = 0
             if opt3: options[opt3] = 0
             if opt4: options[opt4] = 0
+            
             if question and options:
-                new_post["poll"] = {
-                    "id": new_post["id"],
-                    "question": question,
-                    "options": options,
-                    "voted": False
-                }
+                new_poll = Poll(
+                    post_id=new_post.id,
+                    question=question,
+                    options=options,
+                    voted=False
+                )
+                db.session.add(new_poll)
                 
-        NEWS_POSTS.insert(0, new_post)
+        db.session.commit()
         flash("News post published successfully!", "success")
         return redirect(url_for('news.admin_news'))
         
-    return render_template('news_admin.html', posts=NEWS_POSTS)
+    posts = NewsPost.query.order_by(NewsPost.id.desc()).all()
+    return render_template('news_admin.html', posts=posts)
 
 @news_bp.route('/admin/news/feedback')
 @login_required
@@ -157,23 +185,27 @@ def view_feedback():
     if getattr(current_user, 'role', None) != 'admin':
         abort(403)
         
-    logs = load_feedback_logs()
+    feedbacks = Feedback.query.order_by(Feedback.date.desc()).all()
     admin_name = getattr(current_user, 'username', 'Admin')
     updated = False
     
-    for item in logs:
-        if not item.get("viewed", False):
-            item["viewed"] = True
-            item["viewed_by"] = admin_name
+    for item in feedbacks:
+        if not item.viewed:
+            item.viewed = True
+            item.viewed_by = admin_name
             updated = True
-        elif not item.get("viewed_by"):
-            item["viewed_by"] = admin_name
+        elif not item.viewed_by:
+            item.viewed_by = admin_name
             updated = True
             
     if updated:
-        save_feedback_logs(logs) # Save read status updates
-        
-    return render_template('admin_feedback.html', feedbacks=logs)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to update feedback read status: {e}")
+            
+    return render_template('admin_feedback.html', feedbacks=feedbacks)
 
 @news_bp.route('/admin/news/feedback/delete/<int:feedback_id>', methods=['POST'])
 @login_required
@@ -181,11 +213,16 @@ def delete_feedback(feedback_id):
     if getattr(current_user, 'role', None) != 'admin':
         abort(403)
         
-    logs = load_feedback_logs()
-    logs = [f for f in logs if f["id"] != feedback_id]
-    save_feedback_logs(logs) # Save deletion updates
-    
-    flash("Feedback entry deleted successfully.", "success")
+    feedback_item = Feedback.query.get_or_404(feedback_id)
+    try:
+        db.session.delete(feedback_item)
+        db.session.commit()
+        flash("Feedback entry deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to delete feedback: {e}")
+        flash("An error occurred while deleting feedback.", "danger")
+        
     return redirect(url_for('news.view_feedback'))
 
 @news_bp.route('/admin/news/edit/<int:post_id>', methods=['GET', 'POST'])
@@ -194,14 +231,11 @@ def edit_news(post_id):
     if getattr(current_user, 'role', None) != 'admin':
         abort(403)
 
-    post = next((p for p in NEWS_POSTS if p["id"] == post_id), None)
-    if not post:
-        flash("Post not found.", "danger")
-        return redirect(url_for('news.admin_news'))
+    post = NewsPost.query.get_or_404(post_id)
         
     if request.method == 'POST':
-        post['title'] = request.form.get('title')
-        post['content'] = request.form.get('content')
+        post.title = request.form.get('title')
+        post.content = request.form.get('content')
         
         has_poll = request.form.get('has_poll')
         if has_poll:
@@ -211,30 +245,33 @@ def edit_news(post_id):
             opt3 = request.form.get('opt3')
             opt4 = request.form.get('opt4')
             
-            existing_poll = post.get("poll", {})
-            existing_options = existing_poll.get("options", {}) if existing_poll else {}
-            voted_status = existing_poll.get("voted", False) if existing_poll else False
+            existing_options = post.poll.options if post.poll and post.poll.options else {}
+            voted_status = post.poll.voted if post.poll else False
             
             options = {}
-            if opt1: 
-                options[opt1] = existing_options.get(opt1, 0)
-            if opt2: 
-                options[opt2] = existing_options.get(opt2, 0)
-            if opt3: 
-                options[opt3] = existing_options.get(opt3, 0)
-            if opt4: 
-                options[opt4] = existing_options.get(opt4, 0)
+            if opt1: options[opt1] = existing_options.get(opt1, 0)
+            if opt2: options[opt2] = existing_options.get(opt2, 0)
+            if opt3: options[opt3] = existing_options.get(opt3, 0)
+            if opt4: options[opt4] = existing_options.get(opt4, 0)
                 
             if question and options:
-                post["poll"] = {
-                    "id": post["id"],
-                    "question": question,
-                    "options": options,
-                    "voted": voted_status
-                }
+                if post.poll:
+                    post.poll.question = question
+                    post.poll.options = options
+                else:
+                    new_poll = Poll(
+                        post_id=post.id,
+                        question=question,
+                        options=options,
+                        voted=voted_status
+                    )
+                    db.session.add(new_poll)
         else:
-            post["poll"] = None
+            if post.poll:
+                db.session.delete(post.poll)
+                post.poll = None
             
+        db.session.commit()
         flash("Post updated successfully!", "success")
         return redirect(url_for('news.admin_news'))
         
@@ -246,12 +283,14 @@ def delete_news(post_id):
     if getattr(current_user, 'role', None) != 'admin':
         abort(403)
         
-    global NEWS_POSTS
-    post = next((p for p in NEWS_POSTS if p["id"] == post_id), None)
-    if not post:
-        flash("Post not found.", "danger")
-        return redirect(url_for('news.admin_news'))
+    post = NewsPost.query.get_or_404(post_id)
+    try:
+        db.session.delete(post)
+        db.session.commit()
+        flash("News post and associated poll deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Failed to delete news post: {e}")
+        flash("An error occurred while deleting the post.", "danger")
         
-    NEWS_POSTS = [p for p in NEWS_POSTS if p["id"] != post_id]
-    flash("News post and associated poll deleted successfully.", "success")
     return redirect(url_for('news.admin_news'))

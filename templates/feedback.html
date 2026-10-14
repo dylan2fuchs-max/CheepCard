@@ -38,7 +38,8 @@
             
             <p style="margin-bottom: 20px; color: #cbd5e0;">If you are running into any trouble, have suggestions, or want to share feedback, drop a message below! I'd love to hear from you.</p>
 
-            <form method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- 🌟 Explicitly set form action to the news blueprint feedback route -->
+            <form action="{{ url_for('news.feedback_page') }}" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div>

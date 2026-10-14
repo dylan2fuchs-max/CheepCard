@@ -263,14 +263,6 @@ class SearchLog(db.Model):
     set_searched = db.Column(db.String(100), nullable=True)  # 🌟 ADD THIS LINE
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Feedback(db.Model):
-    __tablename__ = 'feedback'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-
 # Temporary in-memory staging dictionary for unranked card reviews
 STAGED_EDITS = {}
 
@@ -762,68 +754,6 @@ def toggle_theme():
         db.session.commit()
         
     return redirect(request.referrer or url_for('home'))
-
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
-@app.route('/feedback', methods=['GET', 'POST'])
-def feedback():
-    if request.method == 'POST':
-        message = request.form.get('message')
-        
-        if not message or not message.strip():
-            flash("Please enter a feedback message.", "error")
-            return redirect(url_for('feedback'))
-            
-        username = current_user.username if current_user.is_authenticated else "Guest User"
-        email = getattr(current_user, 'email', None) or "guest@cheepcards.local"
-        category = "General"
-        
-        try:
-            new_feedback = Feedback(
-                username=username,
-                email=email,
-                category=category,
-                message=message.strip(),
-                viewed=False  # Ensure new feedback is marked as unread
-            )
-            db.session.add(new_feedback)
-            db.session.commit()
-        except Exception as db_err:
-            db.session.rollback()
-            print(f"Database error saving feedback: {db_err}")
-            flash("An error occurred while saving your feedback. Please try again.", "error")
-            return redirect(url_for('feedback'))
-        
-        # Optional: Send email notification if SMTP environment variables are set
-        try:
-            smtp_server = os.environ.get('MAIL_SERVER')
-            smtp_port = int(os.environ.get('MAIL_PORT', 587))
-            smtp_user = os.environ.get('MAIL_USERNAME')
-            smtp_pass = os.environ.get('MAIL_PASSWORD')
-            admin_email = os.environ.get('ADMIN_EMAIL', smtp_user)
-            
-            if smtp_server and smtp_user and smtp_pass:
-                msg = MIMEMultipart()
-                msg['From'] = smtp_user
-                msg['To'] = admin_email
-                msg['Subject'] = f"New CheepCards Feedback from {username}"
-                
-                body = f"Category: {category}\nUser: {username} ({email})\n\nMessage:\n{message}"
-                msg.attach(MIMEText(body, 'plain'))
-                
-                with smtplib.SMTP(smtp_server, smtp_port) as server:
-                    server.starttls()
-                    server.login(smtp_user, smtp_pass)
-                    server.send_message(msg)
-        except Exception as e:
-            print(f"⚠️ Email notification warning: {e}")
-        
-        flash("Thank you for your feedback! It has been successfully recorded.", "success")
-        return redirect(url_for('news.public_news'))
-        
-    return render_template('feedback.html')
 
 @app.route("/synergy", methods=["POST"])
 def synergy():
@@ -1899,15 +1829,11 @@ def quick_switch_role(new_role):
             
     return redirect(url_for('account'))
 
-# Register blueprint at the very bottom to avoid circular import issues
-from news_blueprint import news_bp
-app.register_blueprint(news_bp)
-
 try:
     with app.app_context():
         db.create_all()
         from werkzeug.security import generate_password_hash
-        admin_email = 'dylan2fuchs@gmail.com'
+        admin_email = 'ADMIN_EMAIL'
         existing_user = User.query.filter_by(email=admin_email).first()
         if existing_user:
             existing_user.role = 'admin'

@@ -126,7 +126,7 @@
                 <p style="margin: 5px 0 0 0; color: #a0aec0; font-size: 0.9rem;">Official patch notes, ecosystem updates, and community feedback pipelines.</p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-                <a href="{{ url_for('feedback') }}" class="cta-btn" style="background-color: #27ae60; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">📬 Feedback</a>
+                <a href="{{ url_for('news.feedback_page') }}" class="cta-btn" style="background-color: #27ae60; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">📬 Feedback</a>
                 {% if current_user.is_authenticated and current_user.role == 'admin' %}
                     <a href="{{ url_for('news.admin_news') }}" class="cta-btn" style="background-color: #d69e2e; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">🛠️ Admin Panel</a>
                 {% endif %}
