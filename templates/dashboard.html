@@ -595,10 +595,7 @@
                     <label for="rank_{{ r|lower }}" class="filter-label">{{ r }}</label>
                     {% endfor %}
                 </div>
-                <!-- 🟢 ADD SET FILTER HERE -->
-                <div class="filter-section-title">📦 Card Set Search</div>
-                <input type="text" name="set_name" list="mtg-sets-list" placeholder="Type or select set name..." value="{{ selected_set|default('') }}" style="padding: 6px; border-radius: 4px; background: #121212; color: #fff; border: 1px solid #444; width: 100%; box-sizing: border-box; margin-bottom: 10px;">
-
+                
                 <div class="filter-section-title">💵 Market Value Price Tier</div>
                 <div class="btn-cluster">
                     <input type="radio" name="price_tier" value="all" id="price_all" class="filter-input" {% if price_tier == 'all' or not price_tier %}checked{% endif %}>
