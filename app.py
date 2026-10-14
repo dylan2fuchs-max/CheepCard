@@ -1926,19 +1926,18 @@ except Exception as e:
     print(f"⚠️ Database initialization note: {e}")
 
 with app.app_context():
-    # 🌟 1. Check if the cards table exists and has all required columns. If not, drop and recreate cleanly.
+    # 🌟 1. Force-patch BOTH tables via raw SQL before any queries or logging run
     try:
-        inspector = db.inspect(db.engine)
-        if "cards" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("cards")]
-            if "set_name" not in columns:
-                print("⚠️ 'set_name' column missing from 'cards' table. Recreating table with correct schema...")
-                db.session.execute(db.text("DROP TABLE cards CASCADE;"))
-                db.session.commit()
+        with db.engine.begin() as connection:
+            connection.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
+            # Handle both possible table names (search_log or search_logs) just to be safe
+            connection.execute(db.text("ALTER TABLE search_log ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
+            connection.execute(db.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
+        print("✅ Database schema successfully patched for cards and search logs.")
     except Exception as e:
-        print(f"⚠️ Schema inspection note: {e}")
+        print(f"⚠️ Schema patch note: {e}")
 
-    # 🌟 2. Create all tables with the up-to-date schema
+    # 🌟 2. Create tables if they don't exist
     db.create_all()
 
     # 🟢 3. Auto-seed PostgreSQL if the cards table is empty
