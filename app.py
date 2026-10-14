@@ -839,12 +839,12 @@ def search():
     try:
         # 1. Log the overall search filter event
         log_entry = SearchLog(
-            card_name=keyword if keyword else None, 
-            colors=", ".join(colors) if colors else None,
-            classes=", ".join(classes) if classes else None,
-            rank_searched=rank if rank else None,
-            category=classes[0] if classes else None,
-            set_searched=selected_set if selected_set else None,
+            card_name=keyword if keyword else "Reference Search", 
+            colors=", ".join(colors) if colors else "",
+            classes=", ".join(classes) if classes else "",
+            rank_searched=rank if rank else "",
+            category=classes[0] if classes else "",
+            set_searched=selected_set if selected_set else "",
             timestamp=datetime.utcnow()
         )
         db.session.add(log_entry)
