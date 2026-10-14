@@ -5,6 +5,7 @@ import pandas as pd
 import urllib.parse
 import requests
 import time
+import re
 from Card_Filter import Card
 
 class ExcelManager:

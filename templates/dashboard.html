@@ -522,41 +522,20 @@
             </form>
         </div>
         
-        <div class="result-box">
-            <!-- Header & Counter Flex Container -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                <h2 style="margin: 0;">🔍 Search Results</h2>
+        <form method="POST" action="/search">
+            <!-- Add the CSRF token right here -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="filter-section-title">📝 Rules Text Keyword Search</div>
+            <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
+
+            <!-- 🌟 Side-by-Side Row for Color Identity and Card Set Auto-fill with zero unwanted gaps -->
+            <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: nowrap; margin-bottom: 15px; width: 100%;">
                 
-                <!-- Free Searches Counter Box -->
-                {% if not current_user.is_authenticated or get_active_role() == 'free' %}
-                <div style="display: flex; align-items: flex-start; gap: 8px; border: 1px solid rgba(124, 45, 18, 0.6); background-color: rgba(69, 10, 10, 0.2); padding: 6px 12px; border-radius: 8px;">
-                    <span style="color: #f97316; font-size: 14px; margin-top: 2px;">⚡</span>
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 11px; font-weight: 500; color: #fb923c; letter-spacing: 0.025em;">Free Searches Left:</span>
-                        <span id="free-search-counter" style="font-size: 14px; font-weight: 700; color: #f97316;">
-                            {% if current_user.is_authenticated and current_user.search_count is defined %}
-                                {{ 15 - current_user.search_count }}
-                            {% else %}
-                                15
-                            {% endif %}
-                            / 15
-                        </span>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-
-            <form method="POST" action="/search">
-                <!-- Add the CSRF token right here -->
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
-                <div class="filter-section-title">📝 Rules Text Keyword Search</div>
-                <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
-
                 <!-- Color Identity Checkboxes -->
-                <div style="margin: 15px 0;">
+                <div style="flex: 1; min-width: 0;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px;">Color Identity</label>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <label><input type="checkbox" name="colors" value="W" {% if 'W' in selected_colors %}checked{% endif %}> White</label>
                         <label><input type="checkbox" name="colors" value="U" {% if 'U' in selected_colors %}checked{% endif %}> Blue</label>
                         <label><input type="checkbox" name="colors" value="B" {% if 'B' in selected_colors %}checked{% endif %}> Black</label>
@@ -566,23 +545,26 @@
                     </div>
                 </div>
 
-                <!-- Card Set Filter -->
-                <div style="margin: 15px 0;">
+                <!-- 🌟 Set Search with Substring Autocomplete / Datalist -->
+                <div style="flex: 1; min-width: 0;">
                     <label for="setSearchInput" style="display: block; font-weight: bold; margin-bottom: 5px;">Card Set Filter</label>
                     <input type="text"
                         id="setSearchInput"
                         name="set_name"
                         value="{{ selected_set|default('') }}"
                         list="mtg-sets-list"
-                        placeholder="Type or select a set (e.g. Modern Horizons)...">
-                
+                        placeholder="Type or select a set..."
+                        style="width: 100%; padding: 10px; border-radius: 6px; border: 2px solid var(--border-color); background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box; margin-bottom: 0;">
+            
                     <datalist id="mtg-sets-list">
                         {% for s in all_sets %}
                             <option value="{{ s }}">
                         {% endfor %}
                     </datalist>
                 </div>
-            </form>
+
+            </div>
+        </form>
                 
                 <div class="filter-section-title">🛡️ Key Class Target (Select Multiple)</div>
                 <div class="btn-cluster class-cluster">
