@@ -391,7 +391,7 @@
                 
                 <div style="display: flex; align-items: center; padding-top: 14px;"> <!-- Pushes button down slightly to align flush with the badge row -->
                     {% if current_user.role == 'free' %}
-                    <form action="/create-checkout-session" method="POST" style="margin: 0;">
+                    <form id="checkoutForm" action="/create-checkout-session" method="POST" style="margin: 0;" onsubmit="event.preventDefault(); openCheckoutPasswordModal();">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" style="background-color: #f39c12; width: auto; padding: 8px 14px; font-size: 13px; font-weight: bold; border: none; border-radius: 4px; color: white; cursor: pointer; white-space: nowrap;">⭐ Upgrade to Pro</button>
                     </form>
@@ -701,6 +701,69 @@
             if (pwdInput) {
                 pwdInput.value = '';
             }
+        }
+
+        let isCheckoutAction = false;
+
+        function openCheckoutPasswordModal() {
+            isCheckoutAction = true;
+            const modal = document.getElementById('passwordModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        // Modify your existing submitAccountForm (or use this unified handler)
+        function submitAccountForm() {
+            const modalPassword = document.getElementById('modalCurrentPassword').value;
+            if (!modalPassword) {
+                alert('Current password is required.');
+                return;
+            }
+
+            let hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            
+            if (isCheckoutAction) {
+                // If coming from the Pro upgrade button, target the checkout form and use 'confirmed_password'
+                hiddenInput.name = 'confirmed_password';
+                hiddenInput.value = modalPassword;
+                
+                const form = document.getElementById('checkoutForm');
+                form.appendChild(hiddenInput);
+                form.submit();
+            } else {
+                // Otherwise, handle standard account settings updates ('current_password')
+                hiddenInput.name = 'current_password';
+                hiddenInput.value = modalPassword;
+                
+                const form = document.querySelector('form[action*="account"]');
+                if (form) {
+                    form.appendChild(hiddenInput);
+                    form.submit();
+                }
+            }
+        }
+
+        function verifyAndSubmitCheckout() {
+            const password = document.getElementById('confirmPasswordInput').value;
+            if (!password) {
+                alert("Please enter your password.");
+                return;
+            }
+
+            // Optional: If your backend endpoint expects the password verified via AJAX first, 
+            // or if you pass it along. Alternatively, you can inject a hidden password input into the form:
+            const form = document.getElementById('checkoutForm');
+            let passwordInput = form.querySelector('input[name="confirmed_password"]');
+            if (!passwordInput) {
+                passwordInput = document.createElement('input');
+                passwordInput.type = 'hidden';
+                passwordInput.name = 'confirmed_password';
+                form.appendChild(passwordInput);
+            }
+            passwordInput.value = password;
+
+            // Submit the checkout form securely
+            form.submit();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
