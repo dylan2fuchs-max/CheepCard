@@ -877,7 +877,7 @@ def search():
                 )
             )
 
-        # Apply Set Filter as a substring match so partial typing works
+        # Apply Set Filter as a robust case-insensitive substring match
         if selected_set:
             set_col_attr = getattr(Card, '_set_name', None) or getattr(Card, 'set_name', None)
             if set_col_attr is not None:

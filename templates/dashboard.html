@@ -569,7 +569,7 @@
                     <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">🎨 Color Identity</div>
 
                     <!-- DESKTOP VERSION (Normal inline layout) -->
-                    <div class="desktop-only btn-cluster color-cluster" style="margin-top: 6px;">
+                    <div class="desktop-only btn-cluster color-cluster">
                         {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
                         <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_d_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
                         <label for="color_d_{{ c[0]|lower }}" class="filter-label">{{ c[0] }}</label>
@@ -577,8 +577,8 @@
                     </div>
 
                     <!-- MOBILE VERSION (Strict 3-and-3 Grid) -->
-                    <div class="mobile-only" style="width: 100%; margin-top: 6px;">
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
+                    <div class="mobile-only" style="margin-bottom: 12px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
                             {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
                             <div>
                                 <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_m_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
