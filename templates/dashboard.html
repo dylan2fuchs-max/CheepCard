@@ -400,6 +400,47 @@
             }
         }
 
+        /* Responsive Color Cluster */
+        .color-cluster-responsive {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .color-cluster-responsive .color-item {
+            display: inline-block;
+        }
+
+        .color-cluster-responsive .filter-label {
+            padding: 6px 8px;
+            font-size: 11px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        /* Mobile Screen Layout: 3x3 Grid */
+        @media (max-width: 768px) {
+            .color-cluster-responsive {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+                width: 100%;
+            }
+
+            .color-cluster-responsive .color-item {
+                display: block;
+            }
+
+            .color-cluster-responsive .filter-label {
+                display: block;
+                text-align: center;
+                padding: 8px 4px;
+                box-sizing: border-box;
+                width: 100%;
+                font-size: 13px;
+            }
+        }
+
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; table-layout: fixed; }
         th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--row-border); vertical-align: middle; }
         th { background-color: var(--th-bg); color: var(--title-color); }
@@ -582,24 +623,14 @@
                     <div style="min-width: 0; box-sizing: border-box;">
                         <div class="filter-section-title" style="margin-top: 0; margin-bottom: 6px; font-size: 0.85em;">🎨 Color Identity</div>
 
-                        <!-- DESKTOP VERSION -->
-                        <div class="desktop-only btn-cluster color-cluster" style="gap: 4px;">
+                        <!-- UNIFIED RESPONSIVE VERSION -->
+                        <div class="color-cluster-responsive">
                             {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
-                            <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_d_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
-                            <label for="color_d_{{ c[0]|lower }}" class="filter-label" style="padding: 6px 8px; font-size: 11px;">{{ c[0] }}</label>
-                            {% endfor %}
-                        </div>
-
-                        <!-- MOBILE VERSION (3x3 Grid) -->
-                        <div class="mobile-only">
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
-                                {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
-                                <div>
-                                    <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_m_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
-                                    <label for="color_m_{{ c[0]|lower }}" class="filter-label" style="display: block; text-align: center; padding: 8px 4px; box-sizing: border-box;">{{ c[0] }}</label>
-                                </div>
-                                {% endfor %}
+                            <div class="color-item">
+                                <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
+                                <label for="color_{{ c[0]|lower }}" class="filter-label">{{ c[0] }}</label>
                             </div>
+                            {% endfor %}
                         </div>
                     </div>
 

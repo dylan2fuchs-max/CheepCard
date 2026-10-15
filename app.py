@@ -92,7 +92,7 @@ if os.path.exists('disposable_domains.json'):
 
 manager = ExcelManager("Magic Card Data Base Current View.xlsx")
 
-# SEARCH_CLUSTERS = {}
+SEARCH_CLUSTERS = {}
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
