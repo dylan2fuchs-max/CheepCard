@@ -208,7 +208,7 @@ class ExcelManager:
                 clean_name = str(card_name).strip().split(" // ")[0].strip()
                 print(f"[{index}/{total_cards}] Updating price for: {clean_name}...", end="\r")
                 
-                time.sleep(0.08)
+                time.sleep(0.13)
                 
                 resp = self._make_safe_request(session, exact_url, {"exact": clean_name})
                 
