@@ -92,7 +92,7 @@ if os.path.exists('disposable_domains.json'):
 
 manager = ExcelManager("Magic Card Data Base Current View.xlsx")
 
-SEARCH_CLUSTERS = {}
+# SEARCH_CLUSTERS = {}
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
@@ -863,7 +863,10 @@ def search():
         print(f"⚠️ Search log error: {e}")
     
     search_reports = []
-    SEARCH_CLUSTERS.clear() 
+
+    # 🌟 Fix collision: Use session-scoped dictionary isolated to this user's cookie
+    user_search_clusters = {}
+
     target_classes = classes if classes else ["all available cards"]
     
     RANK_MAP = {"optimized": 5, "fast": 4, "average": 3, "passive": 2, "low": 1}
@@ -1033,7 +1036,7 @@ def search():
 
         display_title = "All Available Cards" if clean_target_class == "all available cards" else target_class.capitalize()
         
-        SEARCH_CLUSTERS[display_title] = [
+        user_search_clusters[display_title] = [
             {
                 "name": getattr(card, 'name', ''),
                 "mana_cost": getattr(card, 'mana_cost', ''),
@@ -1049,6 +1052,9 @@ def search():
             "class_name": display_title,
             "results": final_selected_cards
         })
+
+    # Save clusters safely to the individual user's session cookie
+    session['search_clusters'] = user_search_clusters
 
     if current_user.is_authenticated:
         max_pool_price = max([float(getattr(c, 'price', 0.0)) for c in manager.card_pool], default=0.0)
@@ -1135,7 +1141,9 @@ def reroll_card():
     category = data.get('category')
     current_names = data.get('current_names', [])
     
-    category_pool = SEARCH_CLUSTERS.get(category, [])
+    # 🌟 Fix collision: Pull from the user's session dictionary
+    user_clusters = session.get('search_clusters', {})
+    category_pool = user_clusters.get(category, [])
 
     if not category_pool:
         return jsonify({'success': False, 'message': 'No cached search pool found.'})
