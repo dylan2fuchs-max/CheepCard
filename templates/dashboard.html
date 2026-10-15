@@ -625,42 +625,36 @@
         </div>
         {% endif %}
 
-            <!-- 2. Search Reports Section -->
-            {% if search_reports %}
-                <!-- Parent container to align Title on the left and Test Tier on the right -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px 0; flex-wrap: wrap; gap: 10px; grid-column: span 2;">
-                    <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
+            <!-- 🌟 SEARCH RESULTS MOVED INSIDE THE GRID -->
+        {% if search_reports %}
+            <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
 
-                    {% if current_user.is_authenticated and current_user.role == 'admin' and get_active_role() != 'admin' %}
-                    <div style="background: rgba(142, 68, 173, 0.1); border: 1px dashed #8e44ad; padding: 6px 12px; border-radius: 6px; display: flex; gap: 8px; align-items: center; font-size: 13px;">
-                        <span style="font-weight: bold;">🧪 Test Tier:</span>
-                        <a href="{{ url_for('quick_switch_role', new_role='free') }}" class="theme-btn" style="background: #7f8c8d; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Free</a>
-                        <a href="{{ url_for('quick_switch_role', new_role='pro') }}" class="theme-btn" style="background: #27ae60; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Pro</a>
-                        <a href="{{ url_for('quick_switch_role', new_role='reset') }}" class="theme-btn" style="background: #e74c3c; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Reset Admin</a>
+                {% if current_user.is_authenticated and current_user.role == 'admin' and get_active_role() != 'admin' %}
+                <div style="background: rgba(142, 68, 173, 0.1); border: 1px dashed #8e44ad; padding: 6px 12px; border-radius: 6px; display: flex; gap: 8px; align-items: center; font-size: 13px;">
+                    <span style="font-weight: bold;">🧪 Test Tier:</span>
+                    <a href="{{ url_for('quick_switch_role', new_role='free') }}" class="theme-btn" style="background: #7f8c8d; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Free</a>
+                    <a href="{{ url_for('quick_switch_role', new_role='pro') }}" class="theme-btn" style="background: #27ae60; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Pro</a>
+                    <a href="{{ url_for('quick_switch_role', new_role='reset') }}" class="theme-btn" style="background: #e74c3c; padding: 4px 10px; font-size: 11px; text-decoration: none; border-radius: 4px; color: white; display: inline-block;">Reset Admin</a>
+                </div>
+                {% endif %}
+            </div>
+
+            {% for sr in search_reports %}
+            <div class="result-box full-width" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
+                    <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
+                    
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        {% if current_user.is_authenticated and get_active_role() == 'free' %}
+                            <div style="font-size: 12px; color: #e74c3c; font-weight: bold;">
+                                🔄 Swaps Left: <span id="swap-counter">{{ 3 - session.get('current_rerolls', 0) }}</span> / 3
+                            </div>
+                        {% endif %}
+                        <button type="button" class="theme-btn" onclick="toggleView()" style="background-color: #9b59b6; padding: 6px 14px; font-size: 13px; margin: 0; cursor: pointer;">🖼️ Toggle View</button>
                     </div>
-                    {% endif %}
-
-                {% for sr in search_reports %}
-                <!-- THE DARK BOX -->
-                <div class="result-box full-width" style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
-                        <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
-                        
-                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-
-                            <!-- Swaps Counter -->
-                            {% if current_user.is_authenticated and get_active_role() == 'free' %}
-                                <div style="font-size: 12px; color: #e74c3c; font-weight: bold;">
-                                    🔄 Swaps Left: <span id="swap-counter">{{ 3 - session.get('current_rerolls', 0) }}</span> / 3
-                                </div>
-                            {% endif %}
-                            
-                            <!-- Toggle View Button -->
-                            <button type="button" class="theme-btn" onclick="toggleView()" style="background-color: #9b59b6; padding: 6px 14px; font-size: 13px; margin: 0; cursor: pointer;">🖼️ Toggle View</button>
-                        </div>
-                    </div>
-                
-                <!-- THE TABLE -->
+                </div>
+            
                 <div class="scrollable-table">
                     <table>
                         <tr>
