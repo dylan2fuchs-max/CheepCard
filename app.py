@@ -231,6 +231,12 @@ class User(UserMixin, db.Model):
     # Add this line right here:
     trusted_devices = db.relationship('TrustedDevice', backref='user', cascade='all, delete-orphan', lazy=True)
 
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 class TrustedDevice(db.Model):
     __tablename__ = 'trusted_device'
     id = db.Column(db.Integer, primary_key=True)
