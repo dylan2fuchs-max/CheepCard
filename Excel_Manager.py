@@ -129,6 +129,7 @@ class ExcelManager:
                     "rarity": rarity,
                     "image_url": img_url,
                     "oracle_text": oracle_text,
+                    "set_name": get_row_val(row, "set", "set_name", default=""), # 🌟 Add this line
                     "excel_row_num": idx + 2
                 }
                 
