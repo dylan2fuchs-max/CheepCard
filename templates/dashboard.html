@@ -314,7 +314,7 @@
             .workspace-grid {
                 display: flex !important;
                 flex-direction: column !important;
-                align-items: center !important;
+                align-items: stretch !important; /* <--- Locks them to full container width */
             }
             .result-box { 
                 background: var(--box-bg); 
@@ -529,41 +529,41 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                 <div class="filter-section-title">📝 Rules Text Keyword Search</div>
-                <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
+                    <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
 
-                <!-- Side-by-Side Row for Color Identity and Card Set Search -->
-                <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 10px; width: 100%; box-sizing: border-box;">
-                    
-                    <!-- Color Identity Column -->
-                    <div style="flex: 1; min-width: 200px;">
-                        <div class="filter-section-title" style="margin-top: 0;">🎨 Color Identity (Select Multiple)</div>
-                        <div class="btn-cluster color-cluster">
-                            {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
-                            <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
-                            <label for="color_{{ c[0]|lower }}" class="filter-label">{{ c[0] }}</label>
-                            {% endfor %}
+                    <!-- Compact Side-by-Side Row for Color Identity and Card Set Search -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
+                        
+                        <!-- Color Identity Column -->
+                        <div style="flex: 1.2; min-width: 0;">
+                            <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">🎨 Color Identity</div>
+                            <div class="btn-cluster color-cluster" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
+                                <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
+                                <label for="color_{{ c[0]|lower }}" class="filter-label" style="padding: 6px 10px; font-size: 0.85em;">{{ c[0] }}</label>
+                                {% endfor %}
+                            </div>
                         </div>
+
+                        <!-- Card Set Search Column -->
+                        <div style="flex: 1; min-width: 0;">
+                            <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">📦 Card Set Search</div>
+                            <input type="text"
+                                id="setSearchInput"
+                                name="set_name"
+                                value="{{ selected_set|default('') }}"
+                                list="mtg-sets-list"
+                                placeholder="Type set (e.g. mar)..."
+                                style="width: 100%; padding: 8px; font-size: 0.9em; border-radius: 6px; border: 2px solid var(--border-color); background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box;">
+
+                            <datalist id="mtg-sets-list">
+                                {% for s in all_sets %}
+                                    <option value="{{ s }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+
                     </div>
-
-                    <!-- Card Set Search Column with Substring Autocomplete -->
-                    <div style="flex: 1; min-width: 100px;">
-                        <div class="filter-section-title" style="margin-top: 0;">📦 Card Set Search</div>
-                        <input type="text"
-                            id="setSearchInput"
-                            name="set_name"
-                            value="{{ selected_set|default('') }}"
-                            list="mtg-sets-list"
-                            placeholder="Type set (e.g. mar)..."
-                            style="width: 100%; padding: 10px; border-radius: 6px; border: 2px solid var(--border-color); background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box;">
-
-                        <datalist id="mtg-sets-list">
-                            {% for s in all_sets %}
-                                <option value="{{ s }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-
-                </div>
                     
                 <div class="filter-section-title">🛡️ Key Class Target (Select Multiple)</div>
                 <div class="btn-cluster class-cluster">

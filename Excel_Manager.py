@@ -165,19 +165,12 @@ class ExcelManager:
         return backup_path
 
     def update_all_card_prices(self) -> bool:
-        """
-        DEDICATED PRICE UPDATER:
-        1. Creates a safety backup of your spreadsheet.
-        2. Loops through every card and queries Scryfall for its exact current USD price.
-        3. Updates ONLY the price column in the spreadsheet. Does not add/remove cards or touch other data.
-        """
         try:
             self._create_timestamped_backup()
             
             print("Safely reading spreadsheet data for price updates...")
             df = pd.read_excel(self.file_path, engine="openpyxl")
             
-            # Standardize column headers for matching
             df.columns = (
                 df.columns.astype(str)
                 .str.replace('\xa0', ' ', regex=False)
@@ -195,6 +188,7 @@ class ExcelManager:
                 "Accept": "application/json"
             })
             exact_url = "https://api.scryfall.com/cards/named"
+            search_url = "https://api.scryfall.com/cards/search"
             
             total_cards = len(df)
             print(f"Starting price-only update for {total_cards} cards...")
@@ -206,16 +200,28 @@ class ExcelManager:
                     continue
                 
                 clean_name = str(card_name).strip().split(" // ")[0].strip()
+                # Normalize all quote variations so Scryfall accepts them
+                clean_name = clean_name.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
                 print(f"[{index}/{total_cards}] Updating price for: {clean_name}...", end="\r")
                 
                 time.sleep(0.13)
                 
+                # 1. Try exact match first
                 resp = self._make_safe_request(session, exact_url, {"exact": clean_name})
+                card_json = None
                 
                 if resp and resp.status_code == 200:
                     card_json = resp.json()
+                else:
+                    # 2. Fallback to Scryfall search API with quotes for cards with special punctuation/apostrophes
+                    fallback_resp = self._make_safe_request(session, search_url, {"q": f'! "{clean_name}"'})
+                    if fallback_resp and fallback_resp.status_code == 200:
+                        search_data = fallback_resp.json()
+                        if search_data.get("data"):
+                            card_json = search_data["data"][0]
+                
+                if card_json:
                     live_price = card_json.get("prices", {}).get("usd")
-                    
                     if live_price is not None and price_col in df.columns:
                         try:
                             df.at[idx, price_col] = float(live_price)
@@ -223,7 +229,7 @@ class ExcelManager:
                         except ValueError:
                             pass
                 else:
-                    print(f"⚠️ Could not fetch price for '{clean_name}'")
+                    print(f"\n⚠️ Could not fetch price for '{clean_name}'")
 
             df.to_excel(self.file_path, index=False, engine="openpyxl")
             print(f"\n--- [PRICE UPDATE SUCCESS] Successfully updated prices for {updated_count} cards! ---")
@@ -394,9 +400,10 @@ class ExcelManager:
                     continue
                 
                 clean_name = str(card_name).strip().split(" // ")[0].strip()
-                print(f"[{index}/{total_cards}] Checking: {clean_name}...", end="\r")
+                clean_name = clean_name.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+                print(f"[{index}/{total_cards}] Updating price for: {clean_name}...", end="\r")
                 
-                time.sleep(0.08)
+                time.sleep(0.13)
                 
                 query_param = f'! "{clean_name}" legal:commander'
                 resp = self._make_safe_request(session, search_url, {"q": query_param})
@@ -503,14 +510,15 @@ class ExcelManager:
                 if not str(raw_card_name).strip():
                     continue
                 
-                clean_name = str(raw_card_name).strip().split(" // ")[0].strip()
-                print(f"[{index}/{total_cards}] Checking: {clean_name}...", end="\r")
+                clean_name = str(card_name).strip().split(" // ")[0].strip()
+                clean_name = clean_name.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+                print(f"[{index}/{total_cards}] Updating price for: {clean_name}...", end="\r")
                 
                 url = "https://api.scryfall.com/cards/named"
                 params = {"exact": clean_name}
                 
                 try:
-                    time.sleep(0.08)
+                    time.sleep(0.13)
                     response = requests.get(url, headers=headers, params=params, timeout=5)
                     
                     if response.status_code == 200:
