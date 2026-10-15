@@ -1141,12 +1141,16 @@ def reroll_card():
     category = data.get('category')
     current_names = data.get('current_names', [])
     
-    # 🌟 Fix collision: Pull from the user's session dictionary
+    # 🌟 Fix collision & cookie limits: Pull from session, with database fallback
     user_clusters = session.get('search_clusters', {})
     category_pool = user_clusters.get(category, [])
 
     if not category_pool:
-        return jsonify({'success': False, 'message': 'No cached search pool found.'})
+        # FALLBACK: If cookie got dropped or app restarted, re-fetch from your main master dataset
+        category_pool = get_master_cards_for_category(category) # Replace with your actual search function/DataFrame query
+        
+    if not category_pool:
+        return jsonify({'success': False, 'message': 'No cached search pool found. Please re-run your search.'})
 
     available_candidates = [
         card for card in category_pool 
