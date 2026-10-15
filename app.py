@@ -1858,7 +1858,8 @@ with app.app_context():
         with db.engine.begin() as connection:
             connection.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
             connection.execute(db.text("ALTER TABLE search_log ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
-            connection.execute(db.text("ALTER TABLE search_logs ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
+            db.session.execute(db.text('ALTER TABLE search_log ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);'))
+            db.session.commit()
         print("✅ Database schema successfully patched for cards and search logs.")
     except Exception as e:
         print(f"⚠️ Schema patch note: {e}")
