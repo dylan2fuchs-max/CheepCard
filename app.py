@@ -1899,30 +1899,38 @@ with app.app_context():
     except Exception as e:
         print(f"⚠️ Admin init note: {e}")
 
-    # 🟢 Only seed if PostgreSQL is completely empty (avoids re-importing on every boot)
-if Card.query.count() == 0:
-    print("🌱 Seeding PostgreSQL database for the first time...")
-    for card_data in manager.card_pool:
-        new_card = Card(
-            name=card_data.name,
-            identity=card_data.identity,
-            mana_cost=card_data.mana_cost,
-            raw_type=card_data.raw_type,
-            set_name=getattr(card_data, 'set_name', getattr(card_data, 'set', '')),
-            price=card_data.price,
-            card_class_1=card_data.card_class_1,
-            card_class_2=card_data.card_class_2,
-            ranking_1=card_data.ranking_1_word,
-            ranking_2=card_data.ranking_2_word,
-            rarity=card_data.rarity,
-            image_url=card_data.image_url,
-            oracle_text=card_data.oracle_text
-        )
-        db.session.add(new_card)
-    db.session.commit()
-    print(f"✅ Successfully seeded {Card.query.count()} cards into PostgreSQL!")
-else:
-    print("✅ PostgreSQL database already populated. Skipping re-seed.")
+    # 🟢 4. Only seed if PostgreSQL is completely empty (INSIDE app context)
+    if Card.query.count() == 0:
+        print("🌱 Seeding PostgreSQL database for the first time...")
+        for card_data in manager.card_pool:
+            # Safely check multiple attribute variants for the set name
+            resolved_set = (
+                getattr(card_data, 'set_name', None) or 
+                getattr(card_data, 'set', None) or 
+                getattr(card_data, 'Set', None) or 
+                getattr(card_data, 'set_code', '')
+            )
+
+            new_card = Card(
+                name=card_data.name,
+                identity=card_data.identity,
+                mana_cost=card_data.mana_cost,
+                raw_type=card_data.raw_type,
+                set_name=str(resolved_set).strip(),
+                price=card_data.price,
+                card_class_1=card_data.card_class_1,
+                card_class_2=card_data.card_class_2,
+                ranking_1=card_data.ranking_1_word,
+                ranking_2=card_data.ranking_2_word,
+                rarity=card_data.rarity,
+                image_url=card_data.image_url,
+                oracle_text=card_data.oracle_text
+            )
+            db.session.add(new_card)
+        db.session.commit()
+        print(f"✅ Successfully seeded {Card.query.count()} cards into PostgreSQL!")
+    else:
+        print("✅ PostgreSQL database already populated. Skipping re-seed.")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
