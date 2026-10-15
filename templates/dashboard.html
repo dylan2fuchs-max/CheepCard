@@ -293,6 +293,21 @@
         }
         @media (min-width: 768px) { .workspace-grid { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
 
+        /* 🌟 ADD THESE TWO RULES HERE TO LOCK DOWN BUMP-OUTS */
+        .full-width {
+            grid-column: span 2;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .result-box.full-width {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+
         @media (max-width: 768px) {
             .header-container {
                 flex-direction: row;
