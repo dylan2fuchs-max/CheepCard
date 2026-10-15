@@ -1860,7 +1860,10 @@ with app.app_context():
         with db.engine.begin() as connection:
             connection.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
             connection.execute(db.text("ALTER TABLE search_log ADD COLUMN IF NOT EXISTS set_searched VARCHAR(100);"))
-        print("✅ Database schema successfully patched for cards and search logs.")
+            connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS date TIMESTAMP;"))
+            connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS viewed BOOLEAN DEFAULT FALSE;"))
+            connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS viewed_by VARCHAR(150);"))
+        print("✅ Database schema successfully patched for cards, search logs, and feedback.")
     except Exception as e:
         print(f"⚠️ Schema patch note: {e}")
 
@@ -1895,7 +1898,7 @@ with app.app_context():
                     identity=card_data.identity,
                     mana_cost=card_data.mana_cost,
                     raw_type=card_data.raw_type,
-                    set_name=getattr(card_data, 'set_name', ''),
+                    set_name=getattr(card_data, 'set_name', getattr(card_data, 'set', '')),
                     price=card_data.price,
                     card_class_1=card_data.card_class_1,
                     card_class_2=card_data.card_class_2,
