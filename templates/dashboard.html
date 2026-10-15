@@ -535,12 +535,12 @@
                     <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
                         
                         <!-- Color Identity Column -->
-                        <div style="flex: 1.2; min-width: 0;">
+                        <div style="flex: 1.2; min-width: 0; box-sizing: border-box;">
                             <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">🎨 Color Identity</div>
                             <div class="btn-cluster color-cluster" style="display: flex; flex-wrap: wrap; gap: 4px;">
                                 {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
                                 <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
-                                <label for="color_{{ c[0]|lower }}" class="filter-label" style="padding: 6px 10px; font-size: 0.85em;">{{ c[0] }}</label>
+                                <label for="color_{{ c[0]|lower }}" class="filter-label" style="flex: 1 1 30%; text-align: center; padding: 6px 4px; font-size: 0.85em; box-sizing: border-box;">{{ c[0] }}</label>
                                 {% endfor %}
                             </div>
                         </div>

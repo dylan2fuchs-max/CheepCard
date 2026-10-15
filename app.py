@@ -883,9 +883,11 @@ def search():
                 )
             )
 
-        # Apply Set Filter if the user typed or selected one
+        # Apply Set Filter as a substring match so partial typing works
         if selected_set:
-            query = query.filter(db.func.lower(Card._set_name) == selected_set.lower())
+            set_col_attr = getattr(Card, '_set_name', None) or getattr(Card, 'set_name', None)
+            if set_col_attr is not None:
+                query = query.filter(db.func.lower(set_col_attr).contains(selected_set.lower()))
 
         class_results = query.all()
 
