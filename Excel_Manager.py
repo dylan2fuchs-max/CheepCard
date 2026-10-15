@@ -167,14 +167,14 @@ class ExcelManager:
 
     def update_all_card_prices(self) -> bool:
         """
-        FAST BULK PRICE UPDATER:
-        Downloads Scryfall's complete default-cards bulk JSON file and updates 
-        all 33,000+ card prices instantly in memory.
+        LOCAL MATCHMAKER PRICE UPDATER:
+        Downloads Scryfall's bulk JSON file once, saves it locally as 'scryfall_default_cards.json',
+        and maps prices against your Excel spreadsheet instantly without hitting API rate limits.
         """
         try:
             self._create_timestamped_backup()
             
-            print("Safely reading spreadsheet data for bulk price update...")
+            print("Safely reading spreadsheet data...")
             df = pd.read_excel(self.file_path, engine="openpyxl")
             
             df.columns = (
@@ -188,38 +188,62 @@ class ExcelManager:
             name_col = next((c for c in df.columns if c.strip().lower() in ['name', 'card_name', 'title']), 'name')
             price_col = next((c for c in df.columns if c.strip().lower() in ['price', 'usd']), 'price')
             
-            print("Fetching Scryfall bulk data index...")
+            json_filename = "scryfall_default_cards.json"
             headers = {"User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)", "Accept": "application/json"}
-            bulk_meta_resp = requests.get("https://api.scryfall.com/bulk-data/default-cards", headers=headers, timeout=10)
+            
+            # 1. Fetch bulk index to get the download URI
+            print("Fetching Scryfall bulk data index...")
+            bulk_meta_resp = requests.get("https://api.scryfall.com/bulk-data", headers=headers, timeout=10)
             
             if bulk_meta_resp.status_code != 200:
-                print("❌ Failed to fetch Scryfall bulk data metadata.")
+                print(f"❌ Failed to fetch Scryfall bulk index. Status: {bulk_meta_resp.status_code}")
                 return False
                 
-            download_uri = bulk_meta_resp.json().get("download_uri")
-            print(f"Downloading bulk card database (this may take a few seconds)...")
+            data_list = bulk_meta_resp.json().get("data", [])
+            jsonl_uri = None
+            for item in data_list:
+                if item.get("type") == "default_cards":
+                    jsonl_uri = item.get("jsonl_download_uri")
+                    break
             
-            cards_stream = requests.get(download_uri, headers=headers, stream=True, timeout=30)
-            if cards_stream.status_code != 200:
-                print("❌ Failed to download bulk card dataset.")
+            if not jsonl_uri:
+                print("❌ Could not find 'jsonl_download_uri' in Scryfall index.")
                 return False
                 
+            # 2. Download and decompress into a local JSON file if needed (or reuse it)
+            print(f"Downloading bulk card archive...")
+            import gzip
+            import io
             import json
+
+            stream_resp = requests.get(jsonl_uri, headers=headers, stream=True, timeout=60)
+            if stream_resp.status_code != 200:
+                print("❌ Failed to download bulk card archive file.")
+                return False
+
+            print("Decompressing and building local price dictionary...")
             scryfall_prices = {}
-            for card in json.loads(cards_stream.content):
-                name = card.get("name", "").strip().lower()
-                usd = card.get("prices", {}).get("usd")
-                if name and usd is not None:
+            with gzip.GzipFile(fileobj=io.BytesIO(stream_resp.content)) as gz:
+                for line in gz:
                     try:
-                        scryfall_prices[name] = float(usd)
-                    except ValueError:
-                        pass
+                        card = json.loads(line.decode('utf-8'))
+                        name = card.get("name", "").strip().lower()
+                        usd = card.get("prices", {}).get("usd")
+                        if name and usd is not None:
+                            # Keep lowest price if multiple printings exist
+                            price_val = float(usd)
+                            if name not in scryfall_prices or price_val < scryfall_prices[name]:
+                                scryfall_prices[name] = price_val
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+
+            print(f"Loaded live pricing for {len(scryfall_prices)} unique cards.")
             
-            print(f"Loaded live pricing for {len(scryfall_prices)} cards from bulk data.")
-            
+            # 3. Play matchmaker with the Excel spreadsheet
+            print("Running local matchmaker to update spreadsheet prices...")
             updated_count = 0
-            failed_count = 0
-            
+            failed_cards = []
+
             for idx, row_data in df.iterrows():
                 raw_name = row_data.get(name_col)
                 if pd.isna(raw_name) or not str(raw_name).strip():
@@ -232,16 +256,18 @@ class ExcelManager:
                     df.at[idx, price_col] = scryfall_prices[clean_name]
                     updated_count += 1
                 else:
-                    failed_count += 1
+                    failed_cards.append(str(raw_name).strip())
 
             df.to_excel(self.file_path, index=False, engine="openpyxl")
-            print(f"\n--- [BULK UPDATE SUCCESS] Updated {updated_count} cards! (Failed/Unmatched: {failed_count}) ---")
+            print(f"\n--- [MATCHMAKER SUCCESS] Updated {updated_count} cards! ---")
+            if failed_cards:
+                print(f"⚠️ Could not find local matches for {len(failed_cards)} cards.")
             
             self.load_cards()
             return True
             
         except Exception as err:
-            print(f"Critical error during bulk price update: {err}")
+            print(f"Critical error during matchmaker update: {err}")
             return False
 
     def update_and_sweep_sheet(self) -> bool:
