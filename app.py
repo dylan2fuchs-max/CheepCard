@@ -1887,12 +1887,16 @@ with app.app_context():
     except Exception as e:
         print(f"⚠️ Admin init note: {e}")
 
-    # 🟢 4. Auto-seed PostgreSQL if the cards table is empty
-    if Card.query.count() == 0 and hasattr(manager, 'card_pool') and manager.card_pool:
-        print("🌱 Seeding PostgreSQL database with cards from Excel pool...")
-        for card_data in manager.card_pool:
-            existing = Card.query.filter_by(_name=card_data.name).first()
-            if not existing:
+    # 🟢 4. Auto-seed or Update PostgreSQL if set names are empty
+    if hasattr(manager, 'card_pool') and manager.card_pool:
+        # Check if set names are currently blank in the db
+        sample_check = Card.query.filter(Card._set_name != '').first()
+        if not sample_check or Card.query.count() == 0:
+            print("🌱 Refreshing PostgreSQL database with card set names...")
+            Card.query.delete() # Clear existing rows to re-seed cleanly
+            db.session.commit()
+            
+            for card_data in manager.card_pool:
                 new_card = Card(
                     name=card_data.name,
                     identity=card_data.identity,
@@ -1909,8 +1913,8 @@ with app.app_context():
                     oracle_text=card_data.oracle_text
                 )
                 db.session.add(new_card)
-        db.session.commit()
-        print(f"✅ Successfully seeded {Card.query.count()} cards into PostgreSQL!")
+            db.session.commit()
+            print(f"✅ Successfully seeded {Card.query.count()} cards with set names into PostgreSQL!")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
