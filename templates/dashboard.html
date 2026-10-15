@@ -359,6 +359,20 @@
             }
         }
 
+        /* Standalone mobile rule for color cluster buttons */
+        @media (max-width: 768px) {
+            .color-cluster {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .color-cluster .filter-input + label {
+                flex: 1 1 30% !important;
+                text-align: center;
+                box-sizing: border-box;
+            }
+        }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; table-layout: fixed; }
         th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--row-border); vertical-align: middle; }
         th { background-color: var(--th-bg); color: var(--title-color); }
@@ -625,9 +639,9 @@
         </div>
         {% endif %}
 
-        <!-- 🌟 SEARCH RESULTS SECTION (Aligned & Bounded) -->
+        <!-- 🌟 SEARCH RESULTS SECTION (Strictly Bounded to Grid) -->
         {% if search_reports %}
-        <div style="width: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; grid-column: span 2;">
+        <div style="grid-column: span 2; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px; width: 100%;">
                 <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
 
@@ -642,7 +656,7 @@
             </div>
 
             {% for sr in search_reports %}
-            <div class="result-box full-width" style="margin-bottom: 20px; width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
+            <div class="result-box full-width" style="margin-bottom: 20px; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
                     <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
                     

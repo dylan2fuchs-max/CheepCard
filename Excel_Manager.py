@@ -167,13 +167,14 @@ class ExcelManager:
 
     def update_all_card_prices(self) -> bool:
         """
-        DEDICATED PRICE UPDATER:
-        Uses a clean progress bar to avoid terminal clutter while tracking live updates.
+        FAST BULK PRICE UPDATER:
+        Downloads Scryfall's complete default-cards bulk JSON file and updates 
+        all 33,000+ card prices instantly in memory.
         """
         try:
             self._create_timestamped_backup()
             
-            print("Safely reading spreadsheet data for price updates...")
+            print("Safely reading spreadsheet data for bulk price update...")
             df = pd.read_excel(self.file_path, engine="openpyxl")
             
             df.columns = (
@@ -187,184 +188,60 @@ class ExcelManager:
             name_col = next((c for c in df.columns if c.strip().lower() in ['name', 'card_name', 'title']), 'name')
             price_col = next((c for c in df.columns if c.strip().lower() in ['price', 'usd']), 'price')
             
-            session = requests.Session()
-            session.headers.update({
-                "User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)",
-                "Accept": "application/json" 
-            })
+            print("Fetching Scryfall bulk data index...")
+            headers = {"User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)", "Accept": "application/json"}
+            bulk_meta_resp = requests.get("https://api.scryfall.com/bulk-data/default-cards", headers=headers, timeout=10)
             
-            total_cards = len(df)
+            if bulk_meta_resp.status_code != 200:
+                print("❌ Failed to fetch Scryfall bulk data metadata.")
+                return False
+                
+            download_uri = bulk_meta_resp.json().get("download_uri")
+            print(f"Downloading bulk card database (this may take a few seconds)...")
+            
+            cards_stream = requests.get(download_uri, headers=headers, stream=True, timeout=30)
+            if cards_stream.status_code != 200:
+                print("❌ Failed to download bulk card dataset.")
+                return False
+                
+            import json
+            scryfall_prices = {}
+            for card in json.loads(cards_stream.content):
+                name = card.get("name", "").strip().lower()
+                usd = card.get("prices", {}).get("usd")
+                if name and usd is not None:
+                    try:
+                        scryfall_prices[name] = float(usd)
+                    except ValueError:
+                        pass
+            
+            print(f"Loaded live pricing for {len(scryfall_prices)} cards from bulk data.")
+            
             updated_count = 0
-            failed_cards = []
-
-            print(f"Starting price-only update for {total_cards} cards...\n")
-
-            # Wrap df.iterrows() with tqdm for a clean progress bar
-            for idx, row_data in tqdm(df.iterrows(), total=total_cards, desc="Updating Prices"):
+            failed_count = 0
+            
+            for idx, row_data in df.iterrows():
                 raw_name = row_data.get(name_col)
                 if pd.isna(raw_name) or not str(raw_name).strip():
                     continue
                 
-                clean_name = str(raw_name).strip().split(" // ")[0].strip()
+                clean_name = str(raw_name).strip().split(" // ")[0].strip().lower()
                 clean_name = clean_name.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
                 
-                time.sleep(0.12)
-                
-                resp = self._make_safe_request(session, "https://api.scryfall.com/cards/named", {"exact": clean_name})
-                
-                card_json = None
-                if resp and resp.status_code == 200:
-                    card_json = resp.json()
+                if clean_name in scryfall_prices:
+                    df.at[idx, price_col] = scryfall_prices[clean_name]
+                    updated_count += 1
                 else:
-                    fuzzy_resp = self._make_safe_request(session, "https://api.scryfall.com/cards/named", {"fuzzy": clean_name})
-                    if fuzzy_resp and fuzzy_resp.status_code == 200:
-                        card_json = fuzzy_resp.json()
-                
-                if card_json:
-                    live_price = card_json.get("prices", {}).get("usd")
-                    if live_price is not None and price_col in df.columns:
-                        try:
-                            df.at[idx, price_col] = float(live_price)
-                            updated_count += 1
-                        except ValueError:
-                            pass
-                else:
-                    failed_cards.append(clean_name)
+                    failed_count += 1
 
             df.to_excel(self.file_path, index=False, engine="openpyxl")
-            print(f"\n--- [PRICE UPDATE SUCCESS] Updated {updated_count} cards! ---")
-            if failed_cards:
-                print(f"⚠️ Could not fetch prices for {len(failed_cards)} cards.")
+            print(f"\n--- [BULK UPDATE SUCCESS] Updated {updated_count} cards! (Failed/Unmatched: {failed_count}) ---")
             
             self.load_cards()
             return True
             
         except Exception as err:
-            print(f"Critical error during price update: {err}")
-            return False
-
-    def apply_class_judgement(self, df):
-        """Class Judgement check assigning classes based on Oracle text keywords if empty."""
-        text_col = next((c for c in df.columns if c.strip().lower() in ['text', 'oracle_text']), None)
-        class1_col = next((c for c in df.columns if c.strip().lower() in ['class_1', 'class1']), None)
-        
-        if not text_col or not class1_col:
-            return df
-            
-        updated_classes = 0
-        for idx, row in df.iterrows():
-            current_class = str(row.get(class1_col, '')).strip()
-            if not current_class or current_class.lower() in ['nan', 'none', '']:
-                oracle_txt = str(row.get(text_col, '')).lower()
-                
-                assigned_class = ""
-                if 'draw' in oracle_txt:
-                    assigned_class = "Draw"
-                elif any(keyword in oracle_txt for keyword in ['exile', 'destroy', 'return', 'fight', 'deal']):
-                    assigned_class = "Removal"
-                elif 'basic land' in oracle_txt or 'put that card' in oracle_txt:
-                    assigned_class = "Ramp"
-                    
-                if assigned_class:
-                    df.at[idx, class1_col] = assigned_class
-                    updated_classes += 1
-                    
-        if updated_classes > 0:
-            print(f"🏷️ Class Judgement applied to {updated_classes} cards.")
-        return df
-
-    def import_hobbit_and_reality_fracture_only(self) -> bool:
-        """
-        1. Creates a timestamped backup copy.
-        2. Handles robust multi-page Scryfall pagination for new sets 
-           ('The Hobbit', 'Reality Fracture', and precons).
-        3. Assigns today's date and applies class judgement. Skips global price updates.
-        """
-        try:
-            self._create_timestamped_backup()
-            print("Safely reading spreadsheet data...")
-            df = pd.read_excel(self.file_path, engine="openpyxl")
-            
-            name_col = next((c for c in df.columns if c.strip().lower() in ['name', 'card_name', 'title']), 'Name')
-            set_col = next((c for c in df.columns if c.strip().lower() in ['set name', 'set', 'set_name']), 'Set')
-            price_col = next((c for c in df.columns if c.strip().lower() in ['price', 'usd']), 'Price')
-            date_col = next((c for c in df.columns if c.strip().lower() in ['date', 'date added', 'date_added', 'added_date']), 'Date')
-            mana_col = next((c for c in df.columns if c.strip().lower() in ['mana_cost', 'mana']), 'Mana Cost')
-            type_col = next((c for c in df.columns if c.strip().lower() in ['type', 'card_type']), 'Type')
-            rarity_col = next((c for c in df.columns if c.strip().lower() in ['rarity']), 'Rarity')
-            text_col = next((c for c in df.columns if c.strip().lower() in ['text', 'oracle_text']), 'Text')
-            
-            if date_col not in df.columns:
-                df['Date'] = ""
-                date_col = 'Date'
-            else:
-                df[date_col] = df[date_col].astype(str).replace(['nan', 'None', 'NAT'], '')
-
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            existing_names = {str(n).strip().lower() for n in df[name_col].dropna().tolist()}
-            
-            sets_to_fetch = ["set:hob", "set:fra", "set:frc"]
-            new_cards_buffer = []
-            
-            print("\n--- STEP 1: IMPORTING THE HOBBIT & REALITY FRACTURE SETS ---")
-            for query_set in sets_to_fetch:
-                print(f"Fetching cards from Scryfall for {query_set}...")
-                url = f"https://api.scryfall.com/cards/search?q={query_set}"
-                
-                while url:
-                    res = requests.get(url, headers={"User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)", "Accept": "application/json"})
-                    if res.status_code != 200:
-                        print(f"⚠️ Error fetching {query_set}: Status {res.status_code}")
-                        break
-                    
-                    data = res.json()
-                    for card in data.get("data", []):
-                        full_name = card.get("name", "")
-                        clean_name = full_name.split(" // ")[0].strip()
-                        
-                        if clean_name.lower() in existing_names:
-                            continue
-                        
-                        live_price = card.get("prices", {}).get("usd")
-                        new_row = {
-                            name_col: full_name,
-                            "Identity": "".join([f"{{{c}}}" for c in card.get("color_identity", [])]) or "{COLORLESS}",
-                            mana_col: card.get("mana_cost", "{0}"),
-                            price_col: float(live_price) if live_price else 0.0,
-                            type_col: card.get("type_line", ""),
-                            rarity_col: card.get("rarity", "common").capitalize(),
-                            text_col: self._extract_oracle_text(card),
-                            set_col: card.get("set_name", ""),
-                            date_col: today_str,
-                            "Ranking 1": "none",
-                            "Ranking 2": "none"
-                        }
-                        new_cards_buffer.append(new_row)
-                        existing_names.add(clean_name.lower())
-                        print(f"➕ Bringing in new card: {full_name}")
-                        
-                    if data.get("has_more"):
-                        url = data.get("next_page")
-                        time.sleep(0.13)
-                    else:
-                        break
-
-            if new_cards_buffer:
-                new_df = pd.DataFrame(new_cards_buffer)
-                df = pd.concat([df, new_df], ignore_index=True)
-                print(f"✅ Successfully imported {len(new_cards_buffer)} new cards!")
-            else:
-                print("ℹ No new cards found to import.")
-
-            df = self.apply_class_judgement(df)
-            df.to_excel(self.file_path, index=False, engine="openpyxl")
-            print(f"\n--- [SUCCESS] Set import and local sync complete! ---")
-            
-            self.load_cards()
-            return True
-            
-        except Exception as e:
-            print(f"Critical error during set import: {e}")
+            print(f"Critical error during bulk price update: {err}")
             return False
 
     def update_and_sweep_sheet(self) -> bool:

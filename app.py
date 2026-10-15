@@ -836,12 +836,6 @@ def search():
     # 🌟 1. Capture the Set Filter from the form
     selected_set = str(request.form.get("set_name", "")).strip()
 
-    if selected_set:
-            # Dynamically target the set column safely
-            set_col_attr = getattr(Card, '_set_name', None) or getattr(Card, 'set_name', None)
-            if set_col_attr is not None:
-                query = query.filter(db.func.lower(set_col_attr).contains(selected_set.lower()))
-
     try:
         # 1. Log the overall search filter event
         log_entry = SearchLog(
