@@ -564,51 +564,48 @@
             <form method="POST" action="/search">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
-                <div class="filter-section-title">📝 Rules Text Keyword Search</div>
-                    <input type="text" name="keyword" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" value="{{ selected_keyword }}">
+                <!-- Color Identity Section (Forced Vertical Stack) -->
+                <div style="display: flex; flex-direction: column; align-items: flex-start; width: 100%; box-sizing: border-box; margin-bottom: 12px;">
+                    <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">🎨 Color Identity</div>
 
-                    <!-- Compact Side-by-Side Row for Color Identity and Card Set Search -->
-                    <div style="display: flex; flex-direction: column; align-items: flex-start; width: 100%; box-sizing: border-box; margin-bottom: 12px;">
-                        <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">🎨 Color Identity</div>
-
-                        <!-- DESKTOP VERSION (Normal inline layout) -->
-                        <div class="desktop-only btn-cluster color-cluster" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">
-                            {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
-                            <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_d_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
-                            <label for="color_d_{{ c[0]|lower }}" class="filter-label">{{ c[0] }}</label>
-                            {% endfor %}
-                        </div>
-
-                        <!-- MOBILE VERSION (Strict 3-and-3 Grid) -->
-                        <div class="mobile-only" style="width: 100%; margin-top: 6px;">
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
-                                {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
-                                <div>
-                                    <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_m_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
-                                    <label for="color_m_{{ c[0]|lower }}" class="filter-label" style="display: block; text-align: center; padding: 8px 4px; box-sizing: border-box;">{{ c[0] }}</label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
+                    <!-- DESKTOP VERSION (Normal inline layout) -->
+                    <div class="desktop-only btn-cluster color-cluster" style="margin-top: 6px;">
+                        {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
+                        <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_d_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
+                        <label for="color_d_{{ c[0]|lower }}" class="filter-label">{{ c[0] }}</label>
+                        {% endfor %}
                     </div>
 
-                        <!-- Card Set Search Column -->
-                        <div style="flex: 1; min-width: 0;">
-                            <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">📦 Card Set Search</div>
-                            <input type="text"
-                                id="setSearchInput"
-                                name="set_name"
-                                value="{{ selected_set|default('') }}"
-                                list="mtg-sets-list"
-                                placeholder="Type set (e.g. mar)..."
-                                style="width: 100%; padding: 8px; font-size: 0.9em; border-radius: 6px; border: 2px solid var(--border-color); background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box;">
-
-                            <datalist id="mtg-sets-list">
-                                {% for s in all_sets %}
-                                    <option value="{{ s }}">
-                                {% endfor %}
-                            </datalist>
+                    <!-- MOBILE VERSION (Strict 3-and-3 Grid) -->
+                    <div class="mobile-only" style="width: 100%; margin-top: 6px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
+                            {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
+                            <div>
+                                <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_m_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
+                                <label for="color_m_{{ c[0]|lower }}" class="filter-label" style="display: block; text-align: center; padding: 8px 4px; box-sizing: border-box;">{{ c[0] }}</label>
+                            </div>
+                            {% endfor %}
                         </div>
+                    </div>
+                </div>
+
+                <!-- Card Set Search Section -->
+                <div style="flex: 1; min-width: 0;">
+                    <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">📦 Card Set Search</div>
+                    <input type="text"
+                        id="setSearchInput"
+                        name="set_name"
+                        value="{{ selected_set|default('') }}"
+                        list="mtg-sets-list"
+                        placeholder="Type set (e.g. mar)..."
+                        style="width: 100%; padding: 8px; font-size: 0.9em; border-radius: 6px; border: 2px solid var(--border-color); background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box;">
+
+                    <datalist id="mtg-sets-list">
+                        {% for s in all_sets %}
+                            <option value="{{ s }}">
+                        {% endfor %}
+                    </datalist>
+                </div>
 
                     </div>
                     
@@ -672,9 +669,9 @@
         </div>
         {% endif %}
 
-        <!-- 🌟 SEARCH RESULTS SECTION (Strictly Bounded to Grid) -->
+        <!-- 🌟 SEARCH RESULTS SECTION (Aligned to Grid Width) -->
         {% if search_reports %}
-        <div style="grid-column: span 2; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
+        <div style="grid-column: span 2; width: 100%; max-width: 100%; box-sizing: border-box; margin: 0 auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px; width: 100%;">
                 <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
 
@@ -689,9 +686,9 @@
             </div>
 
             {% for sr in search_reports %}
-            <div class="result-box full-width" style="margin-bottom: 20px; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
+            <div class="result-box full-width" style="width: 100%; max-width: 100%; box-sizing: border-box; margin-top: 15px; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
-                    <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
+                    <h2 style="margin: 0; font-size: 1.1em;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
                     
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                         {% if current_user.is_authenticated and get_active_role() == 'free' %}
@@ -704,7 +701,7 @@
                 </div>
             
                 <div class="scrollable-table" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table>
+                    <table style="width: 100%; box-sizing: border-box;">
                         <tr>
                             <th>Card Name</th><th>Mana Cost</th><th>Color Identity</th><th>Price</th><th>Matched Class</th><th>Class Rank</th><th>Action</th>
                         </tr>
