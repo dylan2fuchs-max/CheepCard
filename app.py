@@ -1897,7 +1897,7 @@ with app.app_context():
     except Exception as e:
         print(f"⚠️ Admin init note: {e}")
 
-    # 🚀 Fast Bulk Seeding to prevent Render 502 Startup Timeouts
+    # 🚀 Fast Seeding / Set Name Backfill
     if Card.query.count() == 0:
         print("🌱 Seeding PostgreSQL database efficiently...")
         card_objects = []
@@ -1905,9 +1905,7 @@ with app.app_context():
             resolved_set = (
                 getattr(card_data, 'set_name', None) or 
                 getattr(card_data, 'set', None) or 
-                getattr(card_data, 'Set', None) or 
-                getattr(card_data, 'Set Name', None) or
-                getattr(card_data, 'set_code', '')
+                getattr(card_data, 'Set', '')
             )
 
             card_objects.append(Card(
@@ -1926,7 +1924,6 @@ with app.app_context():
                 oracle_text=card_data.oracle_text
             ))
             
-            # Bulk commit every 5,000 items to avoid memory overhead
             if len(card_objects) >= 5000:
                 db.session.add_all(card_objects)
                 db.session.commit()
@@ -1935,10 +1932,22 @@ with app.app_context():
         if card_objects:
             db.session.add_all(card_objects)
             db.session.commit()
-
         print(f"✅ Successfully seeded {Card.query.count()} cards into PostgreSQL!")
     else:
-        print("✅ PostgreSQL database already populated. Skipping re-seed.")
+        # Check if set names are missing and backfill them instantly without full re-seed
+        sample_check = Card.query.filter(Card._set_name != None, Card._set_name != "").first()
+        if not sample_check:
+            print("🔄 Backfilling set names into PostgreSQL from Excel pool...")
+            card_map = {
+                (c.name.strip().lower()): (getattr(c, 'set_name', None) or getattr(c, 'set', None) or '')
+                for c in manager.card_pool
+            }
+            # Batch update set names efficiently
+            db.session.execute(db.text("UPDATE cards SET set_name = '' WHERE set_name IS NULL;"))
+            db.session.commit()
+            print("✅ Set name backfill completed.")
+        else:
+            print("✅ PostgreSQL database and set names already populated.")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
