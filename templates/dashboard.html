@@ -155,7 +155,7 @@
         /* 📱 Consolidated & Bulletproof Mobile Layout Fix */
         @media (max-width: 768px) {
             body {
-                padding: 8px !important;
+                padding: 6px !important;
                 box-sizing: border-box !important;
                 overflow-x: hidden !important;
             }
@@ -209,8 +209,8 @@
                 width: 100% !important;
                 max-width: 100% !important;
                 box-sizing: border-box !important;
-                padding: 14px !important;
-                margin: 0 0 15px 0 !important;
+                padding: 10px !important;
+                margin: 0 0 12px 0 !important;
                 display: block !important;
             }
 
@@ -237,12 +237,17 @@
                 width: 100% !important;
                 max-width: 100% !important;
                 table-layout: auto !important;
-                font-size: 11px !important;
+                font-size: 10px !important;
                 box-sizing: border-box !important;
             }
 
             th, td {
-                padding: 6px 4px !important;
+                padding: 4px 2px !important;
+            }
+
+            .swap-btn {
+                padding: 4px 6px !important;
+                font-size: 11px !important;
             }
         }
 
@@ -559,16 +564,16 @@
             </form>
         </div>
         
-        <!-- Right Box: Reference Search & Filters (Wrapped in result-box) -->
+        <!-- Right Box: Reference Search & Filters (Correctly Contained) -->
         <div class="result-box">
             <form method="POST" action="/search">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
-                <!-- Color Identity Section (Vertical Stack) -->
+                <!-- Color Identity Section -->
                 <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
                     <div class="filter-section-title" style="margin-top: 0; margin-bottom: 6px; font-size: 0.9em;">🎨 Color Identity</div>
 
-                    <!-- DESKTOP VERSION (Normal inline layout) -->
+                    <!-- DESKTOP VERSION -->
                     <div class="desktop-only btn-cluster color-cluster">
                         {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
                         <input type="checkbox" name="colors" value="{{ c[0] }}" id="color_d_{{ c[0]|lower }}" class="filter-input" {% if c[0] in selected_colors %}checked{% endif %}>
@@ -576,7 +581,7 @@
                         {% endfor %}
                     </div>
 
-                    <!-- MOBILE VERSION (Strict 3-and-3 Grid) -->
+                    <!-- MOBILE VERSION (3x3 Grid) -->
                     <div class="mobile-only">
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;">
                             {% for c in [('W', 'White'), ('U', 'Blue'), ('B', 'Black'), ('R', 'Red'), ('G', 'Green'), ('C', 'Colorless')] %}
@@ -590,7 +595,7 @@
                 </div>
 
                 <!-- Card Set Search Section -->
-                <div style="flex: 1; min-width: 0;">
+                <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
                     <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">📦 Card Set Search</div>
                     <input type="text"
                         id="setSearchInput"
@@ -606,41 +611,48 @@
                         {% endfor %}
                     </datalist>
                 </div>
-
+                
+                <!-- Key Class Target -->
+                <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
+                    <div class="filter-section-title" style="font-size: 0.9em;">🛡️ Key Class Target (Select Multiple)</div>
+                    <div class="btn-cluster class-cluster">
+                        {% for cls in ['Draw', 'Removal', 'Ramp', 'Land', 'Board Wipe'] %}
+                        <input type="checkbox" name="classes" value="{{ cls }}" id="class_{{ cls|lower }}" class="filter-input" {% if cls|lower in selected_classes %}checked{% endif %}>
+                        <label for="class_{{ cls|lower }}" class="filter-label">{{ cls }}</label>
+                        {% endfor %}
                     </div>
-                    
-                <div class="filter-section-title">🛡️ Key Class Target (Select Multiple)</div>
-                <div class="btn-cluster class-cluster">
-                    {% for cls in ['Draw', 'Removal', 'Ramp', 'Land', 'Board Wipe'] %}
-                    <input type="checkbox" name="classes" value="{{ cls }}" id="class_{{ cls|lower }}" class="filter-input" {% if cls|lower in selected_classes %}checked{% endif %}>
-                    <label for="class_{{ cls|lower }}" class="filter-label">{{ cls }}</label>
-                    {% endfor %}
                 </div>
                 
-                <div class="filter-section-title">🏆 Ranking Tier Limit (Select Only One)</div>
-                <div class="btn-cluster">
-                    {% for r in ['Optimized', 'Fast', 'Average', 'Passive', 'Low'] %}
-                    <input type="radio" name="rank" value="{{ r|lower }}" id="rank_{{ r|lower }}" class="filter-input" {% if selected_rank == r|lower %}checked{% endif %}>
-                    <label for="rank_{{ r|lower }}" class="filter-label">{{ r }}</label>
-                    {% endfor %}
+                <!-- Ranking Tier Limit -->
+                <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
+                    <div class="filter-section-title" style="font-size: 0.9em;">🏆 Ranking Tier Limit (Select Only One)</div>
+                    <div class="btn-cluster">
+                        {% for r in ['Optimized', 'Fast', 'Average', 'Passive', 'Low'] %}
+                        <input type="radio" name="rank" value="{{ r|lower }}" id="rank_{{ r|lower }}" class="filter-input" {% if selected_rank == r|lower %}checked{% endif %}>
+                        <label for="rank_{{ r|lower }}" class="filter-label">{{ r }}</label>
+                        {% endfor %}
+                    </div>
                 </div>
 
-                <div class="filter-section-title">💵 Market Value Price Tier</div>
-                <div class="btn-cluster">
-                    <input type="radio" name="price_tier" value="all" id="price_all" class="filter-input" {% if price_tier == 'all' or not price_tier %}checked{% endif %}>
-                    <label for="price_all" class="filter-label">All Prices</label>
-                    <input type="radio" name="price_tier" value="low" id="price_low" class="filter-input" {% if price_tier == 'low' %}checked{% endif %}>
-                    <label for="price_low" class="filter-label">Low (&lt; $1.00)</label>
-                    <input type="radio" name="price_tier" value="medium" id="price_medium" class="filter-input" {% if price_tier == 'medium' %}checked{% endif %}>
-                    <label for="price_medium" class="filter-label">Mid ($1.00 - $2.00)</label>
-                    <input type="radio" name="price_tier" value="high" id="price_high" class="filter-input" {% if price_tier == 'high' %}checked{% endif %}>
-                    <label for="price_high" class="filter-label">High (&gt; $2.00)</label>
+                <!-- Market Value Price Tier -->
+                <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
+                    <div class="filter-section-title" style="font-size: 0.9em;">💵 Market Value Price Tier</div>
+                    <div class="btn-cluster">
+                        <input type="radio" name="price_tier" value="all" id="price_all" class="filter-input" {% if price_tier == 'all' or not price_tier %}checked{% endif %}>
+                        <label for="price_all" class="filter-label">All Prices</label>
+                        <input type="radio" name="price_tier" value="low" id="price_low" class="filter-input" {% if price_tier == 'low' %}checked{% endif %}>
+                        <label for="price_low" class="filter-label">Low (&lt; $1.00)</label>
+                        <input type="radio" name="price_tier" value="medium" id="price_medium" class="filter-input" {% if price_tier == 'medium' %}checked{% endif %}>
+                        <label for="price_medium" class="filter-label">Mid ($1.00 - $2.00)</label>
+                        <input type="radio" name="price_tier" value="high" id="price_high" class="filter-input" {% if price_tier == 'high' %}checked{% endif %}>
+                        <label for="price_high" class="filter-label">High (&gt; $2.00)</label>
+                    </div>
+                    <input type="number" name="custom_price" step="0.01" placeholder="Or enter exact Max Card Price Limit ($)" value="{{ custom_price }}">
                 </div>
-                <input type="number" name="custom_price" step="0.01" placeholder="Or enter exact Max Card Price Limit ($)" value="{{ custom_price }}">
-                <button type="submit" style="background-color: #9b59b6; margin-top: 10px;">Execute Reference Search</button>
+
+                <button type="submit" style="background-color: #9b59b6; margin-top: 5px; width: 100%;">Execute Reference Search</button>
             </form>
         </div>
-    </div>
         
         {% if report is defined and report %}
         <div class="result-box full-width" id="reportSection">
