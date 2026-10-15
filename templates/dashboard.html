@@ -625,9 +625,10 @@
         </div>
         {% endif %}
 
-            <!-- 🌟 SEARCH RESULTS MOVED INSIDE THE GRID -->
+        <!-- 🌟 SEARCH RESULTS SECTION (Aligned & Bounded) -->
         {% if search_reports %}
-            <div style="grid-column: span 2; display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px;">
+        <div style="width: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; grid-column: span 2;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px; width: 100%;">
                 <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
 
                 {% if current_user.is_authenticated and current_user.role == 'admin' and get_active_role() != 'admin' %}
@@ -641,7 +642,7 @@
             </div>
 
             {% for sr in search_reports %}
-            <div class="result-box full-width" style="margin-bottom: 20px;">
+            <div class="result-box full-width" style="margin-bottom: 20px; width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
                     <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
                     
@@ -655,7 +656,7 @@
                     </div>
                 </div>
             
-                <div class="scrollable-table">
+                <div class="scrollable-table" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
                     <table>
                         <tr>
                             <th>Card Name</th><th>Mana Cost</th><th>Color Identity</th><th>Price</th><th>Matched Class</th><th>Class Rank</th><th>Action</th>
@@ -694,8 +695,8 @@
                 </div>
             </div>
             {% endfor %}
+        </div>
         {% endif %}
-    </div>
 
     <div class="sidebar" id="deckSidebar">
         {% if current_user.is_authenticated and current_user.role != 'free' %}
