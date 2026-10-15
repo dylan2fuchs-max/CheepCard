@@ -1864,10 +1864,8 @@ def quick_switch_role(new_role):
     return redirect(url_for('account'))
 
 with app.app_context():
-    # 🌟 1. Create tables first so they are guaranteed to exist
     db.create_all()
 
-    # 🌟 2. THEN patch the schema to add any new columns safely
     try:
         with db.engine.begin() as connection:
             connection.execute(db.text("ALTER TABLE cards ADD COLUMN IF NOT EXISTS set_name VARCHAR(100);"))
@@ -1875,11 +1873,11 @@ with app.app_context():
             connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS date TIMESTAMP;"))
             connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS viewed BOOLEAN DEFAULT FALSE;"))
             connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS viewed_by VARCHAR(150);"))
-        print("✅ Database schema successfully patched for cards, search logs, and feedback.")
+        print("✅ Database schema successfully patched.")
     except Exception as e:
         print(f"⚠️ Schema patch note: {e}")
 
-    # 🌟 3. Ensure Admin user exists
+    # Ensure Admin user exists
     try:
         admin_email = 'ADMIN_EMAIL'
         existing_user = User.query.filter_by(email=admin_email).first()
@@ -1899,19 +1897,20 @@ with app.app_context():
     except Exception as e:
         print(f"⚠️ Admin init note: {e}")
 
-    # 🟢 4. Only seed if PostgreSQL is completely empty (INSIDE app context)
+    # 🚀 Fast Bulk Seeding to prevent Render 502 Startup Timeouts
     if Card.query.count() == 0:
-        print("🌱 Seeding PostgreSQL database for the first time...")
+        print("🌱 Seeding PostgreSQL database efficiently...")
+        card_objects = []
         for card_data in manager.card_pool:
-            # Safely check multiple attribute variants for the set name
             resolved_set = (
                 getattr(card_data, 'set_name', None) or 
                 getattr(card_data, 'set', None) or 
                 getattr(card_data, 'Set', None) or 
+                getattr(card_data, 'Set Name', None) or
                 getattr(card_data, 'set_code', '')
             )
 
-            new_card = Card(
+            card_objects.append(Card(
                 name=card_data.name,
                 identity=card_data.identity,
                 mana_cost=card_data.mana_cost,
@@ -1925,9 +1924,18 @@ with app.app_context():
                 rarity=card_data.rarity,
                 image_url=card_data.image_url,
                 oracle_text=card_data.oracle_text
-            )
-            db.session.add(new_card)
-        db.session.commit()
+            ))
+            
+            # Bulk commit every 5,000 items to avoid memory overhead
+            if len(card_objects) >= 5000:
+                db.session.add_all(card_objects)
+                db.session.commit()
+                card_objects = []
+
+        if card_objects:
+            db.session.add_all(card_objects)
+            db.session.commit()
+
         print(f"✅ Successfully seeded {Card.query.count()} cards into PostgreSQL!")
     else:
         print("✅ PostgreSQL database already populated. Skipping re-seed.")
