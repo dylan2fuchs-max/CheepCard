@@ -569,6 +569,12 @@
             <form method="POST" action="/search">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
+                <!-- 1. Rules Text Keyword Search -->
+                <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
+                    <div class="filter-section-title" style="margin-top: 0; font-size: 0.9em;">📝 Rules Text Keyword Search</div>
+                    <input type="text" name="keyword" value="{{ selected_keyword }}" placeholder="Search specific words (e.g. Flying, Sacrifice, Scry)" style="width: 100%; padding: 8px; font-size: 0.9em; border-radius: 6px; border: 2px solid var(--border-color); background-color: var(--box-bg); color: var(--text-color); box-sizing: border-box;">
+                </div>
+
                 <!-- Color Identity Section -->
                 <div style="margin-bottom: 15px; width: 100%; box-sizing: border-box;">
                     <div class="filter-section-title" style="margin-top: 0; margin-bottom: 6px; font-size: 0.9em;">🎨 Color Identity</div>
@@ -684,8 +690,9 @@
         <!-- 🌟 SEARCH RESULTS SECTION (Strictly Bounded to Grid) -->
         {% if search_reports %}
         <div style="grid-column: span 2; width: 100%; max-width: 1050px; box-sizing: border-box; margin-left: auto; margin-right: auto; min-width: 0; overflow: hidden;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px; width: 100%;">
-                <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
+            <div class="result-box full-width" style="margin-bottom: 20px; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 15px 0; flex-wrap: wrap; gap: 10px; width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                    <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
 
                 {% if current_user.is_authenticated and current_user.role == 'admin' and get_active_role() != 'admin' %}
                 <div style="background: rgba(142, 68, 173, 0.1); border: 1px dashed #8e44ad; padding: 6px 12px; border-radius: 6px; display: flex; gap: 8px; align-items: center; font-size: 13px;">
