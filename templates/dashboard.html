@@ -669,9 +669,9 @@
         </div>
         {% endif %}
 
-        <!-- 🌟 SEARCH RESULTS SECTION (Aligned to Grid Width) -->
+        <!-- 🌟 SEARCH RESULTS SECTION (Strictly Bounded to Grid) -->
         {% if search_reports %}
-        <div style="grid-column: span 2; width: 100%; max-width: 100%; box-sizing: border-box; margin: 0 auto;">
+        <div style="grid-column: span 2; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0 0 0; flex-wrap: wrap; gap: 10px; width: 100%;">
                 <h2 style="margin: 0;"><span style="color: #3498db;">🔍</span> Search Results</h2>
 
@@ -686,9 +686,9 @@
             </div>
 
             {% for sr in search_reports %}
-            <div class="result-box full-width" style="width: 100%; max-width: 100%; box-sizing: border-box; margin-top: 15px; margin-bottom: 20px;">
+            <div class="result-box full-width" style="margin-bottom: 20px; width: 100%; max-width: 100%; box-sizing: border-box; min-width: 0; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
-                    <h2 style="margin: 0; font-size: 1.1em;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
+                    <h2 style="margin: 0;">📊 Query Output Results for Class: {{ sr.class_name }} (Found: {{ sr.results|length }} items)</h2>
                     
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                         {% if current_user.is_authenticated and get_active_role() == 'free' %}
@@ -701,7 +701,7 @@
                 </div>
             
                 <div class="scrollable-table" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                    <table style="width: 100%; box-sizing: border-box;">
+                    <table>
                         <tr>
                             <th>Card Name</th><th>Mana Cost</th><th>Color Identity</th><th>Price</th><th>Matched Class</th><th>Class Rank</th><th>Action</th>
                         </tr>
