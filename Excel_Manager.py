@@ -7,6 +7,7 @@ import requests
 import time
 import re
 from Card_Filter import Card
+from tqdm import tqdm
 
 class ExcelManager:
     def __init__(self, file_path="Magic Card Data Base Current View.xlsx"):
@@ -165,6 +166,10 @@ class ExcelManager:
         return backup_path
 
     def update_all_card_prices(self) -> bool:
+        """
+        DEDICATED PRICE UPDATER:
+        Uses a clean progress bar to avoid terminal clutter while tracking live updates.
+        """
         try:
             self._create_timestamped_backup()
             
@@ -184,41 +189,36 @@ class ExcelManager:
             
             session = requests.Session()
             session.headers.update({
-                "User-Agent": "CheepCardsApp/1.0",
-                "Accept": "application/json"
+                "User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)",
+                "Accept": "application/json" 
             })
-            exact_url = "https://api.scryfall.com/cards/named"
-            search_url = "https://api.scryfall.com/cards/search"
             
             total_cards = len(df)
-            print(f"Starting price-only update for {total_cards} cards...")
             updated_count = 0
+            failed_cards = []
 
-            for index, (idx, row_data) in enumerate(df.iterrows(), 1):
-                card_name = row_data.get(name_col)
-                if pd.isna(card_name) or not str(card_name).strip():
+            print(f"Starting price-only update for {total_cards} cards...\n")
+
+            # Wrap df.iterrows() with tqdm for a clean progress bar
+            for idx, row_data in tqdm(df.iterrows(), total=total_cards, desc="Updating Prices"):
+                raw_name = row_data.get(name_col)
+                if pd.isna(raw_name) or not str(raw_name).strip():
                     continue
                 
-                clean_name = str(card_name).strip().split(" // ")[0].strip()
-                # Normalize all quote variations so Scryfall accepts them
+                clean_name = str(raw_name).strip().split(" // ")[0].strip()
                 clean_name = clean_name.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
-                print(f"[{index}/{total_cards}] Updating price for: {clean_name}...", end="\r")
                 
-                time.sleep(0.13)
+                time.sleep(0.12)
                 
-                # 1. Try exact match first
-                resp = self._make_safe_request(session, exact_url, {"exact": clean_name})
+                resp = self._make_safe_request(session, "https://api.scryfall.com/cards/named", {"exact": clean_name})
+                
                 card_json = None
-                
                 if resp and resp.status_code == 200:
                     card_json = resp.json()
                 else:
-                    # 2. Fallback to Scryfall search API with quotes for cards with special punctuation/apostrophes
-                    fallback_resp = self._make_safe_request(session, search_url, {"q": f'! "{clean_name}"'})
-                    if fallback_resp and fallback_resp.status_code == 200:
-                        search_data = fallback_resp.json()
-                        if search_data.get("data"):
-                            card_json = search_data["data"][0]
+                    fuzzy_resp = self._make_safe_request(session, "https://api.scryfall.com/cards/named", {"fuzzy": clean_name})
+                    if fuzzy_resp and fuzzy_resp.status_code == 200:
+                        card_json = fuzzy_resp.json()
                 
                 if card_json:
                     live_price = card_json.get("prices", {}).get("usd")
@@ -229,10 +229,12 @@ class ExcelManager:
                         except ValueError:
                             pass
                 else:
-                    print(f"\n⚠️ Could not fetch price for '{clean_name}'")
+                    failed_cards.append(clean_name)
 
             df.to_excel(self.file_path, index=False, engine="openpyxl")
-            print(f"\n--- [PRICE UPDATE SUCCESS] Successfully updated prices for {updated_count} cards! ---")
+            print(f"\n--- [PRICE UPDATE SUCCESS] Updated {updated_count} cards! ---")
+            if failed_cards:
+                print(f"⚠️ Could not fetch prices for {len(failed_cards)} cards.")
             
             self.load_cards()
             return True
@@ -310,7 +312,7 @@ class ExcelManager:
                 url = f"https://api.scryfall.com/cards/search?q={query_set}"
                 
                 while url:
-                    res = requests.get(url, headers={"User-Agent": "CheepCardsApp/1.0", "Accept": "application/json"})
+                    res = requests.get(url, headers={"User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)", "Accept": "application/json"})
                     if res.status_code != 200:
                         print(f"⚠️ Error fetching {query_set}: Status {res.status_code}")
                         break
@@ -343,7 +345,7 @@ class ExcelManager:
                         
                     if data.get("has_more"):
                         url = data.get("next_page")
-                        time.sleep(0.1)
+                        time.sleep(0.13)
                     else:
                         break
 
@@ -383,7 +385,7 @@ class ExcelManager:
             
             session = requests.Session()
             session.headers.update({
-                "User-Agent": "CheepCardsApp/1.0",
+                "User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)",
                 "Accept": "application/json"
             })
             search_url = "https://api.scryfall.com/cards/search"
@@ -492,7 +494,7 @@ class ExcelManager:
                 df[date_col] = df[date_col].astype(str).replace(['nan', 'None', 'NAT'], '')
 
             headers = {
-                "User-Agent": "CheepCardsApp/1.0",
+                "User-Agent": "CheepCardsApp/1.0 (cheepcards4you@gmail.com)",
                 "Accept": "application/json"
             }
             
@@ -592,7 +594,7 @@ class ExcelManager:
                     continue
                 check_name = str(card_name).strip().split(" // ")[0].strip()
                 try:
-                    time.sleep(0.08)
+                    time.sleep(0.13)
                     query_param = f'! "{check_name}" legal:commander'
                     resp = requests.get(search_url, headers=headers, params={"q": query_param}, timeout=4)
                     
