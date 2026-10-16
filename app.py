@@ -839,8 +839,18 @@ def search():
     custom_price = request.form.get("custom_price", "").strip()
     keyword = request.form.get("keyword", "").strip().lower()
     
-    # 🌟 1. Capture the Set Filter from the form
+    # Capture the Set Filter from the form
     selected_set = str(request.form.get("set_name", "")).strip()
+
+    # 🌟 Check if the user searched/submitted nothing up
+    if not keyword and not colors and not classes and not selected_set and not deck_input and rank in ["", "all", "none"] and price_tier == "all":
+        # Optional: decrement the search count if you don't want empty searches to count against free users
+        if current_user.is_authenticated and active_role == 'free':
+            current_user.search_count = max(0, current_user.search_count - 1)
+            db.session.commit()
+            
+        flash("Please enter or select at least one search filter.", "warning")
+        return redirect(url_for('home'))
 
     try:
         # 1. Log the overall search filter event
@@ -854,17 +864,13 @@ def search():
             timestamp=datetime.utcnow()
         )
         db.session.add(log_entry)
-        
-        # 2. 🌟 ALSO log each individual card that appeared in the final search results / bulk pull
-        # (This ensures cards like "Evolving Wilds" get counted for your Top Searched Cards metric)
-        # Note: We'll evaluate search_reports after results are generated, or log them right after building results.
     except Exception as e:
         db.session.rollback()
         print(f"⚠️ Search log error: {e}")
     
     search_reports = []
 
-    # 🌟 Fix collision: Use session-scoped dictionary isolated to this user's cookie
+    # Use session-scoped dictionary isolated to this user's cookie
     user_search_clusters = {}
 
     target_classes = classes if classes else ["all available cards"]
@@ -875,7 +881,7 @@ def search():
     for target_class in target_classes:
         clean_target_class = target_class.strip().lower()
         
-        # 🌟 2. Build Query with Set Filtering Support
+        # Build Query with Set Filtering Support
         if clean_target_class == "all available cards":
             query = Card.query
         else:
@@ -1090,10 +1096,10 @@ def search():
             db.session.commit()
             flash(f"🎉 Secret Achievement Unlocked: {', '.join(unlocked_names)}! Go equip it in your account settings.", "success")
 
-    # 🌟 3. Query all unique set names sorted A-Z for the datalist dropdown
+    # Query all unique set names sorted A-Z for the datalist dropdown
     all_sets = [r[0] for r in db.session.query(Card._set_name).distinct().filter(Card._set_name != None, Card._set_name != "").order_by(Card._set_name.asc()).all()]
 
-    # 🌟 Log individual cards shown in search results so they populate "Top Searched Cards"
+    # Log individual cards shown in search results so they populate "Top Searched Cards"
     try:
         for report in search_reports:
             for card in report.get("results", []):
