@@ -844,13 +844,13 @@ def search():
 
     # 🌟 Check if the user searched/submitted nothing up
     if not keyword and not colors and not classes and not selected_set and not deck_input and rank in ["", "all", "none"] and price_tier == "all":
-        # Optional: decrement the search count if you don't want empty searches to count against free users
+        # Decrement the search count so empty searches don't penalize free users
         if current_user.is_authenticated and active_role == 'free':
             current_user.search_count = max(0, current_user.search_count - 1)
             db.session.commit()
             
         flash("Please enter or select at least one search filter.", "warning")
-        return redirect(url_for('home'))
+        return redirect(request.referrer or url_for('dashboard'))
 
     try:
         # 1. Log the overall search filter event
