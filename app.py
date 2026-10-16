@@ -1059,8 +1059,11 @@ def search():
             "results": final_selected_cards
         })
 
-    # Save clusters safely to the individual user's session cookie
-    session['search_clusters'] = user_search_clusters
+    # 🌟 Save clusters safely to server-side SEARCH_CLUSTERS using a unique session ID cookie key
+    if 'search_session_id' not in session:
+        session['search_session_id'] = str(uuid.uuid4())
+    cluster_key = session['search_session_id']
+    SEARCH_CLUSTERS[cluster_key] = user_search_clusters
 
     if current_user.is_authenticated:
         max_pool_price = max([float(getattr(c, 'price', 0.0)) for c in manager.card_pool], default=0.0)
@@ -1157,12 +1160,18 @@ def reroll_card():
         session.modified = True
 
     data = request.json or {}
-    category = data.get('category')
+    category = data.get('category', '')
     current_names = data.get('current_names', [])
     
-    # 🌟 Pull from session clusters, with database fallback if needed
-    user_clusters = session.get('search_clusters', {})
-    category_pool = user_clusters.get(category, [])
+    # 🌟 Pull from server-side SEARCH_CLUSTERS dictionary with case-insensitive match
+    cluster_key = session.get('search_session_id')
+    user_clusters = SEARCH_CLUSTERS.get(cluster_key, {}) if cluster_key else {}
+    
+    category_pool = []
+    for key, pool in user_clusters.items():
+        if key.strip().lower() == category.strip().lower():
+            category_pool = pool
+            break
 
     if not category_pool:
         # Fallback: re-fetch from master dataset and format as plain dictionaries
@@ -1807,7 +1816,8 @@ def admin_dashboard():
     ).filter(
         extract('year', SearchLog.timestamp) == selected_year,
         extract('month', SearchLog.timestamp) == selected_month,
-        SearchLog.category != None
+        SearchLog.category != None,
+        SearchLog.category != ""
     ).group_by(SearchLog.category).order_by(func.count(SearchLog.category).desc()).limit(5).all()
     top_category = [(row.category, row.total) for row in top_category_query]
 
