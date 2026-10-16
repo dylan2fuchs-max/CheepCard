@@ -1184,7 +1184,14 @@ def reroll_card():
         "active_rank_word": card_rank
     }
 
-    return jsonify({'success': True, 'new_card': new_card_data})
+    # Calculate remaining swaps for the live UI counter update
+    remaining_swaps = max(0, 3 - session.get('current_rerolls', 0)) if current_user.is_authenticated and current_user.role == 'free' else None
+
+    return jsonify({
+        'success': True, 
+        'new_card': new_card_data,
+        'remaining_swaps': remaining_swaps
+    })
 
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
