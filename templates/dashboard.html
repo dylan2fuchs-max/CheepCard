@@ -788,7 +788,11 @@
                     <div class="card-tile">
                         <img src="{{ card.image_url }}" alt="{{ card.name }}" style="width: 100%; border-radius: 10px;">
                         <div style="font-weight: bold; margin-top: 8px;" draggable="true" ondragstart="drag(event)" data-name="{{ card.name }}" data-price="{{ card.price }}" data-img="{{ card.image_url }}" data-mana="{{ card.mana_cost }}" data-id="{{ card.identity }}">{{ card.name }}</div>
-                        <button class="swap-btn" style="margin-top: 10px; width:100% !important;" onclick="addCardFromRow(this, '{{ sr.class_name|escape }}')">Add</button>
+                        
+                        <div style="display: flex; gap: 6px; margin-top: 10px;">
+                            <button type="button" class="swap-btn" style="flex: 1;" onclick="rerollSingleCard('{{ sr.class_name|escape }}', this)">🎲 Swap</button>
+                            <button type="button" class="swap-btn" style="background-color: #28a745; flex: 1;" onclick="addCardFromRow(this, '{{ sr.class_name|escape }}')">➕ Add</button>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
