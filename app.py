@@ -1133,6 +1133,18 @@ def search():
         all_sets=all_sets
     )
 
+def get_master_cards_for_category(category_name):
+    if not category_name or category_name.lower() == "all available cards":
+        cards = Card.query.limit(100).all()
+    else:
+        cards = Card.query.filter(
+            db.or_(
+                db.func.lower(Card._card_class_1).contains(category_name.lower()),
+                db.func.lower(Card._card_class_2).contains(category_name.lower())
+            )
+        ).limit(100).all()
+    return cards
+
 @app.route('/reroll', methods=['POST'])
 @csrf.exempt
 def reroll_card():
@@ -1142,18 +1154,27 @@ def reroll_card():
             return jsonify({'success': False, 'message': 'Free users are limited to 3 swaps per search!'})
         
         session['current_rerolls'] = used_rerolls + 1
+        session.modified = True
 
     data = request.json or {}
     category = data.get('category')
     current_names = data.get('current_names', [])
     
-    # 🌟 Fix collision & cookie limits: Pull from session, with database fallback
+    # 🌟 Pull from session clusters, with database fallback if needed
     user_clusters = session.get('search_clusters', {})
     category_pool = user_clusters.get(category, [])
 
     if not category_pool:
-        # FALLBACK: If cookie got dropped or app restarted, re-fetch from your main master dataset
-        category_pool = get_master_cards_for_category(category) # Replace with your actual search function/DataFrame query
+        # Fallback: re-fetch from master dataset and format as plain dictionaries
+        raw_pool = get_master_cards_for_category(category) 
+        category_pool = [{
+            "name": getattr(c, 'name', ''),
+            "mana_cost": getattr(c, 'mana_cost', ''),
+            "identity": getattr(c, 'identity', ''),
+            "price": getattr(c, 'price', 0.0),
+            "image_url": getattr(c, 'image_url', ''),
+            "active_rank_word": getattr(c, 'active_rank_word', 'None')
+        } for c in raw_pool]
         
     if not category_pool:
         return jsonify({'success': False, 'message': 'No cached search pool found. Please re-run your search.'})
@@ -1892,21 +1913,22 @@ with app.app_context():
 
     # Ensure Admin user exists
     try:
-        admin_email = 'ADMIN_EMAIL'
-        existing_user = User.query.filter_by(email=admin_email).first()
-        if existing_user:
-            existing_user.role = 'admin'
-            db.session.commit()
-        else:
-            new_admin = User(
-                username='admin',
-                email=admin_email,
-                password_hash=generate_password_hash('TempPassword123!'),
-                role='admin'
-            )
-            db.session.add(new_admin)
-            db.session.commit()
-        print("✅ Admin User initialized successfully!")
+        admin_email = os.environ.get('ADMIN_EMAIL')
+        if admin_email:
+            existing_user = User.query.filter_by(email=admin_email).first()
+            if existing_user:
+                existing_user.role = 'admin'
+                db.session.commit()
+            else:
+                new_admin = User(
+                    username='Silver Knight',
+                    email=admin_email,
+                    password_hash=generate_password_hash('TempPassword123!'),
+                    role='admin'
+                )
+                db.session.add(new_admin)
+                db.session.commit()
+            print("✅ Admin User initialized successfully!")
     except Exception as e:
         print(f"⚠️ Admin init note: {e}")
 

@@ -1331,83 +1331,121 @@
     </script> <!-- 1. Close the first script block here -->
 
     <script>
-        async function rerollSingleCard(categoryName, buttonElem) {
-            const table = buttonElem.closest('table');
-            const row = buttonElem.closest('tr');
-            const rejectedName = row.querySelector('.card-name-hover').innerText.trim();
-            const currentNames = Array.from(table.querySelectorAll('.card-name-hover')).map(el => el.innerText.trim());
+    async function rerollSingleCard(categoryName, buttonElem) {
+        const resultBox = buttonElem.closest('.result-box');
+        const tableRow = buttonElem.closest('tr');
+        const cardTile = buttonElem.closest('.card-tile');
 
-            buttonElem.disabled = true;
-            const originalText = buttonElem.innerText;
-            buttonElem.innerText = '🎲 ...';
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-            try {
-                const response = await fetch('/reroll', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ category: categoryName, current_names: currentNames, rejected_card_name: rejectedName })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    const newCard = data.new_card;
-                    const nameStrong = row.querySelector('.card-name-hover');
-                    if (nameStrong) {
-                        nameStrong.innerText = newCard.name;
-                        nameStrong.setAttribute('data-img', newCard.image_url || '');
-                    }
-                    row.cells[0].querySelector('.card-name-hover').innerText = newCard.name;
-                    row.cells[1].innerText = newCard.mana_cost || '';
-                    row.cells[2].innerHTML = newCard.identity || ''; 
-                    row.cells[3].innerText = '$' + parseFloat(newCard.price || 0).toFixed(2);
-                    row.cells[4].innerText = categoryName; 
-                    row.cells[5].innerText = newCard.active_rank_word || 'None';
-
-                    // 👉 Instantly decreases the swap counter on the screen
-                    const swapCounterEl = document.getElementById('swap-counter');
-                    if (swapCounterEl) {
-                        let currentVal = parseInt(swapCounterEl.innerText, 10);
-                        if (currentVal > 0) {
-                            swapCounterEl.innerText = currentVal - 1;
-                        }
-                    }
-
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) {
-                console.error('Error re-rolling card:', err);
-                alert("Network error while trying to swap the card.");
-            } finally {
-                buttonElem.disabled = false;
-                buttonElem.innerText = originalText;
-            }
+        let rejectedName = '';
+        if (tableRow) {
+            rejectedName = tableRow.querySelector('.card-name-hover')?.innerText.trim() || '';
+        } else if (cardTile) {
+            rejectedName = cardTile.querySelector('[data-name]')?.innerText.trim() || '';
         }
 
-        // Substring Datalist Filter for Set Auto-fill
-        document.addEventListener('DOMContentLoaded', () => {
-            const input = document.getElementById('setSearchInput');
-            const datalist = document.getElementById('mtg-sets-list');
-            if (!input || !datalist) return;
+        // Collect all current names from the result box (covering both table and gallery)
+        const currentNames = Array.from(resultBox.querySelectorAll('.card-name-hover, .card-tile [data-name]'))
+            .map(el => el.innerText.trim())
+            .filter(name => name);
 
-            const allOptions = Array.from(datalist.options).map(opt => opt.value);
+        buttonElem.disabled = true;
+        const originalText = buttonElem.innerText;
+        buttonElem.innerText = '🎲 ...';
 
-            input.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                datalist.innerHTML = '';
+        try {
+            const response = await fetch('/reroll', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: categoryName, current_names: currentNames, rejected_card_name: rejectedName })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                const newCard = data.new_card;
 
-                if (query.length === 0) return;
+                // 1. Update Table Row if triggered from table view
+                if (tableRow) {
+                    const nameStrong = tableRow.querySelector('.card-name-hover');
+                    if (nameStrong) {
+                        nameStrong.innerText = newCard.name;
+                        nameStrong.setAttribute('data-name', newCard.name);
+                        nameStrong.setAttribute('data-price', newCard.price);
+                        nameStrong.setAttribute('data-img', newCard.image_url || '');
+                    }
+                    if (tableRow.cells.length >= 6) {
+                        tableRow.cells[0].querySelector('.card-name-hover').innerText = newCard.name;
+                        tableRow.cells[1].innerText = newCard.mana_cost || '';
+                        tableRow.cells[2].innerHTML = newCard.identity || ''; 
+                        tableRow.cells[3].innerText = '$' + parseFloat(newCard.price || 0).toFixed(2);
+                        tableRow.cells[4].innerText = categoryName; 
+                        tableRow.cells[5].innerText = newCard.active_rank_word || 'None';
+                    }
+                }
 
-                const matches = allOptions.filter(setName => setName.toLowerCase().includes(query));
+                // 2. Update Gallery Tile if triggered from gallery toggle view
+                if (cardTile) {
+                    const imgElem = cardTile.querySelector('img');
+                    if (imgElem) {
+                        imgElem.src = newCard.image_url || '';
+                        imgElem.alt = newCard.name;
+                    }
+                    const nameDiv = cardTile.querySelector('[data-name]');
+                    if (nameDiv) {
+                        nameDiv.innerText = newCard.name;
+                        nameDiv.setAttribute('data-name', newCard.name);
+                        nameDiv.setAttribute('data-price', newCard.price);
+                        nameDiv.setAttribute('data-img', newCard.image_url || '');
+                        nameDiv.setAttribute('data-mana', newCard.mana_cost || '');
+                        nameDiv.setAttribute('data-id', newCard.identity || '');
+                    }
+                }
 
-                matches.slice(0, 20).forEach(match => {
-                    const option = document.createElement('option');
-                    option.value = match;
-                    datalist.appendChild(option);
-                });
+                buttonElem.setAttribute('data-name', newCard.name);
+
+                // 👉 Instantly decreases the swap counter on the screen
+                const swapCounterEl = document.getElementById('swap-counter');
+                if (swapCounterEl) {
+                    let currentVal = parseInt(swapCounterEl.innerText, 10);
+                    if (currentVal > 0) {
+                        swapCounterEl.innerText = currentVal - 1;
+                    }
+                }
+
+            } else {
+                alert(data.message);
+            }
+        } catch (err) {
+            console.error('Error re-rolling card:', err);
+            alert("Network error while trying to swap the card.");
+        } finally {
+            buttonElem.disabled = false;
+            buttonElem.innerText = originalText;
+        }
+    }
+
+    // Substring Datalist Filter for Set Auto-fill
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('setSearchInput');
+        const datalist = document.getElementById('mtg-sets-list');
+        if (!input || !datalist) return;
+
+        const allOptions = Array.from(datalist.options).map(opt => opt.value);
+
+        input.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            datalist.innerHTML = '';
+
+            if (query.length === 0) return;
+
+            const matches = allOptions.filter(setName => setName.toLowerCase().includes(query));
+
+            matches.slice(0, 20).forEach(match => {
+                const option = document.createElement('option');
+                option.value = match;
+                datalist.appendChild(option);
             });
         });
+    });
     </script>
     <!-- 🚨 CLEAN MAX SEARCH ALERT POPUP -->
     {% if show_limit_popup %}
