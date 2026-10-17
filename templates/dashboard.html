@@ -484,7 +484,23 @@
         .archetype-banner { background-color: #2ecc71; color: white; padding: 15px; border-radius: 6px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .card-name-hover { color: #3498db; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
 
-        .sidebar { display: none; position: fixed; top: 0; right: 0; width: 300px; height: 100vh; background: var(--box-bg, #1a1a1a); color: var(--text-color, white); padding: 20px; box-shadow: -4px 0 10px rgba(0,0,0,0.5); overflow-y: auto; z-index: 1000; box-sizing: border-box; }
+        .sidebar { 
+        display: none; 
+        position: fixed; 
+        top: 0; 
+        right: 0; 
+        width: 300px; 
+        height: 100vh; 
+        background: var(--box-bg, #1a1a1a); 
+        color: var(--text-color, white); 
+        padding: 20px; 
+        box-shadow: -4px 0 10px rgba(0,0,0,0.5); 
+        overflow-y: auto; 
+        z-index: 1000; 
+        box-sizing: border-box; 
+        /* 🌟 Add extra padding at the bottom so the last items scroll above the buttons */
+        padding-bottom: 140px !important; 
+        }
         .sidebar.open { display: block; }
 
         /* Extra Dense Right-Side Background Squares */
