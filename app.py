@@ -10,6 +10,7 @@ import requests
 import logging
 import sys
 import uuid
+import traceback
 from datetime import date, datetime
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from dotenv import load_dotenv  # <--- Load environment variables first!
