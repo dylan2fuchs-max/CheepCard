@@ -1728,55 +1728,80 @@ def stripe_webhook():
     except stripe.error.SignatureVerificationError:
         return 'Invalid signature', 400
 
-    # 1. Handle successful checkout / subscription start
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        customer_email = session.get("customer_details", {}).get("email")
-        subscription_id = session.get("subscription")
-        
-        if customer_email:
-            user = User.query.filter_by(email=customer_email).first()
+    try:
+        event_type = event['type']
+        data_object = event['data']['object']
+
+        # 1. Handle Successful Checkout Session Completed
+        if event_type == 'checkout.session.completed':
+            customer_email = data_object.get("customer_details", {}).get("email") or data_object.get("customer_email")
+            subscription_id = data_object.get("subscription")
+            
+            if customer_email:
+                user = User.query.filter_by(email=customer_email).first()
+                if user:
+                    now = datetime.utcnow()
+                    if user.pro_expires_at and user.pro_expires_at > now:
+                        user.pro_expires_at = user.pro_expires_at + timedelta(days=30)
+                    else:
+                        user.pro_expires_at = now + timedelta(days=30)
+                    
+                    user.role = 'pro'
+                    user.stripe_subscription_id = subscription_id
+                    db.session.commit()
+                    print(f"⭐ Upgraded user {customer_email} to Pro! Subscription ID: {subscription_id}")
+
+        # 2. Handle Expired Checkout Sessions (User didn't complete checkout)
+        elif event_type == 'checkout.session.expired':
+            print(f"⌛ Checkout session expired: {data_object.get('id')}")
+            # No database action needed since payment was never made
+
+        # 3. Handle Subscription Deleted / Canceled
+        elif event_type == 'customer.subscription.deleted':
+            subscription_id = data_object.get('id')
+            user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+            
+            if not user:
+                customer_id = data_object.get('customer')
+                if customer_id:
+                    customer = stripe.Customer.retrieve(customer_id)
+                    user = User.query.filter_by(email=customer.get('email')).first()
+
             if user:
-                now = datetime.utcnow()
-                if user.pro_expires_at and user.pro_expires_at > now:
-                    user.pro_expires_at = user.pro_expires_at + timedelta(days=30)
-                else:
-                    user.pro_expires_at = now + timedelta(days=30)
-                
-                user.role = 'pro'
-                user.stripe_subscription_id = subscription_id
-                db.session.commit()
-                print(f"⭐ Upgraded user {customer_email} to Pro! Subscription ID: {subscription_id}")
-
-    # 2. Handle subscription cancellation / deletion
-    elif event['type'] == 'customer.subscription.deleted':
-        subscription = event['data']['object']
-        subscription_id = subscription.get('id')
-        
-        # Find the user by their saved subscription ID
-        user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
-        if user:
-            user.role = 'free'
-            user.pro_expires_at = None
-            user.stripe_subscription_id = None
-            db.session.commit()
-            print(f"🚫 Subscription canceled. Reverted user {user.email} to Free.")
-
-    # 3. Handle subscription updates (e.g., renewals, status changes)
-    elif event['type'] == 'customer.subscription.updated':
-        subscription = event['data']['object']
-        subscription_id = subscription.get('id')
-        status = subscription.get('status')
-        
-        user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
-        if user:
-            if status == 'active':
-                user.role = 'pro'
-            elif status in ['canceled', 'unpaid', 'past_due']:
                 user.role = 'free'
                 user.pro_expires_at = None
-            db.session.commit()
-            print(f"🔄 Subscription updated for user {user.email}. Status: {status}")
+                user.stripe_subscription_id = None
+                db.session.commit()
+                print(f"🚫 Subscription canceled. Reverted user {user.email} to Free.")
+
+        # 4. Handle Subscription Updated (Renewals, status changes, cancellations)
+        elif event_type == 'customer.subscription.updated':
+            subscription_id = data_object.get('id')
+            status = data_object.get('status')
+            
+            user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+            
+            if not user:
+                customer_id = data_object.get('customer')
+                if customer_id:
+                    customer = stripe.Customer.retrieve(customer_id)
+                    user = User.query.filter_by(email=customer.get('email')).first()
+                    if user:
+                        user.stripe_subscription_id = subscription_id
+
+            if user:
+                if status == 'active':
+                    user.role = 'pro'
+                elif status in ['canceled', 'unpaid', 'past_due']:
+                    user.role = 'free'
+                    user.pro_expires_at = None
+                
+                db.session.commit()
+                print(f"🔄 Subscription updated for user {user.email}. Status: {status}")
+
+    except Exception as e:
+        print(f"❌ Error processing webhook event {event.get('type')}: {str(e)}")
+        traceback.print_exc()
 
     return '', 200
 
