@@ -1762,6 +1762,22 @@ def stripe_webhook():
             db.session.commit()
             print(f"🚫 Subscription canceled. Reverted user {user.email} to Free.")
 
+    # 3. Handle subscription updates (e.g., renewals, status changes)
+    elif event['type'] == 'customer.subscription.updated':
+        subscription = event['data']['object']
+        subscription_id = subscription.get('id')
+        status = subscription.get('status')
+        
+        user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+        if user:
+            if status == 'active':
+                user.role = 'pro'
+            elif status in ['canceled', 'unpaid', 'past_due']:
+                user.role = 'free'
+                user.pro_expires_at = None
+            db.session.commit()
+            print(f"🔄 Subscription updated for user {user.email}. Status: {status}")
+
     return '', 200
 
 @app.route('/pricing', methods=['GET'])
