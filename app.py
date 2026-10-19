@@ -215,6 +215,7 @@ class User(UserMixin, db.Model):
     
     # Stripe & Subscription Mapping
     stripe_customer_id = db.Column(db.String(100), nullable=True)
+    stripe_subscription_id = db.Column(db.String(100), nullable=True)  # <--- ADD THIS LINE HERE
     role = db.Column(db.String(20), default='free') 
     pro_expires_at = db.Column(db.DateTime, nullable=True)
     
