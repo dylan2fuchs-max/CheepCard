@@ -1722,15 +1722,17 @@ def stripe_webhook():
     endpoint_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        # Convert the Stripe object to a standard Python dictionary
+        event_obj = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        event = event_obj.to_dict()
     except ValueError:
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError:
         return 'Invalid signature', 400
 
     try:
-        event_type = event['type']
-        data_object = event['data']['object']
+        event_type = event.get('type')
+        data_object = event.get('data', {}).get('object', {})
 
         # 1. Handle Successful Checkout Session Completed
         if event_type == 'checkout.session.completed':
@@ -1751,7 +1753,7 @@ def stripe_webhook():
                     db.session.commit()
                     print(f"⭐ Upgraded user {customer_email} to Pro! Subscription ID: {subscription_id}")
 
-        # 2. Handle Expired Checkout Sessions (User didn't complete checkout)
+        # 2. Handle Expired Checkout Sessions
         elif event_type == 'checkout.session.expired':
             print(f"⌛ Checkout session expired: {data_object.get('id')}")
 
@@ -1764,7 +1766,6 @@ def stripe_webhook():
                 customer_id = data_object.get('customer')
                 if customer_id:
                     customer = stripe.Customer.retrieve(customer_id)
-                    # FIX: Use customer.email instead of customer.get('email')
                     user = User.query.filter_by(email=customer.email).first()
 
             if user:
@@ -1774,7 +1775,7 @@ def stripe_webhook():
                 db.session.commit()
                 print(f"🚫 Subscription canceled. Reverted user {user.email} to Free.")
 
-        # 4. Handle Subscription Updated (Renewals, status changes, cancellations)
+        # 4. Handle Subscription Updated
         elif event_type == 'customer.subscription.updated':
             subscription_id = data_object.get('id')
             status = data_object.get('status')
@@ -1785,7 +1786,6 @@ def stripe_webhook():
                 customer_id = data_object.get('customer')
                 if customer_id:
                     customer = stripe.Customer.retrieve(customer_id)
-                    # FIX: Use customer.email instead of customer.get('email')
                     user = User.query.filter_by(email=customer.email).first()
                     if user:
                         user.stripe_subscription_id = subscription_id
@@ -1801,7 +1801,7 @@ def stripe_webhook():
                 print(f"🔄 Subscription updated for user {user.email}. Status: {status}")
 
     except Exception as e:
-        print(f"❌ Error processing webhook event {event.get('type')}: {str(e)}")
+        print(f"❌ Error processing webhook event {event.get('type') if isinstance(event, dict) else 'unknown'}: {str(e)}")
         traceback.print_exc()
 
     return '', 200
