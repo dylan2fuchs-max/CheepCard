@@ -1754,7 +1754,6 @@ def stripe_webhook():
         # 2. Handle Expired Checkout Sessions (User didn't complete checkout)
         elif event_type == 'checkout.session.expired':
             print(f"⌛ Checkout session expired: {data_object.get('id')}")
-            # No database action needed since payment was never made
 
         # 3. Handle Subscription Deleted / Canceled
         elif event_type == 'customer.subscription.deleted':
@@ -1765,7 +1764,8 @@ def stripe_webhook():
                 customer_id = data_object.get('customer')
                 if customer_id:
                     customer = stripe.Customer.retrieve(customer_id)
-                    user = User.query.filter_by(email=customer.get('email')).first()
+                    # FIX: Use customer.email instead of customer.get('email')
+                    user = User.query.filter_by(email=customer.email).first()
 
             if user:
                 user.role = 'free'
@@ -1785,7 +1785,8 @@ def stripe_webhook():
                 customer_id = data_object.get('customer')
                 if customer_id:
                     customer = stripe.Customer.retrieve(customer_id)
-                    user = User.query.filter_by(email=customer.get('email')).first()
+                    # FIX: Use customer.email instead of customer.get('email')
+                    user = User.query.filter_by(email=customer.email).first()
                     if user:
                         user.stripe_subscription_id = subscription_id
 
