@@ -1961,6 +1961,9 @@ with app.app_context():
             connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS date TIMESTAMP;"))
             connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS viewed BOOLEAN DEFAULT FALSE;"))
             connection.execute(db.text("ALTER TABLE feedback ADD COLUMN IF NOT EXISTS viewed_by VARCHAR(150);"))
+            # 👇 ADD THIS LINE BELOW 👇
+            connection.execute(db.text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(100);'))
+            
         print("✅ Database schema successfully patched.")
     except Exception as e:
         print(f"⚠️ Schema patch note: {e}")
