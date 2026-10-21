@@ -767,62 +767,8 @@
             </div>
         </div>
         {% endif %}
-</div>
-
-<!-- Store the server themes safely in a hidden data attribute with proper server-side lookup generation -->
-{% set theme_lookup = [] %}
-{% if report is defined and report and report.themes %}
-    {% for item in report.themes %}
-        {% set clean_t = item.theme | replace('📊', '') | replace('👾', '') | replace('🔮', '') | trim %}
-        {% set _ = theme_lookup.append({'name': clean_t, 'cards': item.cards}) %}
-    {% endfor %}
-{% endif %}
-<div id="theme-data-container" data-themes='{{ theme_lookup | tojson | safe }}' style="display: none;"></div>
 
 <script>
-const cardThemeMap = {};
-const container = document.getElementById('theme-data-container');
-if (container && container.dataset.themes) {
-    try {
-        const serverThemes = JSON.parse(container.dataset.themes);
-        serverThemes.forEach(item => {
-            const rawCards = item.cards.split(',');
-            rawCards.forEach(c => {
-                // Thoroughly clean backend card entries of any "1x" or quantity formatting
-                let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
-                if (cardClean) {
-                    if (!cardThemeMap[item.name]) {
-                        cardThemeMap[item.name] = [];
-                    }
-                    if (!cardThemeMap[item.name].includes(cardClean)) {
-                        cardThemeMap[item.name].push(cardClean);
-                    }
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Failed to parse theme data", e);
-    }
-}
-
-document.getElementById('toggle-export-modal-btn')?.addEventListener('click', function() {
-    const panel = document.getElementById('export-panel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') {
-        updateExportText();
-    }
-});
-
-document.getElementById('select-all-tags')?.addEventListener('click', function() {
-    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
-    updateExportText();
-});
-
-document.getElementById('deselect-all-tags')?.addEventListener('click', function() {
-    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
-    updateExportText();
-});
-
 function updateExportText() {
     const rawText = document.getElementById('deckTextArea');
     if (!rawText) return;
@@ -832,12 +778,11 @@ function updateExportText() {
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
     
-    // Dynamically build lookup map from the visible Synergy Metrics table
     const liveCardThemeMap = {};
     const reportSection = document.getElementById('reportSection');
     if (reportSection) {
         reportSection.querySelectorAll('table tr').forEach((row, index) => {
-            if (index === 0) return; // Skip header
+            if (index === 0) return;
             const themeCell = row.cells[0];
             const cardsDiv = row.querySelector('div[id^="cards-"]');
             
@@ -886,10 +831,10 @@ function updateExportText() {
     }
 }
 
-// Event Listeners with null safety checks
-document.addEventListener('DOMContentLoaded', function() {
+function initExportModal() {
     const toggleBtn = document.getElementById('toggle-export-modal-btn');
-    if (toggleBtn) {
+    if (toggleBtn && !toggleBtn.dataset.bound) {
+        toggleBtn.dataset.bound = "true";
         toggleBtn.addEventListener('click', function() {
             const panel = document.getElementById('export-panel');
             if (panel) {
@@ -902,7 +847,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const selectAllBtn = document.getElementById('select-all-tags');
-    if (selectAllBtn) {
+    if (selectAllBtn && !selectAllBtn.dataset.bound) {
+        selectAllBtn.dataset.bound = "true";
         selectAllBtn.addEventListener('click', function() {
             document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
             updateExportText();
@@ -910,7 +856,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const deselectAllBtn = document.getElementById('deselect-all-tags');
-    if (deselectAllBtn) {
+    if (deselectAllBtn && !deselectAllBtn.dataset.bound) {
+        deselectAllBtn.dataset.bound = "true";
         deselectAllBtn.addEventListener('click', function() {
             document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
             updateExportText();
@@ -918,11 +865,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
-        cb.addEventListener('change', updateExportText);
+        if (!cb.dataset.bound) {
+            cb.dataset.bound = "true";
+            cb.addEventListener('change', updateExportText);
+        }
     });
 
     const copyBtn = document.getElementById('copy-export-btn');
-    if (copyBtn) {
+    if (copyBtn && !copyBtn.dataset.bound) {
+        copyBtn.dataset.bound = "true";
         copyBtn.addEventListener('click', function() {
             const textarea = document.getElementById('export-deck-text');
             if (textarea) {
@@ -933,7 +884,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+}
+
+// Bind immediately upon script evaluation
+initExportModal();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initExportModal);
+}
 </script>
 
         <!-- 🌟 SEARCH RESULTS SECTION (Strictly Bounded to Grid) -->
