@@ -824,39 +824,43 @@ document.getElementById('deselect-all-tags')?.addEventListener('click', function
 });
 
 function updateExportText() {
-    const rawText = document.getElementById('deckTextArea').value;
-    const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const rawText = document.getElementById('deckTextArea');
+    if (!rawText) return;
     
-    // Get all currently checked tags in the export panel
+    const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
     
-    // Build a fresh lookup map dynamically from the visible Synergy Metrics table rows
+    // Dynamically build lookup map from the visible Synergy Metrics table
     const liveCardThemeMap = {};
-    document.querySelectorAll('#reportSection table tr').forEach((row, index) => {
-        if (index === 0) return; // Skip header
-        const themeCell = row.cells[0];
-        const cardsDiv = row.querySelector('div[id^="cards-"]');
-        
-        if (themeCell && cardsDiv) {
-            let themeName = themeCell.innerText.replace(/^[📊👾🔮]\s*/, '').trim();
-            let cardNamesText = cardsDiv.innerText;
+    const reportSection = document.getElementById('reportSection');
+    if (reportSection) {
+        reportSection.querySelectorAll('table tr').forEach((row, index) => {
+            if (index === 0) return; // Skip header
+            const themeCell = row.cells[0];
+            const cardsDiv = row.querySelector('div[id^="cards-"]');
             
-            if (cardNamesText) {
-                cardNamesText.split(',').forEach(c => {
-                    let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
-                    if (cardClean) {
-                        if (!liveCardThemeMap[cardClean]) {
-                            liveCardThemeMap[cardClean] = [];
+            if (themeCell && cardsDiv) {
+                let themeName = themeCell.innerText.replace(/^[📊👾🔮]\s*/, '').trim();
+                let cardNamesText = cardsDiv.innerText;
+                
+                if (cardNamesText) {
+                    cardNamesText.split(',').forEach(c => {
+                        let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
+                        if (cardClean) {
+                            if (!liveCardThemeMap[cardClean]) {
+                                liveCardThemeMap[cardClean] = [];
+                            }
+                            if (!liveCardThemeMap[cardClean].includes(themeName)) {
+                                liveCardThemeMap[cardClean].push(themeName);
+                            }
                         }
-                        if (!liveCardThemeMap[cardClean].includes(themeName)) {
-                            liveCardThemeMap[cardClean].push(themeName);
-                        }
-                    }
-                });
+                    });
+                }
             }
-        }
-    });
+        });
+    }
 
     const formattedText = rawLines.map(line => {
         let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
@@ -876,38 +880,59 @@ function updateExportText() {
         return lineStr;
     }).join('\n');
     
-    document.getElementById('export-deck-text').value = formattedText;
+    const exportDeckText = document.getElementById('export-deck-text');
+    if (exportDeckText) {
+        exportDeckText.value = formattedText;
+    }
 }
 
-// Hook up event listeners
-document.getElementById('toggle-export-modal-btn')?.addEventListener('click', function() {
-    const panel = document.getElementById('export-panel');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') {
-        updateExportText();
+// Event Listeners with null safety checks
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggle-export-modal-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const panel = document.getElementById('export-panel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                if (panel.style.display === 'block') {
+                    updateExportText();
+                }
+            }
+        });
     }
-});
 
-document.getElementById('select-all-tags')?.addEventListener('click', function() {
-    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
-    updateExportText();
-});
+    const selectAllBtn = document.getElementById('select-all-tags');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
+            updateExportText();
+        });
+    }
 
-document.getElementById('deselect-all-tags')?.addEventListener('click', function() {
-    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
-    updateExportText();
-});
+    const deselectAllBtn = document.getElementById('deselect-all-tags');
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
+            updateExportText();
+        });
+    }
 
-document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
-    cb.addEventListener('change', updateExportText);
-});
-
-document.getElementById('copy-export-btn')?.addEventListener('click', function() {
-    const textarea = document.getElementById('export-deck-text');
-    textarea.select();
-    navigator.clipboard.writeText(textarea.value).then(() => {
-        alert('Copied to clipboard! Ready to paste into Deck Builder.');
+    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateExportText);
     });
+
+    const copyBtn = document.getElementById('copy-export-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+            const textarea = document.getElementById('export-deck-text');
+            if (textarea) {
+                textarea.select();
+                navigator.clipboard.writeText(textarea.value).then(() => {
+                    alert('Copied to clipboard! Ready to paste into Deck Builder.');
+                });
+            }
+        });
+    }
 });
 </script>
 
