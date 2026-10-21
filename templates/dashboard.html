@@ -732,7 +732,7 @@
                     {% endfor %}
                 </div>
                 <textarea id="export-deck-text" class="form-control" rows="8" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px; margin-bottom: 10px;"></textarea>
-                <button type="button" id="copy-archidekt-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Copy for Archidekt Export</button>
+                <button type="button" id="copy-archidekt-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Copy for Export</button>
             </div>
 
             <h2>Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
@@ -856,7 +856,7 @@ document.getElementById('copy-archidekt-btn')?.addEventListener('click', functio
     const textarea = document.getElementById('export-deck-text');
     textarea.select();
     navigator.clipboard.writeText(textarea.value).then(() => {
-        alert('Copied to clipboard! Ready to paste into Archidekt.');
+        alert('Copied to clipboard! Ready to paste into Deck Builder.');
     });
 });
 </script>
