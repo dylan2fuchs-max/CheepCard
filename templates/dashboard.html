@@ -780,7 +780,6 @@
 <div id="theme-data-container" data-themes='{{ theme_lookup | tojson | safe }}' style="display: none;"></div>
 
 <script>
-// Build a safe client-side lookup map supporting multiple tags per card
 const cardThemeMap = {};
 const container = document.getElementById('theme-data-container');
 if (container && container.dataset.themes) {
@@ -789,13 +788,14 @@ if (container && container.dataset.themes) {
         serverThemes.forEach(item => {
             const rawCards = item.cards.split(',');
             rawCards.forEach(c => {
-                const cardClean = c.trim().toLowerCase();
+                // Thoroughly clean backend card entries of any "1x" or quantity formatting
+                let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
                 if (cardClean) {
-                    if (!cardThemeMap[cardClean]) {
-                        cardThemeMap[cardClean] = [];
+                    if (!cardThemeMap[item.name]) {
+                        cardThemeMap[item.name] = [];
                     }
-                    if (!cardThemeMap[cardClean].includes(item.name)) {
-                        cardThemeMap[cardClean].push(item.name);
+                    if (!cardThemeMap[item.name].includes(cardClean)) {
+                        cardThemeMap[item.name].push(cardClean);
                     }
                 }
             });
@@ -827,20 +827,28 @@ function updateExportText() {
     const rawText = document.getElementById('deckTextArea').value;
     const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.trim());
+        .map(cb => cb.value.trim().toLowerCase());
     
     const formattedText = rawLines.map(line => {
-        let cleanCard = line.replace(/^\d+x\s*/i, '').replace(/^\d+\s*/, '').replace(/^[📊👾🔮]\s*/, '').trim();
+        // Clean the card name from the textarea line completely (stripping "1x", "1", icons, etc.)
+        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
         let cardKey = cleanCard.toLowerCase();
         
         let matchedTags = [];
-        if (cardThemeMap[cardKey]) {
-            matchedTags = cardThemeMap[cardKey].filter(tag => checkedTags.includes(tag));
+        // Loop through all themes stored in our client map and check if this card name exists in them
+        for (const [themeName, cardList] of Object.entries(cardThemeMap)) {
+            // Check if this theme is currently checked in the export panel checkboxes
+            if (checkedTags.includes(themeName.toLowerCase())) {
+                // cardList contains cleaned lowercase card names from the backend
+                if (cardList.includes(cardKey)) {
+                    matchedTags.push(themeName);
+                }
+            }
         }
 
         let lineStr = `1x ${cleanCard}`;
         if (matchedTags.length > 0) {
-            // Joins multiple tags with backticks cleanly (e.g. `Card Draw` `Tokens`)
+            // Append all matching tags wrapped in backticks separated by spaces
             lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
         }
         return lineStr;
