@@ -780,14 +780,13 @@
 <div id="theme-data-container" data-themes='{{ theme_lookup | tojson | safe }}' style="display: none;"></div>
 
 <script>
-// Build a safe client-side lookup map from the hidden DOM container
+// Build a safe client-side lookup map supporting multiple tags per card
 const cardThemeMap = {};
 const container = document.getElementById('theme-data-container');
 if (container && container.dataset.themes) {
     try {
         const serverThemes = JSON.parse(container.dataset.themes);
         serverThemes.forEach(item => {
-            // Split by comma since Python's run_synergy_analysis outputs card names joined by commas: ", ".join(...)
             const rawCards = item.cards.split(',');
             rawCards.forEach(c => {
                 const cardClean = c.trim().toLowerCase();
@@ -795,7 +794,6 @@ if (container && container.dataset.themes) {
                     if (!cardThemeMap[cardClean]) {
                         cardThemeMap[cardClean] = [];
                     }
-                    // Prevent duplicate tag entries for the same card
                     if (!cardThemeMap[cardClean].includes(item.name)) {
                         cardThemeMap[cardClean].push(item.name);
                     }
@@ -842,7 +840,8 @@ function updateExportText() {
 
         let lineStr = `1x ${cleanCard}`;
         if (matchedTags.length > 0) {
-            lineStr += ` \`${matchedTags[0]}\``;
+            // Joins multiple tags with backticks cleanly (e.g. `Card Draw` `Tokens`)
+            lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
         }
         return lineStr;
     }).join('\n');
