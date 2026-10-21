@@ -790,6 +790,19 @@ def synergy():
     deck_lines = [line.strip() for line in decklist_raw.split("\n") if line.strip()]
     report = run_synergy_analysis(deck_lines) if deck_lines else {}
 
+    # Build the safe card-to-themes dictionary for multi-tag frontend exports
+    card_theme_mapping = {}
+    if report and report.get('themes'):
+        for item in report['themes']:
+            theme_name = item['theme'].replace('📊', '').replace('👾', '').replace('🔮', '').strip()
+            cards_list = [c.strip() for c in item['cards'].split(',') if c.strip()]
+            for card in cards_list:
+                clean_card = card.lower()
+                if clean_card not in card_theme_mapping:
+                    card_theme_mapping[clean_card] = []
+                if theme_name not in card_theme_mapping[clean_card]:
+                    card_theme_mapping[clean_card].append(theme_name)
+
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         data = request.get_json(silent=True) or request.form
         selected_theme = data.get('theme_name')
@@ -821,6 +834,7 @@ def synergy():
         "dashboard.html", 
         report=report, 
         deck_input=deck_input,
+        card_theme_mapping=card_theme_mapping,
         search_reports=[], 
         selected_colors=[], 
         selected_classes=[], 
