@@ -790,6 +790,34 @@ def synergy():
     deck_lines = [line.strip() for line in decklist_raw.split("\n") if line.strip()]
     report = run_synergy_analysis(deck_lines) if deck_lines else {}
 
+    # Check if this is an AJAX / fetch request requesting sub-theme construction
+    if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        data = request.get_json(silent=True) or request.form
+        selected_theme = data.get('theme_name')
+        
+        if selected_theme and report.get('themes'):
+            core_cards = set()
+            subtheme_cards = set()
+            
+            for item in report['themes']:
+                theme_name = item['theme']
+                cards_in_theme = [c.strip() for c in item['cards'].split(',') if c.strip()]
+                
+                if "Card Draw" in theme_name or "Ramp & Land Velocity" in theme_name:
+                    core_cards.update(cards_in_theme)
+                    
+                if selected_theme.lower() in theme_name.lower():
+                    subtheme_cards.update(cards_in_theme)
+
+            combined_package = list(core_cards.union(subtheme_cards))
+            
+            return jsonify({
+                "status": "success",
+                "core_count": len(core_cards),
+                "subtheme_count": len(subtheme_cards),
+                "combined_deck": combined_package
+            })
+
     return render_template(
         "dashboard.html", 
         report=report, 
