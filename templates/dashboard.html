@@ -826,29 +826,51 @@ document.getElementById('deselect-all-tags')?.addEventListener('click', function
 function updateExportText() {
     const rawText = document.getElementById('deckTextArea').value;
     const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.trim().toLowerCase());
     
+    // Get all currently checked tags in the export panel
+    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
+        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
+    
+    // Build a fresh lookup map dynamically from the visible Synergy Metrics table rows
+    const liveCardThemeMap = {};
+    document.querySelectorAll('#reportSection table tr').forEach((row, index) => {
+        if (index === 0) return; // Skip header
+        const themeCell = row.cells[0];
+        const cardsDiv = row.querySelector('div[id^="cards-"]');
+        
+        if (themeCell && cardsDiv) {
+            let themeName = themeCell.innerText.replace(/^[📊👾🔮]\s*/, '').trim();
+            let cardNamesText = cardsDiv.innerText;
+            
+            if (cardNamesText) {
+                cardNamesText.split(',').forEach(c => {
+                    let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
+                    if (cardClean) {
+                        if (!liveCardThemeMap[cardClean]) {
+                            liveCardThemeMap[cardClean] = [];
+                        }
+                        if (!liveCardThemeMap[cardClean].includes(themeName)) {
+                            liveCardThemeMap[cardClean].push(themeName);
+                        }
+                    }
+                });
+            }
+        }
+    });
+
     const formattedText = rawLines.map(line => {
-        // Clean the card name from the textarea line completely (stripping "1x", "1", icons, etc.)
         let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
         let cardKey = cleanCard.toLowerCase();
         
         let matchedTags = [];
-        // Loop through all themes stored in our client map and check if this card name exists in them
-        for (const [themeName, cardList] of Object.entries(cardThemeMap)) {
-            // Check if this theme is currently checked in the export panel checkboxes
-            if (checkedTags.includes(themeName.toLowerCase())) {
-                // cardList contains cleaned lowercase card names from the backend
-                if (cardList.includes(cardKey)) {
-                    matchedTags.push(themeName);
-                }
-            }
+        if (liveCardThemeMap[cardKey]) {
+            matchedTags = liveCardThemeMap[cardKey].filter(themeName => 
+                checkedTags.includes(themeName.toLowerCase())
+            );
         }
 
         let lineStr = `1x ${cleanCard}`;
         if (matchedTags.length > 0) {
-            // Append all matching tags wrapped in backticks separated by spaces
             lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
         }
         return lineStr;
@@ -856,6 +878,25 @@ function updateExportText() {
     
     document.getElementById('export-deck-text').value = formattedText;
 }
+
+// Hook up event listeners
+document.getElementById('toggle-export-modal-btn')?.addEventListener('click', function() {
+    const panel = document.getElementById('export-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'block') {
+        updateExportText();
+    }
+});
+
+document.getElementById('select-all-tags')?.addEventListener('click', function() {
+    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
+    updateExportText();
+});
+
+document.getElementById('deselect-all-tags')?.addEventListener('click', function() {
+    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
+    updateExportText();
+});
 
 document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
     cb.addEventListener('change', updateExportText);
