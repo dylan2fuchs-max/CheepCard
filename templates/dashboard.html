@@ -769,14 +769,25 @@
         {% endif %}
 </div>
 
+<!-- Store the server themes safely in a hidden data attribute with proper server-side lookup generation -->
+{% set theme_lookup = [] %}
+{% if report is defined and report and report.themes %}
+    {% for item in report.themes %}
+        {% set clean_t = item.theme | replace('📊', '') | replace('👾', '') | replace('🔮', '') | trim %}
+        {% set _ = theme_lookup.append({'name': clean_t, 'cards': item.cards}) %}
+    {% endfor %}
+{% endif %}
+<div id="theme-data-container" data-themes='{{ theme_lookup | tojson | safe }}' style="display: none;"></div>
+
 <script>
-// Build a safe client-side lookup map from the hidden DOM container (Linter Friendly)
+// Build a safe client-side lookup map from the hidden DOM container
 const cardThemeMap = {};
 const container = document.getElementById('theme-data-container');
 if (container && container.dataset.themes) {
     try {
         const serverThemes = JSON.parse(container.dataset.themes);
         serverThemes.forEach(item => {
+            // Split by comma since Python's run_synergy_analysis outputs card names joined by commas: ", ".join(...)
             const rawCards = item.cards.split(',');
             rawCards.forEach(c => {
                 const cardClean = c.trim().toLowerCase();
@@ -784,7 +795,10 @@ if (container && container.dataset.themes) {
                     if (!cardThemeMap[cardClean]) {
                         cardThemeMap[cardClean] = [];
                     }
-                    cardThemeMap[cardClean].push(item.name);
+                    // Prevent duplicate tag entries for the same card
+                    if (!cardThemeMap[cardClean].includes(item.name)) {
+                        cardThemeMap[cardClean].push(item.name);
+                    }
                 }
             });
         });
