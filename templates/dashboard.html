@@ -714,19 +714,28 @@
         
         {% if report is defined and report %}
         <div class="result-box full-width" id="reportSection" style="position: relative;">
-            <!-- Top Right Archidekt Tag Manager Control -->
-            <div style="position: absolute; top: 15px; right: 20px; background: rgba(0,0,0,0.25); padding: 8px 12px; border-radius: 6px; font-size: 0.85em; z-index: 10;">
-                <span style="font-weight: bold; display: block; margin-bottom: 4px;">🏷️ Export Tags Active:</span>
-                <div id="export-tag-checkboxes" style="max-height: 80px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;">
+            <!-- Top Right Export Button Triggering Modal / Container -->
+            <div style="position: absolute; top: 15px; right: 20px; z-index: 10;">
+                <button type="button" id="toggle-export-modal-btn" style="background: #e67e22; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
+                    📦 Export Deck
+                </button>
+            </div>
+
+            <!-- Export Configuration Panel (Hidden by default, toggled via Export Deck button) -->
+            <div id="export-panel" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
+                <div style="font-weight: bold; margin-bottom: 8px;">🏷️ Select Tags to Include in Export:</div>
+                <div id="export-tag-checkboxes" style="max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
                     {% for item in report.themes %}
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.9em;">
                         <input type="checkbox" class="tag-selector-checkbox" value="{{ item.theme }}" checked> {{ item.theme }}
                     </label>
                     {% endfor %}
                 </div>
+                <textarea id="export-deck-text" class="form-control" rows="8" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px; margin-bottom: 10px;"></textarea>
+                <button type="button" id="copy-archidekt-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Copy for Archidekt Export</button>
             </div>
 
-            <div class="archetype-banner" style="margin-right: 220px;">Identified Deck Architecture Play-style: {{ report.archetype }}</div>
+            <div class="archetype-banner" style="margin-right: 140px;">Identified Deck Architecture Play-style: {{ report.archetype }}</div>
             <h2>Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
             <div class="scrollable-table">
                 <table> 
@@ -737,11 +746,13 @@
                         <td>{{ item.count }}</td>
                         <td>{{ item.percentage }}</td>
                         <td>
+                            {% if '🔮' in item.theme %}
+                            <button type="button" class="build-deck-btn" data-theme="{{ item.theme }}" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 5px;">
+                                Build Around This
+                            </button>
+                            {% endif %}
                             <button type="button" onclick="const el = document.getElementById('cards-{{ loop.index }}'); el.style.display = el.style.display === 'none' ? 'block' : 'none';" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">
                                 View Cards ({{ item.count }})
-                            </button>
-                            <button type="button" class="build-deck-btn" data-theme="{{ item.theme }}" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 5px;">
-                                Build Around This
                             </button>
                             <div id="cards-{{ loop.index }}" style="display: none; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px; line-height: 1.4; color: var(--card-text); max-height: 150px; overflow-y: auto;">
                                 {{ item.cards }}
@@ -752,12 +763,13 @@
                 </table>
             </div>
 
-            <!-- Dynamic Sub-Theme Deck Output Section -->
+            <!-- Dynamic Sub-Theme Built Results Container -->
             <div id="dynamic-deck-container" class="mt-4 p-4" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.15); border-radius: 6px;">
-                <h3>Generated Deck: <span id="active-subtheme-title"></span></h3>
-                <p>Locked Core + Selected Sub-Theme Cards (<span id="total-built-count">0</span> Cards):</p>
-                <textarea id="export-deck-text" class="form-control" rows="10" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px;"></textarea>
-                <button type="button" id="copy-archidekt-btn" style="background: #e67e22; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px;">Copy for Archidekt Export</button>
+                <h3>Built Sub-Theme Deck: <span id="active-subtheme-title"></span></h3>
+                <p>Locked Core Utilities + Selected Sub-Theme Cards (<span id="total-built-count">0</span> Cards Total):</p>
+                <div class="scrollable-table" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px;">
+                    <ul id="built-cards-list" style="margin: 0; padding-left: 20px; font-family: monospace; font-size: 0.9em;"></ul>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -794,6 +806,9 @@ document.querySelectorAll('.build-deck-btn').forEach(button => {
                 document.getElementById('active-subtheme-title').innerText = themeName;
                 document.getElementById('total-built-count').innerText = currentDeckCards.length;
                 
+                const listEl = document.getElementById('built-cards-list');
+                listEl.innerHTML = currentDeckCards.map(c => `<li>${c}</li>`).join('');
+                
                 updateExportText();
                 
                 const container = document.getElementById('dynamic-deck-container');
@@ -805,15 +820,27 @@ document.querySelectorAll('.build-deck-btn').forEach(button => {
     });
 });
 
+document.getElementById('toggle-export-modal-btn')?.addEventListener('click', function() {
+    const panel = document.getElementById('export-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'block') {
+        if (currentDeckCards.length === 0) {
+            // Default to textarea deck if no subtheme built yet
+            const rawText = document.getElementById('deckTextArea').value;
+            currentDeckCards = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        }
+        updateExportText();
+    }
+});
+
 function updateExportText() {
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked')).map(cb => cb.value);
     
     const formattedText = currentDeckCards.map(card => {
-        // If card belongs to the built sub-theme or core, attach checked tags if applicable
-        let line = `1x ${card}`;
+        let cleanCard = card.replace(/^1x\s+/i, '');
+        let line = `1x ${cleanCard}`;
         if (checkedTags.length > 0) {
-            // Pick primary active theme or attach tags
-            let tagToUse = checkedTags.includes(currentActiveTheme) ? currentActiveTheme : checkedTags[0];
+            let tagToUse = (currentActiveTheme && checkedTags.includes(currentActiveTheme)) ? currentActiveTheme : checkedTags[0];
             line += ` \`${tagToUse}\``;
         }
         return line;

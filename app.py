@@ -790,7 +790,6 @@ def synergy():
     deck_lines = [line.strip() for line in decklist_raw.split("\n") if line.strip()]
     report = run_synergy_analysis(deck_lines) if deck_lines else {}
 
-    # Check if this is an AJAX / fetch request requesting sub-theme construction
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         data = request.get_json(silent=True) or request.form
         selected_theme = data.get('theme_name')
