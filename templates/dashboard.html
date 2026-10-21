@@ -714,8 +714,9 @@
         
         {% if report is defined and report %}
         <div class="result-box full-width" id="reportSection" style="position: relative;">
-            <!-- Top Right Export Button Triggering Panel -->
-            <div style="position: absolute; top: 15px; right: 20px; z-index: 10;">
+            <!-- Header Row with Metrics Title and Export Button Aligned Horizontally -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h2 style="margin: 0;">Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
                 <button type="button" id="toggle-export-modal-btn" style="background: #e67e22; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
                     📦 Export Deck
                 </button>
@@ -723,8 +724,8 @@
 
             <!-- Export Configuration Panel -->
             <div id="export-panel" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 15px; flex-wrap: wrap;">
-                    <div style="font-weight: bold; display: flex; align-items: center; gap: 12px;">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-weight: bold; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
                         <span>🏷️ Select Tags to Include in Export:</span>
                         <div style="display: flex; gap: 6px;">
                             <button type="button" id="select-all-tags" style="background: #3498db; color: white; border: none; padding: 3px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Select All</button>
@@ -741,10 +742,9 @@
                     {% endfor %}
                 </div>
                 <textarea id="export-deck-text" class="form-control" rows="8" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px; margin-bottom: 10px;"></textarea>
-                <button type="button" id="copy-archidekt-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Copy for Export</button>
+                <button type="button" id="copy-export-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Copy for Export</button>
             </div>
 
-            <h2>Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
             <div class="scrollable-table">
                 <table> 
                     <tr><th>Theme/Variable Subtype</th><th>Card Count</th><th>Deck %</th><th>Matching Row Items</th></tr>
@@ -754,11 +754,6 @@
                         <td>{{ item.count }}</td>
                         <td>{{ item.percentage }}</td>
                         <td>
-                            {% if '🔮' in item.theme %}
-                            <button type="button" class="build-deck-btn" data-theme="{{ item.theme }}" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 8px;">
-                                Build Around This
-                            </button>
-                            {% endif %}
                             <button type="button" onclick="const el = document.getElementById('cards-{{ loop.index }}'); el.style.display = el.style.display === 'none' ? 'block' : 'none';" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">
                                 View Cards ({{ item.count }})
                             </button>
@@ -770,73 +765,38 @@
                     {% endfor %}
                 </table>
             </div>
-
-            <!-- Dynamic Sub-Theme Built Results Container -->
-            <div id="dynamic-deck-container" class="mt-4 p-4" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.15); border-radius: 6px;">
-                <h3>Built Sub-Theme Deck: <span id="active-subtheme-title"></span></h3>
-                <p>Locked Core Utilities + Selected Sub-Theme Cards (<span id="total-built-count">0</span> Cards Total):</p>
-                <div class="scrollable-table" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px;">
-                    <ul id="built-cards-list" style="margin: 0; padding-left: 20px; font-family: monospace; font-size: 0.9em;"></ul>
-                </div>
-            </div>
         </div>
         {% endif %}
 </div>
 
 <script>
-let currentDeckCards = [];
-let currentActiveTheme = '';
-
-document.querySelectorAll('.build-deck-btn').forEach(button => {
-    button.addEventListener('click', function() {
-        const rawTheme = this.getAttribute('data-theme');
-        const themeName = rawTheme.replace(/^[📊👾🔮]\s*/, '').trim();
-        const decklistText = document.getElementById('deckTextArea').value;
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-        
-        fetch('/synergy', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                decklist: decklistText,
-                theme_name: themeName
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.status === 'success') {
-                currentDeckCards = data.combined_deck;
-                currentActiveTheme = themeName;
-                
-                document.getElementById('active-subtheme-title').innerText = rawTheme;
-                document.getElementById('total-built-count').innerText = currentDeckCards.length;
-                
-                const listEl = document.getElementById('built-cards-list');
-                listEl.innerHTML = currentDeckCards.map(c => `<li>${c}</li>`).join('');
-                
-                updateExportText();
-                
-                const container = document.getElementById('dynamic-deck-container');
-                container.style.display = 'block';
-                container.scrollIntoView({ behavior: 'smooth' });
-            }
-        })
-        .catch(error => console.error('Error building sub-theme deck:', error));
-    });
-});
+// Build a safe client-side lookup map from the hidden DOM container (Linter Friendly)
+const cardThemeMap = {};
+const container = document.getElementById('theme-data-container');
+if (container && container.dataset.themes) {
+    try {
+        const serverThemes = JSON.parse(container.dataset.themes);
+        serverThemes.forEach(item => {
+            const rawCards = item.cards.split(',');
+            rawCards.forEach(c => {
+                const cardClean = c.trim().toLowerCase();
+                if (cardClean) {
+                    if (!cardThemeMap[cardClean]) {
+                        cardThemeMap[cardClean] = [];
+                    }
+                    cardThemeMap[cardClean].push(item.name);
+                }
+            });
+        });
+    } catch (e) {
+        console.error("Failed to parse theme data", e);
+    }
+}
 
 document.getElementById('toggle-export-modal-btn')?.addEventListener('click', function() {
     const panel = document.getElementById('export-panel');
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     if (panel.style.display === 'block') {
-        if (currentDeckCards.length === 0) {
-            const rawText = document.getElementById('deckTextArea').value;
-            currentDeckCards = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        }
         updateExportText();
     }
 });
@@ -852,18 +812,25 @@ document.getElementById('deselect-all-tags')?.addEventListener('click', function
 });
 
 function updateExportText() {
+    const rawText = document.getElementById('deckTextArea').value;
+    const rawLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim());
+        .map(cb => cb.value.trim());
     
-    const formattedText = currentDeckCards.map(card => {
-        let cleanCard = card.replace(/^\d+x\s*/i, '').replace(/^\d+\s*/, '').replace(/^[📊👾🔮]\s*/, '').trim();
-        let line = `1x ${cleanCard}`;
-        if (checkedTags.length > 0) {
-            let activeClean = currentActiveTheme ? currentActiveTheme.replace(/^[📊👾🔮]\s*/, '').trim() : '';
-            let tagToUse = (activeClean && checkedTags.includes(activeClean)) ? activeClean : checkedTags[0];
-            line += ` \`${tagToUse}\``;
+    const formattedText = rawLines.map(line => {
+        let cleanCard = line.replace(/^\d+x\s*/i, '').replace(/^\d+\s*/, '').replace(/^[📊👾🔮]\s*/, '').trim();
+        let cardKey = cleanCard.toLowerCase();
+        
+        let matchedTags = [];
+        if (cardThemeMap[cardKey]) {
+            matchedTags = cardThemeMap[cardKey].filter(tag => checkedTags.includes(tag));
         }
-        return line;
+
+        let lineStr = `1x ${cleanCard}`;
+        if (matchedTags.length > 0) {
+            lineStr += ` \`${matchedTags[0]}\``;
+        }
+        return lineStr;
     }).join('\n');
     
     document.getElementById('export-deck-text').value = formattedText;
@@ -873,7 +840,7 @@ document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
     cb.addEventListener('change', updateExportText);
 });
 
-document.getElementById('copy-archidekt-btn')?.addEventListener('click', function() {
+document.getElementById('copy-export-btn')?.addEventListener('click', function() {
     const textarea = document.getElementById('export-deck-text');
     textarea.select();
     navigator.clipboard.writeText(textarea.value).then(() => {
