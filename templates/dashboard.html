@@ -770,7 +770,8 @@
 
 <script>
 function updateExportText() {
-    const rawText = document.getElementById('deckTextArea');
+    // Target the textarea safely by its name attribute
+    const rawText = document.querySelector('textarea[name="decklist"]') || document.getElementById('deckTextArea');
     if (!rawText) return;
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -778,42 +779,47 @@ function updateExportText() {
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
     
-    const liveCardThemeMap = {};
-    const reportSection = document.getElementById('reportSection');
-    if (reportSection) {
-        reportSection.querySelectorAll('table tr').forEach((row, index) => {
-            if (index === 0) return;
-            const themeCell = row.cells[0];
-            const cardsDiv = row.querySelector('div[id^="cards-"]');
-            
-            if (themeCell && cardsDiv) {
-                let themeName = themeCell.innerText.replace(/^[📊👾🔮]\s*/, '').trim();
-                let cardNamesText = cardsDiv.innerText;
-                
-                if (cardNamesText) {
-                    cardNamesText.split(',').forEach(c => {
-                        let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
-                        if (cardClean) {
-                            if (!liveCardThemeMap[cardClean]) {
-                                liveCardThemeMap[cardClean] = [];
-                            }
-                            if (!liveCardThemeMap[cardClean].includes(themeName)) {
-                                liveCardThemeMap[cardClean].push(themeName);
-                            }
-                        }
-                    });
-                }
-            }
-        });
-    }
-
     const formattedText = rawLines.map(line => {
         let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
         let cardKey = cleanCard.toLowerCase();
         
         let matchedTags = [];
-        if (liveCardThemeMap[cardKey]) {
-            matchedTags = liveCardThemeMap[cardKey].filter(themeName => 
+        if (cardThemeMap[cardKey]) {
+            matchedTags = cardThemeMap[cardKey].filter(themeName => 
+                checkedTags.includes(themeName.toLowerCase())
+            );
+        }
+
+        let lineStr = `1x ${cleanCard}`;
+        if (matchedTags.length > 0) {
+            lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
+        }
+        return lineStr;
+    }).join('\n');
+    
+    const exportDeckText = document.getElementById('export-deck-text');
+    if (exportDeckText) {
+        exportDeckText.value = formattedText;
+    }
+}
+
+function updateExportText() {
+    const rawText = document.getElementById('deckTextArea');
+    if (!rawText) return;
+    
+    const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    
+    // Get all currently checked box values
+    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
+        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
+    
+    const formattedText = rawLines.map(line => {
+        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
+        let cardKey = cleanCard.toLowerCase();
+        
+        let matchedTags = [];
+        if (cardThemeMap[cardKey]) {
+            matchedTags = cardThemeMap[cardKey].filter(themeName => 
                 checkedTags.includes(themeName.toLowerCase())
             );
         }
@@ -886,7 +892,6 @@ function initExportModal() {
     }
 }
 
-// Bind immediately upon script evaluation
 initExportModal();
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initExportModal);
