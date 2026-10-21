@@ -723,11 +723,13 @@
 
             <!-- Export Configuration Panel -->
             <div id="export-panel" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap;">
-                    <div style="font-weight: bold;">🏷️ Select Tags to Include in Export:</div>
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" id="select-all-tags" style="background: #3498db; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Select All</button>
-                        <button type="button" id="deselect-all-tags" style="background: #7f8c8d; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Unselect All</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 15px; flex-wrap: wrap;">
+                    <div style="font-weight: bold; display: flex; align-items: center; gap: 12px;">
+                        <span>🏷️ Select Tags to Include in Export:</span>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" id="select-all-tags" style="background: #3498db; color: white; border: none; padding: 3px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Select All</button>
+                            <button type="button" id="deselect-all-tags" style="background: #7f8c8d; color: white; border: none; padding: 3px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Unselect All</button>
+                        </div>
                     </div>
                 </div>
                 <div id="export-tag-checkboxes" style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; padding-right: 5px;">
@@ -753,7 +755,7 @@
                         <td>{{ item.percentage }}</td>
                         <td>
                             {% if '🔮' in item.theme %}
-                            <button type="button" class="build-deck-btn" data-theme="{{ item.theme }}" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 5px;">
+                            <button type="button" class="build-deck-btn" data-theme="{{ item.theme }}" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 8px;">
                                 Build Around This
                             </button>
                             {% endif %}
@@ -854,7 +856,7 @@ function updateExportText() {
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim());
     
     const formattedText = currentDeckCards.map(card => {
-        let cleanCard = card.replace(/^\d+x\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
+        let cleanCard = card.replace(/^\d+x\s*/i, '').replace(/^\d+\s*/, '').replace(/^[📊👾🔮]\s*/, '').trim();
         let line = `1x ${cleanCard}`;
         if (checkedTags.length > 0) {
             let activeClean = currentActiveTheme ? currentActiveTheme.replace(/^[📊👾🔮]\s*/, '').trim() : '';
