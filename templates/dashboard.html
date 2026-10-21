@@ -714,31 +714,32 @@
         
         {% if report is defined and report %}
         <div class="result-box full-width" id="reportSection" style="position: relative;">
-            <!-- Top Right Export Button Triggering Modal / Container -->
+            <!-- Top Right Export Button Triggering Panel -->
             <div style="position: absolute; top: 15px; right: 20px; z-index: 10;">
                 <button type="button" id="toggle-export-modal-btn" style="background: #e67e22; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
                     📦 Export Deck
                 </button>
             </div>
 
-            <!-- Export Configuration Panel (Hidden by default, toggled via Export Deck button) -->
+            <!-- Export Configuration Panel -->
             <div id="export-panel" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap;">
                     <div style="font-weight: bold;">🏷️ Select Tags to Include in Export:</div>
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" id="select-all-tags" style="background: #3498db; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Select All</button>
-                        <button type="button" id="deselect-all-tags" style="background: #7f8c8d; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Unselect All</button>
+                        <button type="button" id="select-all-tags" style="background: #3498db; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Select All</button>
+                        <button type="button" id="deselect-all-tags" style="background: #7f8c8d; color: white; border: none; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Unselect All</button>
                     </div>
                 </div>
-                <div id="export-tag-checkboxes" style="max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+                <div id="export-tag-checkboxes" style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; padding-right: 5px;">
                     {% for item in report.themes %}
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.9em;">
-                        <input type="checkbox" class="tag-selector-checkbox" value="{{ item.theme }}" checked> {{ item.theme }}
+                    {% set clean_theme_val = item.theme | replace('📊', '') | replace('👾', '') | replace('🔮', '') | trim %}
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9em;">
+                        <input type="checkbox" class="tag-selector-checkbox" value="{{ clean_theme_val }}" checked> {{ item.theme }}
                     </label>
                     {% endfor %}
                 </div>
                 <textarea id="export-deck-text" class="form-control" rows="8" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px; margin-bottom: 10px;"></textarea>
-                <button type="button" id="copy-archidekt-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Copy for Export</button>
+                <button type="button" id="copy-archidekt-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Copy for Export</button>
             </div>
 
             <h2>Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
@@ -853,7 +854,7 @@ function updateExportText() {
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim());
     
     const formattedText = currentDeckCards.map(card => {
-        let cleanCard = card.replace(/^1x\s+/i, '').trim();
+        let cleanCard = card.replace(/^\d+x\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
         let line = `1x ${cleanCard}`;
         if (checkedTags.length > 0) {
             let activeClean = currentActiveTheme ? currentActiveTheme.replace(/^[📊👾🔮]\s*/, '').trim() : '';
