@@ -770,46 +770,20 @@
 
 <script>
 function updateExportText() {
-    // Target the textarea safely by its name attribute
-    const rawText = document.querySelector('textarea[name="decklist"]') || document.getElementById('deckTextArea');
-    if (!rawText) return;
-    
-    const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    
-    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
-    
-    const formattedText = rawLines.map(line => {
-        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
-        let cardKey = cleanCard.toLowerCase();
-        
-        let matchedTags = [];
-        if (cardThemeMap[cardKey]) {
-            matchedTags = cardThemeMap[cardKey].filter(themeName => 
-                checkedTags.includes(themeName.toLowerCase())
-            );
-        }
-
-        let lineStr = `1x ${cleanCard}`;
-        if (matchedTags.length > 0) {
-            lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
-        }
-        return lineStr;
-    }).join('\n');
-    
-    const exportDeckText = document.getElementById('export-deck-text');
-    if (exportDeckText) {
-        exportDeckText.value = formattedText;
+    // Find the input decklist textarea using any common ID or name, ensuring it's not the export box
+    const rawText = document.getElementById('decklist') || 
+                    document.getElementById('deckTextArea') || 
+                    document.querySelector('textarea[name="decklist"]') || 
+                    document.querySelector('textarea:not(#export-deck-text)');
+                    
+    if (!rawText || !rawText.value.trim()) {
+        const exportDeckText = document.getElementById('export-deck-text');
+        if (exportDeckText) exportDeckText.value = "No decklist found in input box.";
+        return;
     }
-}
-
-function updateExportText() {
-    const rawText = document.getElementById('deckTextArea');
-    if (!rawText) return;
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
-    // Get all currently checked box values
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
     
