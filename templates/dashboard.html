@@ -723,7 +723,13 @@
 
             <!-- Export Configuration Panel (Hidden by default, toggled via Export Deck button) -->
             <div id="export-panel" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-color);">
-                <div style="font-weight: bold; margin-bottom: 8px;">🏷️ Select Tags to Include in Export:</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-weight: bold;">🏷️ Select Tags to Include in Export:</div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" id="select-all-tags" style="background: #3498db; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Select All</button>
+                        <button type="button" id="deselect-all-tags" style="background: #7f8c8d; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">Unselect All</button>
+                    </div>
+                </div>
                 <div id="export-tag-checkboxes" style="max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
                     {% for item in report.themes %}
                     <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 0.9em;">
@@ -780,7 +786,8 @@ let currentActiveTheme = '';
 
 document.querySelectorAll('.build-deck-btn').forEach(button => {
     button.addEventListener('click', function() {
-        const themeName = this.getAttribute('data-theme');
+        const rawTheme = this.getAttribute('data-theme');
+        const themeName = rawTheme.replace(/^[📊👾🔮]\s*/, '').trim();
         const decklistText = document.getElementById('deckTextArea').value;
         const csrfToken = document.querySelector('input[name="csrf_token"]').value;
         
@@ -802,7 +809,7 @@ document.querySelectorAll('.build-deck-btn').forEach(button => {
                 currentDeckCards = data.combined_deck;
                 currentActiveTheme = themeName;
                 
-                document.getElementById('active-subtheme-title').innerText = themeName;
+                document.getElementById('active-subtheme-title').innerText = rawTheme;
                 document.getElementById('total-built-count').innerText = currentDeckCards.length;
                 
                 const listEl = document.getElementById('built-cards-list');
@@ -824,7 +831,6 @@ document.getElementById('toggle-export-modal-btn')?.addEventListener('click', fu
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     if (panel.style.display === 'block') {
         if (currentDeckCards.length === 0) {
-            // Default to textarea deck if no subtheme built yet
             const rawText = document.getElementById('deckTextArea').value;
             currentDeckCards = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         }
@@ -832,14 +838,26 @@ document.getElementById('toggle-export-modal-btn')?.addEventListener('click', fu
     }
 });
 
+document.getElementById('select-all-tags')?.addEventListener('click', function() {
+    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
+    updateExportText();
+});
+
+document.getElementById('deselect-all-tags')?.addEventListener('click', function() {
+    document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
+    updateExportText();
+});
+
 function updateExportText() {
-    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked')).map(cb => cb.value);
+    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
+        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim());
     
     const formattedText = currentDeckCards.map(card => {
-        let cleanCard = card.replace(/^1x\s+/i, '');
+        let cleanCard = card.replace(/^1x\s+/i, '').trim();
         let line = `1x ${cleanCard}`;
         if (checkedTags.length > 0) {
-            let tagToUse = (currentActiveTheme && checkedTags.includes(currentActiveTheme)) ? currentActiveTheme : checkedTags[0];
+            let activeClean = currentActiveTheme ? currentActiveTheme.replace(/^[📊👾🔮]\s*/, '').trim() : '';
+            let tagToUse = (activeClean && checkedTags.includes(activeClean)) ? activeClean : checkedTags[0];
             line += ` \`${tagToUse}\``;
         }
         return line;
