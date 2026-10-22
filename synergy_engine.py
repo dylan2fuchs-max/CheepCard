@@ -64,9 +64,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
     if deck_size == 0:
         return {}
 
-    # Build reference maps directly from PostgreSQL via SQLAlchemy
-    card_text_map = {}
-    card_type_map = {}
+    card_db_map = {}
     
     try:
         db_cards = Card.query.all()
@@ -86,105 +84,97 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
     # 1. EXPANDED AGGRESSIVE FILLER LIST
     filler_words = AUTO_FILLER_WORDS
+    theme_engine = ThemeEngine()
 
-    core_categories = {
-        "Card Draw": {
-            "keywords": ["draw", "draws", "drawing"],
-            "regex_patterns": [],
-            "exclude_type": None,
-            "cards": set(),
-        },
-        "Ramp & Land Velocity": {
-            "keywords": [
-                "ramp",
-                "additional land",
-                "basic land card, put it onto the battlefield",
-                "put land",
-            ],
-            "regex_patterns": [
-                r"\badd\s+(?:\{[wubrgc0-9xyz/]+\}|\bone\s+mana\b)",
-                r"\bput\s+.*?land.*?\bonto the battlefield\b",
-            ],
-            "exclude_type": "land",
-            "cards": set(),
-        },
+    # Track core category card pools separately
+    core_pools = {
+        "Card Draw": set(),
+        "Ramp": set(),
+        "Land": set(),
+        "Removal": set(),
+        "Board Wipes": set()
     }
 
-    theme_engine = ThemeEngine()
     theme_card_pools = {theme: set() for theme in theme_engine.theme_rules.keys()}
-
     raw_theme_pool = []
     card_assignments = {card.strip(): [] for card in deck_list if card.strip()}
     
-    # Track physical creature types directly from your type column map
     creature_type_pool = []
     card_creature_type_assignments = {card.strip(): [] for card in deck_list if card.strip()}
+    card_theme_mapping = {}
 
     for card_name in deck_list:
         raw_string = str(card_name).strip().lower()
         if not raw_string:
             continue
             
-        rules_text = ""
-        current_card_type = ""
-        actual_name_in_excel = card_name.strip()
+        matched_card_obj = None
+        actual_name = card_name.strip()
         
-        if raw_string in card_text_map:
-            rules_text = card_text_map[raw_string]
-            current_card_type = card_type_map[raw_string]
+        if raw_string in card_db_map:
+            matched_card_obj = card_db_map[raw_string]
+            actual_name = matched_card_obj.name.title()
         else:
-            for excel_name, text_content in card_text_map.items():
-                if raw_string in excel_name or excel_name in raw_string:
-                    rules_text = text_content
-                    current_card_type = card_type_map[excel_name]
-                    actual_name_in_excel = excel_name.title()
+            for db_name, c_obj in card_db_map.items():
+                if raw_string in db_name or db_name in raw_string:
+                    matched_card_obj = c_obj
+                    actual_name = db_name.title()
                     break
 
-        if not rules_text:
+        if not matched_card_obj:
             continue
 
-        # 1. PROCESS CORE THEMES
-        for cat_name, tracking in core_categories.items():
-            exclude_param = tracking.get("exclude_type")
-            if exclude_param and exclude_param in current_card_type:
-                continue
+        rules_text = matched_card_obj.oracle_text.lower() if matched_card_obj.oracle_text else ""
+        current_card_type = matched_card_obj.raw_type.lower() if matched_card_obj.raw_type else ""
+        
+        # 1. Check Card_Filter classes (card_class_1, card_class_2)
+        c1 = matched_card_obj.card_class_1.lower()
+        c2 = matched_card_obj.card_class_2.lower()
+        
+        assigned_classes = [c1, c2]
+        
+        if "draw" in assigned_classes or matched_card_obj.serves_purpose("draw"):
+            core_pools["Card Draw"].add(actual_name)
+        if "ramp" in assigned_classes or matched_card_obj.serves_purpose("ramp"):
+            core_pools["Ramp"].add(actual_name)
+        if "land" in assigned_classes or matched_card_obj.serves_purpose("land") or "land" in current_card_type:
+            core_pools["Land"].add(actual_name)
+        if "removal" in assigned_classes or matched_card_obj.serves_purpose("removal"):
+            core_pools["Removal"].add(actual_name)
+        if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
+            core_pools["Board Wipes"].add(actual_name)
 
-            matched = False
-            for kw in tracking.get("keywords", []):
-                pattern = r'\b' + re.escape(kw) + r'\b'
-                if re.search(pattern, rules_text, re.IGNORECASE):
-                    tracking["cards"].add(actual_name_in_excel)
-                    matched = True
-                    break
-
-            if not matched:
-                for reg in tracking.get("regex_patterns", []):
-                    if re.search(reg, rules_text, re.IGNORECASE):
-                        tracking["cards"].add(actual_name_in_excel)
-                        break
-
-        # 2. READ CREATURE TYPE SUBTYPES DIRECTLY FROM TYPE COLUMN
+        # 2. Extract Creature Subtypes (e.g., Party, Wizard, Cleric, Rogue, Warrior)
         clean_types = re.sub(r'[^\w\s]', ' ', current_card_type)
         for sub_type in clean_types.split():
-            if sub_type in PROTECTED_TYPES:
-                creature_type_pool.append(sub_type)
-                card_creature_type_assignments[card_name.strip()].append(sub_type)
+            sub_lower = sub_type.lower()
+            if sub_lower in PROTECTED_TYPES:
+                creature_type_pool.append(sub_lower)
+                card_creature_type_assignments[card_name.strip()].append(sub_lower)
 
-        # 3. PROCESS THE REMAINING DYNAMIC THEMES
-        clean_text = re.sub(r'[^\w\s{}]', ' ', rules_text)
-        words = [w for w in clean_text.split() if len(w) > 2]
-
+        # 3. Process ThemeEngine Rules
+        card_themes_matched = []
         for theme in theme_card_pools.keys():
             if theme_engine.evaluate_card_for_theme(theme, rules_text, current_card_type):
-                theme_card_pools[theme].add(actual_name_in_excel)
+                theme_card_pools[theme].add(actual_name)
+                card_themes_matched.append(theme)
 
+        # Also register core classes as themes for export mapping
+        for c_name, p_set in core_pools.items():
+            if actual_name in p_set:
+                card_themes_matched.append(c_name)
+
+        card_theme_mapping[actual_name.lower()] = card_themes_matched
+
+        # 4. Fallback dynamic word mining
+        clean_text = re.sub(r'[^\w\s{}]', ' ', rules_text)
+        words = [w for w in clean_text.split() if len(w) > 2]
         for word in set(words):
             if word not in filler_words and word not in PROTECTED_TYPES:
                 raw_theme_pool.append(word)
                 card_assignments[card_name.strip()].append(word)
 
     MIN_MATCHES = 5
-    
     theme_counts = Counter(raw_theme_pool)
     valid_themes = {theme: count for theme, count in theme_counts.items() if count >= MIN_MATCHES}
    
@@ -193,65 +183,94 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
     output = []
     
-    for cat_name, tracking in core_categories.items():
-        count = len(tracking["cards"])
+    # Append core categories (Card Draw, Ramp, Land, Removal, Board Wipes)
+    for cat_name, cards_set in core_pools.items():
+        count = len(cards_set)
         if count > 0:
             percentage = round((count / deck_size) * 100, 2)
             output.append({
                 "theme": f"📊 {cat_name}",
                 "count": count,
                 "percentage": f"{percentage}%",
-                "cards": ", ".join(sorted(list(tracking["cards"])))
+                "cards": ", ".join(sorted(list(cards_set)))
             })
 
+    # Append valid creature subtypes (e.g. Party members, elves, etc.)
     for type_name, count in sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True):
         percentage = round((count / deck_size) * 100, 2)
         matching_cards = []
         for card in deck_list:
             if type_name in card_creature_type_assignments.get(card.strip(), []):
-                matching_cards.append(card.strip())
+                db_obj = card_db_map.get(card.strip().lower())
+                card_display_name = db_obj.name.title() if db_obj else card.strip()
+                if card_display_name not in matching_cards:
+                    matching_cards.append(card_display_name)
                 
         output.append({
             "theme": f"👾 {type_name.capitalize()} (Creature Subtype)",
-            "count": count,
-            "percentage": f"{percentage}%",
-            "cards": ", ".join(matching_cards)
+            "count": len(matching_cards),
+            "percentage": f"{round((len(matching_cards) / deck_size) * 100, 2)}%",
+            "cards": ", ".join(sorted(matching_cards))
         })
 
+    # Append ThemeEngine themes
     major_themes_formatted = []
     for theme, cards_set in theme_card_pools.items():
         count = len(cards_set)
         if count >= 8:
             percentage = round((count / deck_size) * 100, 2)
-            matching_cards = sorted(list(cards_set))
-            
             major_themes_formatted.append({
                 "theme": f"🔮 {theme}",
                 "count": count,
                 "percentage": f"{percentage}%",
-                "cards": ", ".join(matching_cards)
+                "cards": ", ".join(sorted(list(cards_set)))
             })
             
     for theme_data in sorted(major_themes_formatted, key=lambda x: x["count"], reverse=True):
         output.append(theme_data)
+    
+    # After computing all pools in run_synergy_analysis, build card_theme_mapping robustly:
+    card_theme_mapping = {}
 
-    for theme, count in sorted(valid_themes.items(), key=lambda item: item[1], reverse=True):
-        if theme in ["draw", "land", "lands"]:
-            continue
-            
-        percentage = round((count / deck_size) * 100, 2)
-        matching_cards = []
+    def clean_key(name):
+        return re.sub(r'[^a-z0-9]', '', str(name).lower())
+
+    # 1. Map Core Pools
+    for cat_name, cards_set in core_pools.items():
+        for card in cards_set:
+            key = card.strip().lower()
+            if key not in card_theme_mapping:
+                card_theme_mapping[key] = []
+            if cat_name not in card_theme_mapping[key]:
+                card_theme_mapping[key].append(cat_name)
+
+    # 2. Map Creature Subtypes
+    for type_name, count in valid_creature_types.items():
+        theme_display = f"{type_name.capitalize()} (Creature Subtype)"
         for card in deck_list:
-            if theme in card_assignments.get(card.strip(), []):
-                matching_cards.append(card.strip())
-                
-        output.append({
-            "theme": theme.capitalize(),
-            "count": count,
-            "percentage": f"{percentage}%",
-            "cards": ", ".join(matching_cards)
-        })
-        
-    return {"deck_size": deck_size, "themes": output}
+            if type_name in card_creature_type_assignments.get(card.strip(), []):
+                db_obj = card_db_map.get(card.strip().lower())
+                card_name = db_obj.name.title() if db_obj else card.strip()
+                key = card_name.lower()
+                if key not in card_theme_mapping:
+                    card_theme_mapping[key] = []
+                if theme_display not in card_theme_mapping[key]:
+                    card_theme_mapping[key].append(theme_display)
+
+    # 3. Map ThemeEngine Themes (>= 8 count)
+    for theme, cards_set in theme_card_pools.items():
+        if len(cards_set) >= 8:
+            for card in cards_set:
+                key = card.strip().lower()
+                if key not in card_theme_mapping:
+                    card_theme_mapping[key] = []
+                if theme not in card_theme_mapping[key]:
+                    card_theme_mapping[key].append(theme)
+
+    return {
+        "deck_size": deck_size, 
+        "themes": output,
+        "card_theme_mapping": card_theme_mapping
+    }
 
 

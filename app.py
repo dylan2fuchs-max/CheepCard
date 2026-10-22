@@ -790,18 +790,8 @@ def synergy():
     deck_lines = [line.strip() for line in decklist_raw.split("\n") if line.strip()]
     report = run_synergy_analysis(deck_lines) if deck_lines else {}
 
-    # Build the safe card-to-themes dictionary for multi-tag frontend exports
-    card_theme_mapping = {}
-    if report and report.get('themes'):
-        for item in report['themes']:
-            theme_name = item['theme'].replace('📊', '').replace('👾', '').replace('🔮', '').strip()
-            cards_list = [c.strip() for c in item['cards'].split(',') if c.strip()]
-            for card in cards_list:
-                clean_card = card.lower()
-                if clean_card not in card_theme_mapping:
-                    card_theme_mapping[clean_card] = []
-                if theme_name not in card_theme_mapping[clean_card]:
-                    card_theme_mapping[clean_card].append(theme_name)
+    # Extract the pre-built card-to-themes mapping directly from the synergy engine report
+    card_theme_mapping = report.get('card_theme_mapping', {})
 
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         data = request.get_json(silent=True) or request.form
@@ -815,7 +805,7 @@ def synergy():
                 theme_name = item['theme']
                 cards_in_theme = [c.strip() for c in item['cards'].split(',') if c.strip()]
                 
-                if "Card Draw" in theme_name or "Ramp & Land Velocity" in theme_name:
+                if any(core in theme_name for core in ["Card Draw", "Ramp", "Land", "Removal", "Board Wipes"]):
                     core_cards.update(cards_in_theme)
                     
                 if selected_theme.lower() in theme_name.lower():

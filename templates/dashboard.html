@@ -714,7 +714,6 @@
         
         {% if report is defined and report %}
         <div class="result-box full-width" id="reportSection" style="position: relative;">
-            <!-- Header Row with Metrics Title and Export Button Aligned Horizontally -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h2 style="margin: 0;">Synergy Metrics Table (Total Cards: {{ report.deck_size }})</h2>
                 <button type="button" id="toggle-export-modal-btn" style="background: #e67e22; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
@@ -768,53 +767,31 @@
         </div>
         {% endif %}
 
-<!-- Store server themes safely for JavaScript lookup -->
-{% set theme_lookup = [] %}
-{% if report is defined and report and report.themes %}
-    {% for item in report.themes %}
-        {% set clean_t = item.theme | replace('📊', '') | replace('👾', '') | replace('🔮', '') | trim %}
-        {% set _ = theme_lookup.append({'name': clean_t, 'cards': item.cards}) %}
-    {% endfor %}
-{% endif %}
-<div id="theme-data-container" data-themes='{{ theme_lookup | tojson | safe }}' style="display: none;"></div>
+<!-- Hidden container to pass dictionary safely without IDE linter errors -->
+<div id="card-theme-data" data-mapping='{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}' style="display: none;"></div>
 
 <script>
-const cardThemeMap = {};
-const container = document.getElementById('theme-data-container');
-if (container && container.dataset.themes) {
-    try {
-        const serverThemes = JSON.parse(container.dataset.themes);
-        serverThemes.forEach(item => {
-            const rawCards = item.cards.split(',');
-            rawCards.forEach(c => {
-                let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
-                if (cardClean) {
-                    if (!cardThemeMap[cardClean]) {
-                        cardThemeMap[cardClean] = [];
-                    }
-                    if (!cardThemeMap[cardClean].includes(item.name)) {
-                        cardThemeMap[cardClean].push(item.name);
-                    }
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Failed to parse theme data", e);
+let cardThemeMap = {};
+try {
+    const container = document.getElementById('card-theme-data');
+    if (container && container.dataset.mapping) {
+        cardThemeMap = JSON.parse(container.dataset.mapping);
     }
+} catch (e) {
+    console.error("Failed to parse card theme mapping", e);
+}
+
+function cleanKey(name) {
+    return name.replace(/[^a-z0-9]/g, '').toLowerCase();
 }
 
 function updateExportText() {
-    // Find the input decklist textarea using any common ID or name, ensuring it's not the export box
     const rawText = document.getElementById('decklist') || 
                     document.getElementById('deckTextArea') || 
                     document.querySelector('textarea[name="decklist"]') || 
                     document.querySelector('textarea:not(#export-deck-text)');
                     
-    if (!rawText || !rawText.value.trim()) {
-        const exportDeckText = document.getElementById('export-deck-text');
-        if (exportDeckText) exportDeckText.value = "No decklist found in input box.";
-        return;
-    }
+    if (!rawText || !rawText.value.trim()) return;
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
@@ -823,7 +800,7 @@ function updateExportText() {
     
     const formattedText = rawLines.map(line => {
         let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
-        let cardKey = cleanCard.toLowerCase();
+        let cardKey = cleanKey(cleanCard);
         
         let matchedTags = [];
         if (cardThemeMap[cardKey]) {
