@@ -139,21 +139,19 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
             core_pools["Board Wipes"].add(actual_name)
 
-        # 2. Compare card type & oracle text against PROTECTED_TYPES
-        type_source = f"{current_card_type} {rules_text}"
-        clean_types = re.sub(r'[^\w\s]', ' ', type_source)
-        
-        found_subtypes_for_card = set()
-        for sub_type in clean_types.split():
-            sub_lower = sub_type.lower()
-            if sub_lower in PROTECTED_TYPES:
-                found_subtypes_for_card.add(sub_lower)
-                
-        for sub_lower in found_subtypes_for_card:
-            creature_type_pool.append(sub_lower)
-            ck = clean_key(actual_name)
-            if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
-                card_creature_type_assignments[ck].append(sub_lower)
+        # 2. Extract Creature Subtypes automatically from official type lines (everything after em-dash)
+        if current_card_type:
+            parts = re.split(r'[—–-]', current_card_type, maxsplit=1)
+            if len(parts) > 1:
+                subtype_part = parts[1].strip()
+                subtypes = re.findall(r'\b[a-zA-Z]+\b', subtype_part)
+                for sub_type in subtypes:
+                    sub_lower = sub_type.lower()
+                    if sub_lower not in {'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 'enchantment', 'land', 'planeswalker'}:
+                        creature_type_pool.append(sub_lower)
+                        ck = clean_key(actual_name)
+                        if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
+                            card_creature_type_assignments[ck].append(sub_lower)
 
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
@@ -169,11 +167,11 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 ck = clean_key(actual_name)
                 card_assignments.setdefault(ck, []).append(word)
 
-    MIN_MATCHES = 7
+    MIN_MATCHES = 10
     theme_counts = Counter(raw_theme_pool)
     valid_themes = {theme: count for theme, count in theme_counts.items() if count >= MIN_MATCHES}
    
-    MIN_CREATURE_MATCHES = 2
+    MIN_CREATURE_MATCHES = 8
     creature_type_counts = Counter(creature_type_pool)
     valid_creature_types = {type_name: count for type_name, count in creature_type_counts.items() if count >= MIN_CREATURE_MATCHES}
 
@@ -189,8 +187,10 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "percentage": f"{percentage}%",
                 "cards": ", ".join(sorted(list(cards_set)))
             })
+    
+    top_creature_types = sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True)[:3]
 
-    for type_name, count in sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True):
+    for type_name, count in top_creature_types:
         matching_cards = []
         for card in deck_list:
             clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
@@ -235,7 +235,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 if cat_name not in card_theme_mapping[k]:
                     card_theme_mapping[k].append(cat_name)
 
-    for type_name, count in valid_creature_types.items():
+    for type_name, count in top_creature_types:
         theme_display = f"{type_name.capitalize()} (Creature Subtype)"
         for card in deck_list:
             clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()

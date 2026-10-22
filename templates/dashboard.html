@@ -767,22 +767,30 @@
         </div>
         {% endif %}
 
-<!-- Hidden container to pass dictionary safely without IDE linter errors -->
-<div id="card-theme-data" data-mapping='{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}' style="display: none;"></div>
+<!-- Hidden container to pass dictionary safely without linter errors -->
+<div id="card-theme-data" data-mapping="{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else '{}' }}" style="display: none;"></div>
 
 <script>
-// Directly inject card theme mapping safely without JSON.parse issues
-const cardThemeMap = {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else '{}' }};
+let cardThemeMap = {};
+try {
+    const container = document.getElementById('card-theme-data');
+    if (container && container.dataset.mapping) {
+        cardThemeMap = JSON.parse(container.dataset.mapping);
+    }
+} catch (e) {
+    console.error("Failed to parse card theme mapping", e);
+}
+console.log("🔍 [Debug] Loaded cardThemeMap keys count:", Object.keys(cardThemeMap).length);
 
 function cleanKey(name) {
     return name.replace(/[^a-z0-9]/g, '').toLowerCase();
 }
 
 function updateExportText() {
-    const rawText = document.getElementById('decklist') || 
+    const rawText = document.querySelector('textarea[name="decklist"]') || 
+                    document.getElementById('decklist') || 
                     document.getElementById('deckTextArea') || 
-                    document.querySelector('textarea[name="decklist"]') || 
-                    document.querySelector('textarea:not(#export-deck-text)');
+                    document.querySelector('textarea');
                     
     if (!rawText || !rawText.value.trim()) {
         const exportBox = document.getElementById('export-deck-text');
@@ -792,7 +800,6 @@ function updateExportText() {
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
-    // Normalize checked tags by stripping icons and lowercasing
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
     
@@ -801,7 +808,6 @@ function updateExportText() {
         let cardKey = cleanKey(cleanCard);
         
         let matchedTags = [];
-        // Check both exact cleanKey and partial matches in cardThemeMap keys
         for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
             if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
                 themes.forEach(t => {
