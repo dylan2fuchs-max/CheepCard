@@ -768,8 +768,7 @@
         {% endif %}
 
 <!-- Hidden container to pass dictionary safely without linter errors -->
-<div id="card-theme-data" data-mapping="{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else '{}' }}" style="display: none;"></div>
-
+<div id="card-theme-data" data-mapping='{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}' style="display: none;"></div>
 <script>
 let cardThemeMap = {};
 try {

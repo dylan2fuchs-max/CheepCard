@@ -141,17 +141,20 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
         # 2. Extract Creature Subtypes automatically from official type lines (everything after em-dash)
         if current_card_type:
+            exclude_words = {
+                'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 
+                'enchantment', 'land', 'planeswalker', 'instant', 'sorcery', 
+                'token', 'equipment', 'aura', 'vehicle', 'shrines'
+            }
             parts = re.split(r'[—–-]', current_card_type, maxsplit=1)
-            if len(parts) > 1:
-                subtype_part = parts[1].strip()
-                subtypes = re.findall(r'\b[a-zA-Z]+\b', subtype_part)
-                for sub_type in subtypes:
-                    sub_lower = sub_type.lower()
-                    if sub_lower not in {'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 'enchantment', 'land', 'planeswalker'}:
-                        creature_type_pool.append(sub_lower)
-                        ck = clean_key(actual_name)
-                        if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
-                            card_creature_type_assignments[ck].append(sub_lower)
+            subtype_source = parts[1] if len(parts) > 1 else current_card_type
+            for sub_type in re.findall(r'\b[a-zA-Z]+\b', subtype_source):
+                sub_lower = sub_type.lower()
+                if sub_lower not in exclude_words and len(sub_lower) > 2:
+                    creature_type_pool.append(sub_lower)
+                    ck = clean_key(actual_name)
+                    if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
+                        card_creature_type_assignments[ck].append(sub_lower)
 
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
