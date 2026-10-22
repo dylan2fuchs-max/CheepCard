@@ -153,11 +153,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
                         if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
                             card_creature_type_assignments[ck].append(sub_lower)
 
-    # Tally and keep only top 2 creature subtypes
-    creature_type_counts = Counter(creature_type_pool)
-    valid_creature_types = {t: c for t, c in creature_type_counts.items() if c >= 2}
-    top_creature_types = sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True)[:2]
-
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
             if theme_engine.evaluate_card_for_theme(theme, rules_text, current_card_type):
@@ -176,7 +171,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
     theme_counts = Counter(raw_theme_pool)
     valid_themes = {theme: count for theme, count in theme_counts.items() if count >= MIN_MATCHES}
    
-    MIN_CREATURE_MATCHES = 8
+    MIN_CREATURE_MATCHES = 2
     creature_type_counts = Counter(creature_type_pool)
     valid_creature_types = {type_name: count for type_name, count in creature_type_counts.items() if count >= MIN_CREATURE_MATCHES}
 
@@ -193,7 +188,8 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "cards": ", ".join(sorted(list(cards_set)))
             })
     
-    top_creature_types = sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True)[:3]
+    # Restrict to top 2 creature subtypes as requested
+    top_creature_types = sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True)[:2]
 
     for type_name, count in top_creature_types:
         matching_cards = []
