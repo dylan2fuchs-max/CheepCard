@@ -771,15 +771,8 @@
 <div id="card-theme-data" data-mapping='{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}' style="display: none;"></div>
 
 <script>
-let cardThemeMap = {};
-try {
-    const container = document.getElementById('card-theme-data');
-    if (container && container.dataset.mapping) {
-        cardThemeMap = JSON.parse(container.dataset.mapping);
-    }
-} catch (e) {
-    console.error("Failed to parse card theme mapping", e);
-}
+// Directly inject card theme mapping safely without JSON.parse issues
+const cardThemeMap = {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else '{}' }};
 
 function cleanKey(name) {
     return name.replace(/[^a-z0-9]/g, '').toLowerCase();
@@ -799,6 +792,7 @@ function updateExportText() {
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
+    // Normalize checked tags by stripping icons and lowercasing
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
     
@@ -807,10 +801,15 @@ function updateExportText() {
         let cardKey = cleanKey(cleanCard);
         
         let matchedTags = [];
-        if (cardThemeMap[cardKey]) {
-            matchedTags = cardThemeMap[cardKey].filter(themeName => 
-                checkedTags.includes(themeName.toLowerCase())
-            );
+        // Check both exact cleanKey and partial matches in cardThemeMap keys
+        for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
+            if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
+                themes.forEach(t => {
+                    if (checkedTags.includes(t.toLowerCase()) && !matchedTags.includes(t)) {
+                        matchedTags.push(t);
+                    }
+                });
+            }
         }
 
         let lineStr = `1x ${cleanCard}`;
@@ -880,11 +879,9 @@ function initExportModal() {
         });
     }
 
-    // Run immediately on init so export text is ready
     updateExportText();
 }
 
-// Initialize on load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initExportModal);
 } else {

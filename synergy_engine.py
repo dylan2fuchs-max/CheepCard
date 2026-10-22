@@ -139,18 +139,21 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
             core_pools["Board Wipes"].add(actual_name)
 
-        # 2. Extract Creature Subtypes robustly
-        type_parts = re.split(r'[—–-]', current_card_type)
-        subtype_source = type_parts[1] if len(type_parts) > 1 else current_card_type
+        # 2. Compare card type & oracle text against PROTECTED_TYPES
+        type_source = f"{current_card_type} {rules_text}"
+        clean_types = re.sub(r'[^\w\s]', ' ', type_source)
         
-        clean_types = re.sub(r'[^\w\s]', ' ', subtype_source)
+        found_subtypes_for_card = set()
         for sub_type in clean_types.split():
             sub_lower = sub_type.lower()
             if sub_lower in PROTECTED_TYPES:
-                creature_type_pool.append(sub_lower)
-                ck = clean_key(actual_name)
-                if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
-                    card_creature_type_assignments[ck].append(sub_lower)
+                found_subtypes_for_card.add(sub_lower)
+                
+        for sub_lower in found_subtypes_for_card:
+            creature_type_pool.append(sub_lower)
+            ck = clean_key(actual_name)
+            if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
+                card_creature_type_assignments[ck].append(sub_lower)
 
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
