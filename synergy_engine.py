@@ -58,7 +58,7 @@ PROTECTED_TYPES = {
 def run_synergy_analysis(deck_list: list) -> dict:
     """
     POSTGRESQL-BACKED SYNERGY ENGINE.
-    Evaluates card text loops in memory by querying SQLAlchemy instead of Excel files.
+    Evaluates card text loops in memory by querying SQLAlchemy and separating core categories.
     """
     deck_size = len(deck_list)
     if deck_size == 0:
@@ -70,16 +70,13 @@ def run_synergy_analysis(deck_list: list) -> dict:
         db_cards = Card.query.all()
         for c in db_cards:
             name = c.name.strip().lower()
-            rules_text = c.oracle_text.lower() if c.oracle_text else ""
-            card_type = c.raw_type.lower() if c.raw_type else ""
             if name:
-                card_text_map[name] = rules_text
-                card_type_map[name] = card_type
+                card_db_map[name] = c
     except Exception as e:
         print(f"[Synergy Engine Error] Failed to fetch cards from database: {e}")
         return {"error": "Could not retrieve card data from database."}
 
-    if not card_text_map:
+    if not card_db_map:
         return {"error": "Card database is empty."}
 
     # 1. EXPANDED AGGRESSIVE FILLER LIST
