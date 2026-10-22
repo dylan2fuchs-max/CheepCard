@@ -791,7 +791,11 @@ function updateExportText() {
                     document.querySelector('textarea[name="decklist"]') || 
                     document.querySelector('textarea:not(#export-deck-text)');
                     
-    if (!rawText || !rawText.value.trim()) return;
+    if (!rawText || !rawText.value.trim()) {
+        const exportBox = document.getElementById('export-deck-text');
+        if (exportBox) exportBox.value = "No decklist found in input box.";
+        return;
+    }
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
@@ -875,11 +879,16 @@ function initExportModal() {
             }
         });
     }
+
+    // Run immediately on init so export text is ready
+    updateExportText();
 }
 
-initExportModal();
+// Initialize on load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initExportModal);
+} else {
+    initExportModal();
 }
 </script>
 

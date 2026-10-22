@@ -141,8 +141,11 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
             core_pools["Board Wipes"].add(actual_name)
 
-        # 2. Extract Creature Subtypes (e.g., Party, Wizard, Cleric, Rogue, Warrior)
-        clean_types = re.sub(r'[^\w\s]', ' ', current_card_type)
+        # 2. Extract Creature Subtypes robustly (focusing on subtypes after the dash '—' or '-')
+        type_parts = re.split(r'[—–-]', current_card_type)
+        subtype_source = type_parts[1] if len(type_parts) > 1 else current_card_type
+        
+        clean_types = re.sub(r'[^\w\s]', ' ', subtype_source)
         for sub_type in clean_types.split():
             sub_lower = sub_type.lower()
             if sub_lower in PROTECTED_TYPES:
@@ -171,12 +174,14 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 raw_theme_pool.append(word)
                 card_assignments[card_name.strip()].append(word)
 
-    MIN_MATCHES = 5
+    MIN_MATCHES = 7
     theme_counts = Counter(raw_theme_pool)
     valid_themes = {theme: count for theme, count in theme_counts.items() if count >= MIN_MATCHES}
    
+    MIN_CREATURE_MATCHES = 3
+    
     creature_type_counts = Counter(creature_type_pool)
-    valid_creature_types = {type_name: count for type_name, count in creature_type_counts.items() if count >= MIN_MATCHES}
+    valid_creature_types = {type_name: count for type_name, count in creature_type_counts.items() if count >= MIN_CREATURE_MATCHES}
 
     output = []
     
