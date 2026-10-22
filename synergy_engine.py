@@ -153,6 +153,11 @@ def run_synergy_analysis(deck_list: list) -> dict:
                         if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
                             card_creature_type_assignments[ck].append(sub_lower)
 
+    # Tally and keep only top 2 creature subtypes
+    creature_type_counts = Counter(creature_type_pool)
+    valid_creature_types = {t: c for t, c in creature_type_counts.items() if c >= 2}
+    top_creature_types = sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True)[:2]
+
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
             if theme_engine.evaluate_card_for_theme(theme, rules_text, current_card_type):
@@ -223,39 +228,42 @@ def run_synergy_analysis(deck_list: list) -> dict:
     for theme_data in sorted(major_themes_formatted, key=lambda x: x["count"], reverse=True):
         output.append(theme_data)
     
-    # Build clean card_theme_mapping using clean_key()
     card_theme_mapping = {}
 
+    def get_canonical_name_and_key(card_str):
+        clean_input = re.sub(r'^\d+x?\s*', '', str(card_str)).strip().lower()
+        db_obj = card_db_map.get(clean_input)
+        if not db_obj:
+            for db_n, c_obj in card_db_map.items():
+                if clean_input in db_n or db_n in clean_input:
+                    db_obj = c_obj
+                    break
+        official_name = db_obj.name.title() if db_obj else clean_input.title()
+        return official_name, clean_key(official_name)
+
+    # 1. Map Core Pools
     for cat_name, cards_set in core_pools.items():
         for card in cards_set:
-            k = clean_key(card)
+            _, k = get_canonical_name_and_key(card)
             if k:
-                if k not in card_theme_mapping:
-                    card_theme_mapping[k] = []
-                if cat_name not in card_theme_mapping[k]:
-                    card_theme_mapping[k].append(cat_name)
+                card_theme_mapping.setdefault(k, []).append(cat_name)
 
+    # 2. Map Top Creature Subtypes
     for type_name, count in top_creature_types:
         theme_display = f"{type_name.capitalize()} (Creature Subtype)"
         for card in deck_list:
-            clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
-            db_obj = card_db_map.get(clean_c_input)
-            c_name = db_obj.name.title() if db_obj else clean_c_input.title()
-            k = clean_key(c_name)
+            _, k = get_canonical_name_and_key(card)
             if type_name in card_creature_type_assignments.get(k, []):
-                if k not in card_theme_mapping:
-                    card_theme_mapping[k] = []
-                if theme_display not in card_theme_mapping[k]:
+                if theme_display not in card_theme_mapping.setdefault(k, []):
                     card_theme_mapping[k].append(theme_display)
 
+    # 3. Map Theme Engine Themes
     for theme, cards_set in theme_card_pools.items():
         if len(cards_set) >= 8:
             for card in cards_set:
-                k = clean_key(card)
+                _, k = get_canonical_name_and_key(card)
                 if k:
-                    if k not in card_theme_mapping:
-                        card_theme_mapping[k] = []
-                    if theme not in card_theme_mapping[k]:
+                    if theme not in card_theme_mapping.setdefault(k, []):
                         card_theme_mapping[k].append(theme)
 
     return {

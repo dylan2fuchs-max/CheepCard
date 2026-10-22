@@ -809,6 +809,7 @@ function updateExportText() {
         
         let matchedTags = [];
         for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
+            // Flexible match: exact, contains, or sub-contained
             if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
                 themes.forEach(t => {
                     if (checkedTags.includes(t.toLowerCase()) && !matchedTags.includes(t)) {
