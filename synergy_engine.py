@@ -7,9 +7,7 @@ from theme_engine import ThemeEngine
 
 logger = logging.getLogger('cheepcards')
 
-# Example usage in a login route or database block:
 try:
-    # Your database or logic here...
     logger.info("Database initialized successfully.")
 except Exception as e:
     logger.error("Failed to initialize database: %s", e)
@@ -65,7 +63,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
         return {}
 
     card_db_map = {}
-    
+
     try:
         db_cards = Card.query.all()
         for c in db_cards:
@@ -79,11 +77,9 @@ def run_synergy_analysis(deck_list: list) -> dict:
     if not card_db_map:
         return {"error": "Card database is empty."}
 
-    # 1. EXPANDED AGGRESSIVE FILLER LIST
     filler_words = AUTO_FILLER_WORDS
     theme_engine = ThemeEngine()
 
-    # Track core category card pools separately
     core_pools = {
         "Card Draw": set(),
         "Ramp": set(),
@@ -153,7 +149,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
             if sub_lower in PROTECTED_TYPES:
                 creature_type_pool.append(sub_lower)
                 ck = clean_key(actual_name)
-                if sub_lower not in card_creature_type_assignments[ck]:
+                if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
                     card_creature_type_assignments[ck].append(sub_lower)
 
         # 3. Process ThemeEngine Rules
@@ -168,7 +164,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
             if word not in filler_words and word not in PROTECTED_TYPES:
                 raw_theme_pool.append(word)
                 ck = clean_key(actual_name)
-                card_assignments[ck].append(word)
+                card_assignments.setdefault(ck, []).append(word)
 
     MIN_MATCHES = 7
     theme_counts = Counter(raw_theme_pool)

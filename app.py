@@ -820,6 +820,8 @@ def synergy():
                 "combined_deck": combined_package
             })
 
+    card_theme_mapping = report.get('card_theme_mapping', {})
+
     return render_template(
         "dashboard.html", 
         report=report, 
