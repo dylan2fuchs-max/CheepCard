@@ -768,7 +768,41 @@
         </div>
         {% endif %}
 
+<!-- Store server themes safely for JavaScript lookup -->
+{% set theme_lookup = [] %}
+{% if report is defined and report and report.themes %}
+    {% for item in report.themes %}
+        {% set clean_t = item.theme | replace('📊', '') | replace('👾', '') | replace('🔮', '') | trim %}
+        {% set _ = theme_lookup.append({'name': clean_t, 'cards': item.cards}) %}
+    {% endfor %}
+{% endif %}
+<div id="theme-data-container" data-themes='{{ theme_lookup | tojson | safe }}' style="display: none;"></div>
+
 <script>
+const cardThemeMap = {};
+const container = document.getElementById('theme-data-container');
+if (container && container.dataset.themes) {
+    try {
+        const serverThemes = JSON.parse(container.dataset.themes);
+        serverThemes.forEach(item => {
+            const rawCards = item.cards.split(',');
+            rawCards.forEach(c => {
+                let cardClean = c.replace(/^\d+x?\s*/i, '').trim().toLowerCase();
+                if (cardClean) {
+                    if (!cardThemeMap[cardClean]) {
+                        cardThemeMap[cardClean] = [];
+                    }
+                    if (!cardThemeMap[cardClean].includes(item.name)) {
+                        cardThemeMap[cardClean].push(item.name);
+                    }
+                }
+            });
+        });
+    } catch (e) {
+        console.error("Failed to parse theme data", e);
+    }
+}
+
 function updateExportText() {
     // Find the input decklist textarea using any common ID or name, ensuring it's not the export box
     const rawText = document.getElementById('decklist') || 
