@@ -139,25 +139,23 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
             core_pools["Board Wipes"].add(actual_name)
 
-        # 2. Extract Creature Subtypes automatically from type lines
+        # Extract all creature types across the entire type line
         if current_card_type:
-            parts = re.split(r'[—–-]', current_card_type, maxsplit=1)
-            subtype_source = parts[1] if len(parts) > 1 else current_card_type
-            
             exclude_type_words = {
                 'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 
                 'enchantment', 'land', 'planeswalker', 'instant', 'sorcery', 
-                'token', 'equipment', 'aura', 'vehicle', 'tribal'
+                'token', 'equipment', 'aura', 'vehicle', 'tribal', 'kindred', 'basic',
+                'battle', 'conspiracy', 'phenomenon', 'plane', 'scheme'
             }
             
-            subtypes = re.findall(r'\b[a-zA-Z]+\b', subtype_source)
-            for sub_type in subtypes:
-                sub_lower = sub_type.lower()
-                if sub_lower not in exclude_type_words and len(sub_lower) > 2:
-                    creature_type_pool.append(sub_lower)
+            words = re.findall(r'\b[a-zA-Z]+\b', current_card_type)
+            for w in words:
+                w_lower = w.lower()
+                if w_lower not in exclude_type_words and len(w_lower) > 2:
+                    creature_type_pool.append(w_lower)
                     ck = clean_key(actual_name)
-                    if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
-                        card_creature_type_assignments[ck].append(sub_lower)
+                    if w_lower not in card_creature_type_assignments.setdefault(ck, []):
+                        card_creature_type_assignments[ck].append(w_lower)
 
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
@@ -187,25 +185,23 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "cards": ", ".join(sorted(list(cards_set)))
             })
     
-    # Tally creature subtypes and get top 2
+   # Automatically grab the top 2 most frequent creature types across the deck
     creature_type_counts = Counter(creature_type_pool)
-    MIN_CREATURE_MATCHES = 2
-    valid_creature_types = {type_name: count for type_name, count in creature_type_counts.items() if count >= MIN_CREATURE_MATCHES}
-    top_creature_types = sorted(valid_creature_types.items(), key=lambda item: item[1], reverse=True)[:2]
+    top_creature_types = creature_type_counts.most_common(2)
 
     for type_name, count in top_creature_types:
         matching_cards = []
         for card in deck_list:
             clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
             db_obj = card_db_map.get(clean_c_input)
-            c_disp = db_obj.name.title() if db_obj else clean_c_input.title()
+            c_disp = db_obj.name.title() if db_obj else clean_input_name.title()
             ck = clean_key(c_disp)
             if type_name in card_creature_type_assignments.get(ck, []):
                 if c_disp not in matching_cards:
                     matching_cards.append(c_disp)
                 
         output.append({
-            "theme": f"👾 {type_name.capitalize()} (Creature Subtype)",
+            "theme": f"👾 {type_name.capitalize()}",
             "count": len(matching_cards),
             "percentage": f"{round((len(matching_cards) / deck_size) * 100, 2)}%",
             "cards": ", ".join(sorted(matching_cards))
@@ -246,9 +242,9 @@ def run_synergy_analysis(deck_list: list) -> dict:
             if k:
                 card_theme_mapping.setdefault(k, []).append(cat_name)
 
-    # 2. Map Top 2 Creature Subtypes
+    # 2. Map Top 2 Creature Subtypes / Types
     for type_name, count in top_creature_types:
-        theme_display = f"{type_name.capitalize()} (Creature Subtype)"
+        theme_display = f"👾 {type_name.capitalize()}"
         for card in deck_list:
             _, k = get_canonical_name_and_key(card)
             if type_name in card_creature_type_assignments.get(k, []):

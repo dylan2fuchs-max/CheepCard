@@ -802,17 +802,21 @@ function updateExportText() {
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').replace(/\s*\(Creature Subtype\)/i, '').trim().toLowerCase());
     
     const formattedText = rawLines.map(line => {
-        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
+        // Extract original leading quantity (e.g., "4x", "2", or none) and clean card name
+        const qtyMatch = line.match(/^(\d+x?\s*)/i);
+        const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
+        
+        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
         let cardKey = cleanKey(cleanCard);
         
         let matchedTags = [];
         for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-            if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
+            // Use exact key matching or safe inclusion for reliable association
+            if (dbKey === cardKey || (cardKey.length > 3 && (dbKey.includes(cardKey) || cardKey.includes(dbKey)))) {
                 themes.forEach(t => {
                     const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').replace(/\s*\(Creature Subtype\)/i, '').trim().toLowerCase();
                     
                     if (checkedTags.includes(cleanTheme)) {
-                        // Keep original display format for the tag backticks
                         if (!matchedTags.includes(t)) {
                             matchedTags.push(t);
                         }
@@ -821,7 +825,8 @@ function updateExportText() {
             }
         }
 
-        let lineStr = `1x ${cleanCard}`;
+        // Preserve original quantity prefix (e.g. "4x" or "1 ") instead of forcing "1x"
+        let lineStr = `${qtyPrefix}${cleanCard}`;
         if (matchedTags.length > 0) {
             lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
         }
