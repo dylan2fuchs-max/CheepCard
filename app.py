@@ -789,22 +789,18 @@ def synergy():
     deck_input = decklist_raw 
     deck_lines = [line.strip() for line in decklist_raw.split("\n") if line.strip()]
     
-    # ──> Place your synergy analysis call here:
+    # Run synergy analysis
     results = run_synergy_analysis(deck_lines) if deck_lines else {}
 
-    # Handle AJAX / modal requests if needed...
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # ... your existing ajax code ...
         pass
 
-    # ──> And use it right here in your render_template call:
     return render_template(
         'dashboard.html',
         report=results,
         deck_input=deck_input,
         themes=results.get('themes'),
         deck_size=results.get('deck_size'),
-        card_theme_mapping=results.get('card_theme_mapping', {}),
         search_reports=[], 
         selected_colors=[], 
         selected_classes=[], 

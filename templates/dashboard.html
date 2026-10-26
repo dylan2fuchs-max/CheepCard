@@ -767,7 +767,7 @@
         </div>
         {% endif %}
 
-<div id="card-theme-data" data-mapping='{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}' style="display: none;"></div>
+<div id="synergy-report-data" data-report='{{ report.themes | tojson | safe if report is defined and report.themes is defined else "[]" }}' style="display: none;"></div>
 
 <script>
 let cardThemeMap = {};
@@ -785,57 +785,56 @@ function cleanKey(name) {
 }
 
 function updateExportText() {
-    const rawText = document.getElementById('deckTextArea') || 
-                    document.querySelector('textarea[name="decklist"]') || 
-                    document.querySelector('textarea');
-                    
-    if (!rawText || !rawText.value.trim()) {
-        const exportBox = document.getElementById('export-deck-text');
-        if (exportBox) exportBox.value = "No decklist found in input box.";
+    const exportBox = document.getElementById('export-deck-text');
+    if (!exportBox) return;
+
+    // Check if synergy report data exists in the HTML
+    let synergyThemes = [];
+    try {
+        const reportContainer = document.getElementById('synergy-report-data');
+        if (reportContainer && reportContainer.dataset.report) {
+            synergyThemes = JSON.parse(reportContainer.dataset.report);
+        }
+    } catch (e) {
+        console.error("Failed to parse synergy report themes", e);
+    }
+
+    if (synergyThemes.length === 0) {
+        exportBox.value = "Please evaluate synergy first to generate categorized export sections.";
         return;
     }
-    
-    const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    
-    // Get all checked tag values and normalize them completely
+
+    // Get all checked tag checkboxes from the export panel
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').replace(/\s*\(Creature Subtype\)/i, '').trim().toLowerCase());
-    
-    const formattedText = rawLines.map(line => {
-        // Extract original leading quantity (e.g., "4x", "2", or none) and clean card name
-        const qtyMatch = line.match(/^(\d+x?\s*)/i);
-        const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
+        .map(cb => cb.value.trim().toLowerCase());
+
+    let outputSections = [];
+
+    // Loop directly through the synergy report themes
+    synergyThemes.forEach(item => {
+        const cleanThemeName = item.theme.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         
-        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
-        let cardKey = cleanKey(cleanCard);
-        
-        let matchedTags = [];
-        for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-            // Use exact key matching or safe inclusion for reliable association
-            if (dbKey === cardKey || (cardKey.length > 3 && (dbKey.includes(cardKey) || cardKey.includes(dbKey)))) {
-                themes.forEach(t => {
-                    const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').replace(/\s*\(Creature Subtype\)/i, '').trim().toLowerCase();
-                    
-                    if (checkedTags.includes(cleanTheme)) {
-                        if (!matchedTags.includes(t)) {
-                            matchedTags.push(t);
-                        }
-                    }
+        // If this category checkbox is checked, add its section header and cards
+        if (checkedTags.includes(cleanThemeName)) {
+            if (item.cards && item.cards.trim() !== "") {
+                outputSections.push(`// --- ${item.theme} ---`);
+                
+                // Split the comma-separated cards string into clean lines
+                const cardList = item.cards.split(',').map(c => c.trim()).filter(c => c.length > 0);
+                
+                cardList.forEach(cardName => {
+                    outputSections.push(`1x ${cardName}`);
                 });
+                
+                outputSections.push(''); // Empty line spacing between sections
             }
         }
+    });
 
-        // Preserve original quantity prefix (e.g. "4x" or "1 ") instead of forcing "1x"
-        let lineStr = `${qtyPrefix}${cleanCard}`;
-        if (matchedTags.length > 0) {
-            lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
-        }
-        return lineStr;
-    }).join('\n');
-    
-    const exportDeckText = document.getElementById('export-deck-text');
-    if (exportDeckText) {
-        exportDeckText.value = formattedText;
+    if (outputSections.length === 0) {
+        exportBox.value = "No categories selected. Please check at least one tag above.";
+    } else {
+        exportBox.value = outputSections.join('\n').trim();
     }
 }
 
