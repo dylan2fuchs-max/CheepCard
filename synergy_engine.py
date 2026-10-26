@@ -94,13 +94,12 @@ def run_synergy_analysis(deck_list: list) -> dict:
     def clean_key(name):
         return re.sub(r'[^a-z0-9]', '', str(name).lower())
 
+    def get_clean_card_key(c_str):
+        name_only = re.sub(r'^\d+x?\s*', '', str(c_str)).strip()
+        return re.sub(r'[^a-z0-9]', '', name_only.lower())
+
     card_assignments = {clean_key(card): [] for card in deck_list if card.strip()}
     creature_type_pool = []
-
-    def get_clean_card_key(c_str):
-    name_only = re.sub(r'^\d+x?\s*', '', str(c_str)).strip()
-    return re.sub(r'[^a-z0-9]', '', name_only.lower())
-
     card_creature_type_assignments = {get_clean_card_key(card): [] for card in deck_list if card.strip()}
 
     # ─── MAIN CARD ITERATION LOOP ───
