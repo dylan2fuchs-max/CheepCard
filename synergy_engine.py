@@ -121,7 +121,13 @@ def run_synergy_analysis(deck_list: list) -> dict:
             continue
 
         rules_text = matched_card_obj.oracle_text.lower() if matched_card_obj.oracle_text else ""
-        current_card_type = matched_card_obj.raw_type.lower() if matched_card_obj.raw_type else ""
+        # Safely retrieve card type across any possible database column name
+        current_card_type = ""
+        for attr in ['raw_type', 'type_line', 'card_type', 'types', 'type']:
+            val = getattr(matched_card_obj, attr, None)
+            if val:
+                current_card_type = str(val).lower()
+                break
         
         # 1. Check Card_Filter classes
         c1 = matched_card_obj.card_class_1.lower() if matched_card_obj.card_class_1 else ""
