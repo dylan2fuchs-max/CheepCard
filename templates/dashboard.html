@@ -785,8 +785,8 @@ function cleanKey(name) {
 }
 
 function updateExportText() {
-    const rawText = document.querySelector('textarea[name="decklist"]') || 
-                    document.getElementById('decklist') || 
+    const rawText = document.getElementById('deckTextArea') || 
+                    document.querySelector('textarea[name="decklist"]') || 
                     document.querySelector('textarea');
                     
     if (!rawText || !rawText.value.trim()) {
@@ -797,8 +797,9 @@ function updateExportText() {
     
     const rawLines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     
+    // Get all checked tag values and normalize them completely
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.trim().toLowerCase());
+        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').replace(/\s*\(Creature Subtype\)/i, '').trim().toLowerCase());
     
     const formattedText = rawLines.map(line => {
         let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').trim();
@@ -809,7 +810,9 @@ function updateExportText() {
             if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
                 themes.forEach(t => {
                     const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').replace(/\s*\(Creature Subtype\)/i, '').trim().toLowerCase();
-                    if (checkedTags.some(tag => cleanTheme.includes(tag) || tag.includes(cleanTheme))) {
+                    
+                    if (checkedTags.includes(cleanTheme)) {
+                        // Keep original display format for the tag backticks
                         if (!matchedTags.includes(t)) {
                             matchedTags.push(t);
                         }
@@ -846,15 +849,23 @@ function initExportModal() {
         });
     }
 
-    document.getElementById('select-all-tags')?.addEventListener('click', () => {
-        document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
-        updateExportText();
-    });
+    const selectAllBtn = document.getElementById('select-all-tags');
+    if (selectAllBtn && !selectAllBtn.dataset.bound) {
+        selectAllBtn.dataset.bound = "true";
+        selectAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
+            updateExportText();
+        });
+    }
 
-    document.getElementById('deselect-all-tags')?.addEventListener('click', () => {
-        document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
-        updateExportText();
-    });
+    const deselectAllBtn = document.getElementById('deselect-all-tags');
+    if (deselectAllBtn && !deselectAllBtn.dataset.bound) {
+        deselectAllBtn.dataset.bound = "true";
+        deselectAllBtn.addEventListener('click', () => {
+            document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
+            updateExportText();
+        });
+    }
 
     document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
         if (!cb.dataset.bound) {
@@ -863,16 +874,13 @@ function initExportModal() {
         }
     });
 
-    document.getElementById('copy-export-btn')?.addEventListener('click', () => {
-        const textarea = document.getElementById('export-deck-text');
-        if (textarea) {
-            textarea.select();
-            navigator.clipboard.writeText(textarea.value).then(() => {
-                alert('Copied to clipboard! Ready to paste into Deck Builder.');
-            });
-        }
-    });
+    const deckTextArea = document.getElementById('deckTextArea');
+    if (deckTextArea && !deckTextArea.dataset.bound) {
+        deckTextArea.dataset.bound = "true";
+        deckTextArea.addEventListener('input', updateExportText);
+    }
 
+    // Instantly generate export text on load if report is present
     updateExportText();
 }
 
