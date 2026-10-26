@@ -96,7 +96,12 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
     card_assignments = {clean_key(card): [] for card in deck_list if card.strip()}
     creature_type_pool = []
-    card_creature_type_assignments = {clean_key(card): [] for card in deck_list if card.strip()}
+
+    def get_clean_card_key(c_str):
+    name_only = re.sub(r'^\d+x?\s*', '', str(c_str)).strip()
+    return re.sub(r'[^a-z0-9]', '', name_only.lower())
+
+    card_creature_type_assignments = {get_clean_card_key(card): [] for card in deck_list if card.strip()}
 
     # ─── MAIN CARD ITERATION LOOP ───
     for card_name in deck_list:
@@ -197,16 +202,17 @@ def run_synergy_analysis(deck_list: list) -> dict:
     top_creature_types = creature_type_counts.most_common(2)
 
     for type_name, count in top_creature_types:
-        matching_cards = []
-        for card in deck_list:
-            clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
-            db_obj = card_db_map.get(clean_c_input)
-            c_disp = db_obj.name.title() if db_obj else clean_c_input.title()
-            ck = clean_key(c_disp)
-            if type_name in card_creature_type_assignments.get(ck, []):
-                if c_disp not in matching_cards:
-                    matching_cards.append(c_disp)
-                
+    matching_cards = []
+    for card in deck_list:
+        clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
+        db_obj = card_db_map.get(clean_c_input)
+        c_disp = db_obj.name.title() if db_obj else clean_c_input.title()
+        ck = get_clean_card_key(c_disp)
+        if type_name in card_creature_type_assignments.get(ck, []):
+            if c_disp not in matching_cards:
+                matching_cards.append(c_disp)
+            
+    if matching_cards:
         output.append({
             "theme": f"👾 {type_name.capitalize()}",
             "count": len(matching_cards),

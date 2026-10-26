@@ -783,11 +783,10 @@ function updateExportText() {
 
     const deckLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-    // Get all checked tag values from the export panel checkboxes
+    // Get checked tags (normalized: lowercase, stripped emojis/symbols)
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.trim().toLowerCase());
+        .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
 
-    // Parse synergy report themes from the hidden data attribute
     let synergyThemes = [];
     try {
         const reportContainer = document.getElementById('synergy-report-data');
@@ -798,37 +797,41 @@ function updateExportText() {
         console.error("Failed to parse synergy report themes", e);
     }
 
-    // Map each card name (lowercased) to its matching checked theme names
+    // Helper for robust card key matching
+    function normKey(str) {
+        return str.replace(/[^a-z0-9]/g, '').toLowerCase();
+    }
+
+    // Map normalized card names to matching tag titles
     const cardToTagsMap = {};
     synergyThemes.forEach(item => {
-        const cleanThemeVal = item.theme.replace(/^[📊👾🔮]\s*/, '').trim();
-        const themeLower = cleanThemeVal.toLowerCase();
+        const displayTag = item.theme.replace(/^[📊👾🔮]\s*/, '').trim();
+        const tagKey = displayTag.toLowerCase();
 
-        // If this theme/creature type is checked by the user
-        if (checkedTags.includes(themeLower)) {
+        if (checkedTags.includes(tagKey)) {
             if (item.cards && item.cards.trim() !== "") {
-                const cardList = item.cards.split(',').map(c => c.trim().toLowerCase());
-                cardList.forEach(cardName => {
-                    if (!cardToTagsMap[cardName]) {
-                        cardToTagsMap[cardName] = [];
+                const cardList = item.cards.split(',').map(c => c.trim());
+                cardList.forEach(rawCardName => {
+                    const cKey = normKey(rawCardName);
+                    if (!cardToTagsMap[cKey]) {
+                        cardToTagsMap[cKey] = [];
                     }
-                    if (!cardToTagsMap[cardName].includes(cleanThemeVal)) {
-                        cardToTagsMap[cardName].push(cleanThemeVal);
+                    if (!cardToTagsMap[cKey].includes(displayTag)) {
+                        cardToTagsMap[cKey].push(displayTag);
                     }
                 });
             }
         }
     });
 
-    // Process each line of the user's input decklist
+    // Format output lines preserving quantity
     const formattedLines = deckLines.map(line => {
-        // Match quantity prefix (e.g. "1 ", "4x ")
-        const qtyMatch = line.match(/^(\d+x?\s*)(.+)$/);
-        const qtyPrefix = qtyMatch ? qtyMatch[1] : "1 ";
+        const qtyMatch = line.match(/^(\d+x?\s*)(.+)$/i);
+        const qtyPrefix = qtyMatch ? qtyMatch[1] : "";
         const cardName = qtyMatch ? qtyMatch[2].trim() : line.trim();
         
-        const lookupKey = cardName.toLowerCase();
-        const matchingTags = cardToTagsMap[lookupKey] || [];
+        const cKey = normKey(cardName);
+        const matchingTags = cardToTagsMap[cKey] || [];
 
         let lineStr = `${qtyPrefix}${cardName}`;
         if (matchingTags.length > 0) {
