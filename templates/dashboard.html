@@ -770,25 +770,24 @@
 <div id="synergy-report-data" data-report='{{ report.themes | tojson | safe if report is defined and report.themes is defined else "[]" }}' style="display: none;"></div>
 
 <script>
-let cardThemeMap = {};
-try {
-    const container = document.getElementById('card-theme-data');
-    if (container && container.dataset.mapping) {
-        cardThemeMap = JSON.parse(container.dataset.mapping);
-    }
-} catch (e) {
-    console.error("Failed to parse card theme mapping", e);
-}
-
-function cleanKey(name) {
-    return name.replace(/[^a-z0-9]/g, '').toLowerCase();
-}
-
 function updateExportText() {
     const exportBox = document.getElementById('export-deck-text');
-    if (!exportBox) return;
+    const deckTextArea = document.getElementById('deckTextArea');
+    if (!exportBox || !deckTextArea) return;
 
-    // Check if synergy report data exists in the HTML
+    const rawText = deckTextArea.value.trim();
+    if (!rawText) {
+        exportBox.value = "No decklist found in input box.";
+        return;
+    }
+
+    const deckLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+    // Get all checked tag values from the export panel checkboxes
+    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
+        .map(cb => cb.value.trim().toLowerCase());
+
+    // Parse synergy report themes from the hidden data attribute
     let synergyThemes = [];
     try {
         const reportContainer = document.getElementById('synergy-report-data');
@@ -799,43 +798,46 @@ function updateExportText() {
         console.error("Failed to parse synergy report themes", e);
     }
 
-    if (synergyThemes.length === 0) {
-        exportBox.value = "Please evaluate synergy first to generate categorized export sections.";
-        return;
-    }
-
-    // Get all checked tag checkboxes from the export panel
-    const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-        .map(cb => cb.value.trim().toLowerCase());
-
-    let outputSections = [];
-
-    // Loop directly through the synergy report themes
+    // Map each card name (lowercased) to its matching checked theme names
+    const cardToTagsMap = {};
     synergyThemes.forEach(item => {
-        const cleanThemeName = item.theme.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-        
-        // If this category checkbox is checked, add its section header and cards
-        if (checkedTags.includes(cleanThemeName)) {
+        const cleanThemeVal = item.theme.replace(/^[📊👾🔮]\s*/, '').trim();
+        const themeLower = cleanThemeVal.toLowerCase();
+
+        // If this theme/creature type is checked by the user
+        if (checkedTags.includes(themeLower)) {
             if (item.cards && item.cards.trim() !== "") {
-                outputSections.push(`// --- ${item.theme} ---`);
-                
-                // Split the comma-separated cards string into clean lines
-                const cardList = item.cards.split(',').map(c => c.trim()).filter(c => c.length > 0);
-                
+                const cardList = item.cards.split(',').map(c => c.trim().toLowerCase());
                 cardList.forEach(cardName => {
-                    outputSections.push(`1x ${cardName}`);
+                    if (!cardToTagsMap[cardName]) {
+                        cardToTagsMap[cardName] = [];
+                    }
+                    if (!cardToTagsMap[cardName].includes(cleanThemeVal)) {
+                        cardToTagsMap[cardName].push(cleanThemeVal);
+                    }
                 });
-                
-                outputSections.push(''); // Empty line spacing between sections
             }
         }
     });
 
-    if (outputSections.length === 0) {
-        exportBox.value = "No categories selected. Please check at least one tag above.";
-    } else {
-        exportBox.value = outputSections.join('\n').trim();
-    }
+    // Process each line of the user's input decklist
+    const formattedLines = deckLines.map(line => {
+        // Match quantity prefix (e.g. "1 ", "4x ")
+        const qtyMatch = line.match(/^(\d+x?\s*)(.+)$/);
+        const qtyPrefix = qtyMatch ? qtyMatch[1] : "1 ";
+        const cardName = qtyMatch ? qtyMatch[2].trim() : line.trim();
+        
+        const lookupKey = cardName.toLowerCase();
+        const matchingTags = cardToTagsMap[lookupKey] || [];
+
+        let lineStr = `${qtyPrefix}${cardName}`;
+        if (matchingTags.length > 0) {
+            lineStr += ' ' + matchingTags.map(t => `\`${t}\``).join(' ');
+        }
+        return lineStr;
+    });
+
+    exportBox.value = formattedLines.join('\n');
 }
 
 function initExportModal() {
@@ -872,19 +874,15 @@ function initExportModal() {
     }
 
     document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
-        if (!cb.dataset.bound) {
-            cb.dataset.bound = "true";
-            cb.addEventListener('change', updateExportText);
-        }
+        cb.addEventListener('change', updateExportText);
     });
 
     const deckTextArea = document.getElementById('deckTextArea');
-    if (deckTextArea && !deckTextArea.dataset.bound) {
-        deckTextArea.dataset.bound = "true";
+    if (deckTextArea) {
         deckTextArea.addEventListener('input', updateExportText);
     }
 
-    // Instantly generate export text on load if report is present
+    // Run on load if synergy data is present
     updateExportText();
 }
 
