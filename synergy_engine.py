@@ -201,23 +201,23 @@ def run_synergy_analysis(deck_list: list) -> dict:
     top_creature_types = creature_type_counts.most_common(2)
 
     for type_name, count in top_creature_types:
-    matching_cards = []
-    for card in deck_list:
-        clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
-        db_obj = card_db_map.get(clean_c_input)
-        c_disp = db_obj.name.title() if db_obj else clean_c_input.title()
-        ck = get_clean_card_key(c_disp)
-        if type_name in card_creature_type_assignments.get(ck, []):
-            if c_disp not in matching_cards:
-                matching_cards.append(c_disp)
-            
-    if matching_cards:
-        output.append({
-            "theme": f"👾 {type_name.capitalize()}",
-            "count": len(matching_cards),
-            "percentage": f"{round((len(matching_cards) / deck_size) * 100, 2)}%",
-            "cards": ", ".join(sorted(matching_cards))
-        })
+        matching_cards = []
+        for card in deck_list:
+            clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
+            db_obj = card_db_map.get(clean_c_input)
+            c_disp = db_obj.name.title() if db_obj else clean_c_input.title()
+            ck = get_clean_card_key(c_disp)
+            if type_name in card_creature_type_assignments.get(ck, []):
+                if c_disp not in matching_cards:
+                    matching_cards.append(c_disp)
+                
+        if matching_cards:
+            output.append({
+                "theme": f"👾 {type_name.capitalize()}",
+                "count": len(matching_cards),
+                "percentage": f"{round((len(matching_cards) / deck_size) * 100, 2)}%",
+                "cards": ", ".join(sorted(matching_cards))
+            })
 
     major_themes_formatted = []
     for theme, cards_set in theme_card_pools.items():
