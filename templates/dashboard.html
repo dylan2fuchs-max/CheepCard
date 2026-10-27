@@ -767,9 +767,12 @@
         </div>
         {% endif %}
 
-<!-- Direct Jinja-to-JS Object Injection -->
+<!-- Direct Jinja-to-JS Object Injection with Null Safety -->
 <script>
-    let cardThemeMap = {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }};
+    let cardThemeMap = {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined and card_theme_mapping else "{}" }};
+    if (!cardThemeMap || typeof cardThemeMap !== 'object') {
+        cardThemeMap = {};
+    }
 
     function cleanKey(name) {
         if (!name) return '';
@@ -788,12 +791,15 @@
             return;
         }
         
+        console.log("Card Theme Map Loaded:", cardThemeMap);
+        
         // Get all checked tag checkboxes
         const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
             .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
         
+        console.log("Checked Export Tags:", checkedTags);
+        
         const formattedLines = lines.map(line => {
-            // Extract quantity prefix (e.g., "1 ", "4x ")
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
             
@@ -803,7 +809,6 @@
             let matchedTags = [];
             let assignedThemes = [];
             
-            // 🌟 Robust Lookup: Check exact match first, then fallback to safe partial/contains matching
             if (cardThemeMap[cardKey]) {
                 assignedThemes = cardThemeMap[cardKey];
             } else {
