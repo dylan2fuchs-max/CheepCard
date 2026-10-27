@@ -767,13 +767,13 @@
         </div>
         {% endif %}
 
-<!-- Safe JSON Script Tag (No Editor Red Lines & Zero Parsing Errors) -->
+<!-- Safe JSON Script Tag for Card Themes -->
 <script type="application/json" id="card-theme-json">
     {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}
 </script>
 
 <script>
-    // Safely parse the JSON object from the DOM script tag
+    // 1. Safely load the theme map
     let cardThemeMap = {};
     try {
         const jsonEl = document.getElementById('card-theme-json');
@@ -781,134 +781,149 @@
             cardThemeMap = JSON.parse(jsonEl.textContent.trim() || '{}');
         }
     } catch (e) {
-        console.error("Failed to parse cardThemeMap:", e);
+        console.error("Error parsing cardThemeMap:", e);
     }
 
-    console.log("🔥 Card Theme Map Loaded from Flask:", cardThemeMap);
-
-    function cleanKey(name) {
+    // 2. Simple, consistent key normalizer
+    function normalizeName(name) {
         if (!name) return '';
-        return String(name).replace(/[^a-z0-9]/g, '').toLowerCase();
+        return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
-    function updateExportText() {
-        const rawText = document.getElementById('deckTextArea');
+    // 3. Brand New Dedicated Export Function
+    function generateExportWithTags() {
+        const textArea = document.getElementById('deckTextArea');
         const exportBox = document.getElementById('export-deck-text');
         
-        if (!rawText || !exportBox) return;
-        
-        const lines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (!textArea || !exportBox) {
+            console.warn("Export elements not found in DOM.");
+            return;
+        }
+
+        const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (lines.length === 0) {
             exportBox.value = "No decklist found in input box.";
             return;
         }
-        
-        const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
-            .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
-        
-        const formattedLines = lines.map(line => {
+
+        // Gather all currently checked tag names (lowercased, emoji-stripped)
+        const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
+        const checkedTags = Array.from(activeCheckboxes).map(cb => {
+            return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
+        });
+
+        console.log("--- 📦 EXPORT DIAGNOSTIC ---");
+        console.log("Total cards in textarea:", lines.length);
+        console.log("Active checked tags:", checkedTags);
+        console.log("Total entries in cardThemeMap:", Object.keys(cardThemeMap).length);
+
+        const newExportLines = lines.map(line => {
+            // Extract quantity (e.g., "1 ", "4x ")
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
             
-            let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
-            let cardKey = cleanKey(cleanCard);
+            // Clean card name for lookup
+            let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
+            let lookupKey = normalizeName(rawCardName);
+
+            // Find themes assigned to this card in our map
+            let assignedThemes = cardThemeMap[lookupKey] || [];
             
-            let matchedTags = [];
-            let assignedThemes = [];
-            
-            if (cardThemeMap[cardKey]) {
-                assignedThemes = cardThemeMap[cardKey];
-            } else {
+            // Fallback: if exact normalized key misses, try a loose scan
+            if (assignedThemes.length === 0) {
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-                    if (dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
+                    if (dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
                         assignedThemes = themes;
                         break;
                     }
                 }
             }
 
+            // Filter down to only themes that are currently checked in the export panel
+            let matchedTags = [];
             assignedThemes.forEach(t => {
-                const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-                if (checkedTags.includes(cleanTheme)) {
+                let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
+                if (checkedTags.includes(cleanThemeName)) {
                     if (!matchedTags.includes(t)) {
                         matchedTags.push(t);
                     }
                 }
             });
 
-            let lineStr = `${qtyPrefix}${cleanCard}`;
+            // Rebuild the line with tags in backticks
+            let outputLine = `${qtyPrefix}${rawCardName}`;
             if (matchedTags.length > 0) {
-                lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
+                outputLine += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
             }
-            return lineStr;
+            return outputLine;
         });
-        
-        exportBox.value = formattedLines.join('\n');
+
+        exportBox.value = newExportLines.join('\n');
+        console.log("--- EXPORT COMPLETE ---");
     }
 
-    function initExportModal() {
+    // 4. Bind events cleanly
+    function initExportSystem() {
         const toggleBtn = document.getElementById('toggle-export-modal-btn');
-        if (toggleBtn && !toggleBtn.dataset.bound) {
-            toggleBtn.dataset.bound = "true";
-            toggleBtn.addEventListener('click', function() {
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
                 const panel = document.getElementById('export-panel');
                 if (panel) {
-                    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                    if (panel.style.display === 'block') {
-                        updateExportText();
+                    const isHidden = panel.style.display === 'none' || panel.style.display === '';
+                    panel.style.display = isHidden ? 'block' : 'none';
+                    if (isHidden) {
+                        generateExportWithTags();
                     }
                 }
             });
         }
 
-        const selectAllBtn = document.getElementById('select-all-tags');
-        if (selectAllBtn && !selectAllBtn.dataset.bound) {
-            selectAllBtn.dataset.bound = "true";
-            selectAllBtn.addEventListener('click', () => {
+        // Select All / Unselect All bindings
+        const selectAll = document.getElementById('select-all-tags');
+        if (selectAll) {
+            selectAll.addEventListener('click', () => {
                 document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
-                updateExportText();
+                generateExportWithTags();
             });
         }
 
-        const deselectAllBtn = document.getElementById('deselect-all-tags');
-        if (deselectAllBtn && !deselectAllBtn.dataset.bound) {
-            deselectAllBtn.dataset.bound = "true";
-            deselectAllBtn.addEventListener('click', () => {
+        const deselectAll = document.getElementById('deselect-all-tags');
+        if (deselectAll) {
+            deselectAll.addEventListener('click', () => {
                 document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
-                updateExportText();
+                generateExportWithTags();
             });
         }
 
+        // Checkbox change listener
         document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
-            cb.addEventListener('change', updateExportText);
+            cb.addEventListener('change', generateExportWithTags);
         });
 
+        // Textarea input listener
         const deckTextArea = document.getElementById('deckTextArea');
         if (deckTextArea) {
-            deckTextArea.addEventListener('input', updateExportText);
+            deckTextArea.addEventListener('input', generateExportWithTags);
         }
 
+        // Copy button binding
         const copyBtn = document.getElementById('copy-export-btn');
-        if (copyBtn && !copyBtn.dataset.bound) {
-            copyBtn.dataset.bound = "true";
+        if (copyBtn) {
             copyBtn.addEventListener('click', () => {
                 const exportBox = document.getElementById('export-deck-text');
                 if (exportBox) {
-                    exportBox.select();
                     navigator.clipboard.writeText(exportBox.value).then(() => {
                         alert("📋 Export decklist copied to clipboard!");
                     });
                 }
             });
         }
-
-        updateExportText();
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initExportModal);
+        document.addEventListener('DOMContentLoaded', initExportSystem);
     } else {
-        initExportModal();
+        initExportSystem();
     }
 </script>
 
