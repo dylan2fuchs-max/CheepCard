@@ -767,12 +767,24 @@
         </div>
         {% endif %}
 
-<!-- Direct Jinja-to-JS Object Injection with Null Safety -->
+<!-- Safe JSON Script Tag (No Editor Red Lines & Zero Parsing Errors) -->
+<script type="application/json" id="card-theme-json">
+    {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}
+</script>
+
 <script>
-    let cardThemeMap = {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined and card_theme_mapping else "{}" }};
-    if (!cardThemeMap || typeof cardThemeMap !== 'object') {
-        cardThemeMap = {};
+    // Safely parse the JSON object from the DOM script tag
+    let cardThemeMap = {};
+    try {
+        const jsonEl = document.getElementById('card-theme-json');
+        if (jsonEl) {
+            cardThemeMap = JSON.parse(jsonEl.textContent.trim() || '{}');
+        }
+    } catch (e) {
+        console.error("Failed to parse cardThemeMap:", e);
     }
+
+    console.log("🔥 Card Theme Map Loaded from Flask:", cardThemeMap);
 
     function cleanKey(name) {
         if (!name) return '';
@@ -791,13 +803,8 @@
             return;
         }
         
-        console.log("Card Theme Map Loaded:", cardThemeMap);
-        
-        // Get all checked tag checkboxes
         const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
             .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
-        
-        console.log("Checked Export Tags:", checkedTags);
         
         const formattedLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
