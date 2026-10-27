@@ -126,13 +126,37 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
         rules_text = matched_card_obj.oracle_text.lower() if matched_card_obj.oracle_text else ""
         
-        # Safely retrieve card type across any possible database column name
-        current_card_type = ""
+        # 🌟 Bulletproof Creature Type Extraction
+        card_type_to_check = ""
         for attr in ['raw_type', 'type_line', 'card_type', 'types', 'type']:
             val = getattr(matched_card_obj, attr, None)
-            if val:
-                current_card_type = str(val).lower()
+            if val and str(val).strip():
+                card_type_to_check = str(val)
                 break
+
+        # If type line has a dash, grab subtypes after it. Otherwise, scan the whole type line.
+        subtypes_source = card_type_to_check
+        if '—' in card_type_to_check:
+            subtypes_source = card_type_to_check.split('—')[-1]
+        elif '-' in card_type_to_check:
+            subtypes_source = card_type_to_check.split('-')[-1]
+
+        subtypes = re.findall(r'\b[a-zA-Z]+\b', subtypes_source)
+        
+        exclude_type_words = {
+            'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 
+            'enchantment', 'land', 'planeswalker', 'instant', 'sorcery', 
+            'token', 'equipment', 'aura', 'vehicle', 'tribal', 'kindred', 'basic',
+            'battle', 'conspiracy', 'phenomenon', 'plane', 'scheme'
+        }
+        
+        for sub in subtypes:
+            sub_lower = sub.lower()
+            if len(sub_lower) > 2 and sub_lower not in exclude_type_words:
+                creature_type_pool.append(sub_lower)
+                ck = get_clean_card_key(actual_name)
+                if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
+                    card_creature_type_assignments[ck].append(sub_lower)
         
         # 1. Check Card_Filter classes
         c1 = matched_card_obj.card_class_1.lower() if matched_card_obj.card_class_1 else ""
