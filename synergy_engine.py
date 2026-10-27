@@ -253,18 +253,16 @@ def run_synergy_analysis(deck_list: list) -> dict:
         official_name = db_obj.name.title() if db_obj else clean_input.title()
         return official_name, clean_key(official_name)
 
-    # 1. Map Core Pools
+    # 1. Map Core Pools (with 📊 prefix)
     for cat_name, cards_set in core_pools.items():
+        theme_display = f"📊 {cat_name}"
         for card in cards_set:
             _, k = get_canonical_name_and_key(card)
             if k:
-                card_theme_mapping.setdefault(k, []).append(cat_name)
+                if theme_display not in card_theme_mapping.setdefault(k, []):
+                    card_theme_mapping[k].append(theme_display)
 
-    # 2. Map ALL Creature Subtypes to card_theme_mapping (fixes missing export tags!)
-    for type_name, subtypes_list in card_creature_type_assignments.items():
-        # find matching card in db map
-        pass
-
+    # 2. Map Creature Subtypes (with 👾 prefix)
     for card in deck_list:
         _, k = get_canonical_name_and_key(card)
         assigned_types = card_creature_type_assignments.get(k, [])
@@ -273,15 +271,16 @@ def run_synergy_analysis(deck_list: list) -> dict:
             if theme_display not in card_theme_mapping.setdefault(k, []):
                 card_theme_mapping[k].append(theme_display)
 
-    # 3. Map Theme Engine Themes
+    # 3. Map Theme Engine Themes (with 🔮 prefix)
     for theme, cards_set in theme_card_pools.items():
         if len(cards_set) >= 8:
+            theme_display = f"🔮 {theme}" if not theme.startswith("🔮") else theme
             for card in cards_set:
                 _, k = get_canonical_name_and_key(card)
                 if k:
-                    if theme not in card_theme_mapping.setdefault(k, []):
-                        card_theme_mapping[k].append(theme)
-
+                    if theme_display not in card_theme_mapping.setdefault(k, []):
+                        card_theme_mapping[k].append(theme_display)
+                        
     return {
         "deck_size": deck_size, 
         "themes": output,
