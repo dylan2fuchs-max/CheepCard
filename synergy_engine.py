@@ -234,7 +234,47 @@ def run_synergy_analysis(deck_list: list) -> dict:
     for theme_data in sorted(major_themes_formatted, key=lambda x: x["count"], reverse=True):
         output.append(theme_data)
 
+    # ─── BUILD CARD THEME MAPPING FOR INLINE EXPORT TAGS ───
+    card_theme_mapping = {}
+
+    def get_canonical_name_and_key(card_str):
+        clean_input = re.sub(r'^\d+x?\s*', '', str(card_str)).strip().lower()
+        db_obj = card_db_map.get(clean_input)
+        if not db_obj:
+            for db_n, c_obj in card_db_map.items():
+                if clean_input in db_n or db_n in clean_input:
+                    db_obj = c_obj
+                    break
+        official_name = db_obj.name.title() if db_obj else clean_input.title()
+        return official_name, clean_key(official_name)
+
+    # 1. Map Core Pools
+    for cat_name, cards_set in core_pools.items():
+        for card in cards_set:
+            _, k = get_canonical_name_and_key(card)
+            if k:
+                card_theme_mapping.setdefault(k, []).append(cat_name)
+
+    # 2. Map Top 2 Creature Subtypes / Types
+    for type_name, count in top_creature_types:
+        theme_display = f"👾 {type_name.capitalize()}"
+        for card in deck_list:
+            _, k = get_canonical_name_and_key(card)
+            if type_name in card_creature_type_assignments.get(k, []):
+                if theme_display not in card_theme_mapping.setdefault(k, []):
+                    card_theme_mapping[k].append(theme_display)
+
+    # 3. Map Theme Engine Themes
+    for theme, cards_set in theme_card_pools.items():
+        if len(cards_set) >= 8:
+            for card in cards_set:
+                _, k = get_canonical_name_and_key(card)
+                if k:
+                    if theme not in card_theme_mapping.setdefault(k, []):
+                        card_theme_mapping[k].append(theme)
+
     return {
         "deck_size": deck_size, 
-        "themes": output
+        "themes": output,
+        "card_theme_mapping": card_theme_mapping
     }

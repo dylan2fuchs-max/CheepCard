@@ -801,6 +801,7 @@ def synergy():
         deck_input=deck_input,
         themes=results.get('themes'),
         deck_size=results.get('deck_size'),
+        card_theme_mapping=results.get('card_theme_mapping', {}),
         search_reports=[], 
         selected_colors=[], 
         selected_classes=[], 

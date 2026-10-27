@@ -767,79 +767,71 @@
         </div>
         {% endif %}
 
+<div id="card-theme-data" data-mapping='{{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}' style="display: none;"></div>
 <div id="synergy-report-data" data-report='{{ report.themes | tojson | safe if report is defined and report.themes is defined else "[]" }}' style="display: none;"></div>
 
 <script>
-function updateExportText() {
-    const exportBox = document.getElementById('export-deck-text');
-    const deckTextArea = document.getElementById('deckTextArea');
-    if (!exportBox || !deckTextArea) return;
+let cardThemeMap = {};
+try {
+    const container = document.getElementById('card-theme-data');
+    if (container && container.dataset.mapping) {
+        cardThemeMap = JSON.parse(container.dataset.mapping);
+    }
+} catch (e) {
+    console.error("Failed to parse card theme mapping", e);
+}
 
-    const rawText = deckTextArea.value.trim();
-    if (!rawText) {
+function cleanKey(name) {
+    return name.replace(/[^a-z0-9]/g, '').toLowerCase();
+}
+
+function updateExportText() {
+    const rawText = document.getElementById('deckTextArea');
+    const exportBox = document.getElementById('export-deck-text');
+    
+    if (!rawText || !exportBox) return;
+    
+    const lines = rawText.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) {
         exportBox.value = "No decklist found in input box.";
         return;
     }
-
-    const deckLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-    // Get checked tags (normalized: lowercase, stripped emojis/symbols)
+    
+    // Get all checked tag checkboxes
     const checkedTags = Array.from(document.querySelectorAll('.tag-selector-checkbox:checked'))
         .map(cb => cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase());
-
-    let synergyThemes = [];
-    try {
-        const reportContainer = document.getElementById('synergy-report-data');
-        if (reportContainer && reportContainer.dataset.report) {
-            synergyThemes = JSON.parse(reportContainer.dataset.report);
-        }
-    } catch (e) {
-        console.error("Failed to parse synergy report themes", e);
-    }
-
-    // Helper for robust card key matching
-    function normKey(str) {
-        return str.replace(/[^a-z0-9]/g, '').toLowerCase();
-    }
-
-    // Map normalized card names to matching tag titles
-    const cardToTagsMap = {};
-    synergyThemes.forEach(item => {
-        const displayTag = item.theme.replace(/^[📊👾🔮]\s*/, '').trim();
-        const tagKey = displayTag.toLowerCase();
-
-        if (checkedTags.includes(tagKey)) {
-            if (item.cards && item.cards.trim() !== "") {
-                const cardList = item.cards.split(',').map(c => c.trim());
-                cardList.forEach(rawCardName => {
-                    const cKey = normKey(rawCardName);
-                    if (!cardToTagsMap[cKey]) {
-                        cardToTagsMap[cKey] = [];
-                    }
-                    if (!cardToTagsMap[cKey].includes(displayTag)) {
-                        cardToTagsMap[cKey].push(displayTag);
+    
+    const formattedLines = lines.map(line => {
+        // Extract quantity prefix (e.g., "1 ", "4x ")
+        const qtyMatch = line.match(/^(\d+x?\s*)/i);
+        const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
+        
+        let cleanCard = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
+        let cardKey = cleanKey(cleanCard);
+        
+        let matchedTags = [];
+        
+        // Look up card in cardThemeMap
+        for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
+            if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
+                themes.forEach(t => {
+                    const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
+                    if (checkedTags.includes(cleanTheme)) {
+                        if (!matchedTags.includes(t)) {
+                            matchedTags.push(t);
+                        }
                     }
                 });
             }
         }
-    });
 
-    // Format output lines preserving quantity
-    const formattedLines = deckLines.map(line => {
-        const qtyMatch = line.match(/^(\d+x?\s*)(.+)$/i);
-        const qtyPrefix = qtyMatch ? qtyMatch[1] : "";
-        const cardName = qtyMatch ? qtyMatch[2].trim() : line.trim();
-        
-        const cKey = normKey(cardName);
-        const matchingTags = cardToTagsMap[cKey] || [];
-
-        let lineStr = `${qtyPrefix}${cardName}`;
-        if (matchingTags.length > 0) {
-            lineStr += ' ' + matchingTags.map(t => `\`${t}\``).join(' ');
+        let lineStr = `${qtyPrefix}${cleanCard}`;
+        if (matchedTags.length > 0) {
+            lineStr += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
         }
         return lineStr;
     });
-
+    
     exportBox.value = formattedLines.join('\n');
 }
 
@@ -885,7 +877,6 @@ function initExportModal() {
         deckTextArea.addEventListener('input', updateExportText);
     }
 
-    // Run on load if synergy data is present
     updateExportText();
 }
 
