@@ -126,15 +126,11 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
         rules_text = matched_card_obj.oracle_text.lower() if matched_card_obj.oracle_text else ""
         
-        # 🌟 Bulletproof Creature Type Extraction
-        card_type_to_check = ""
-        for attr in ['raw_type', 'type_line', 'card_type', 'types', 'type']:
-            val = getattr(matched_card_obj, attr, None)
-            if val and str(val).strip():
-                card_type_to_check = str(val)
-                break
+        # 🌟 Safely define current_card_type from raw_type
+        current_card_type = str(matched_card_obj.raw_type).lower() if matched_card_obj.raw_type else ""
 
-        # If type line has a dash, grab subtypes after it. Otherwise, scan the whole type line.
+        # 🌟 Bulletproof Creature Type Extraction
+        card_type_to_check = current_card_type
         subtypes_source = card_type_to_check
         if '—' in card_type_to_check:
             subtypes_source = card_type_to_check.split('—')[-1]
@@ -173,29 +169,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
             core_pools["Removal"].add(actual_name)
         if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
             core_pools["Board Wipes"].add(actual_name)
-
-        # 👇 PLACE YOUR NEW CREATURE EXTRACTION CODE HERE 👇
-        if matched_card_obj.raw_type:
-            # Split by em-dash, en-dash, or hyphen to isolate subtypes
-            parts = re.split(r'[—–-]', matched_card_obj.raw_type)
-            if len(parts) > 1:
-                subtypes_part = parts[1]
-                subtypes = re.findall(r'\b[a-zA-Z]+\b', subtypes_part)
-                
-                exclude_type_words = {
-                    'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 
-                    'enchantment', 'land', 'planeswalker', 'instant', 'sorcery', 
-                    'token', 'equipment', 'aura', 'vehicle', 'tribal', 'kindred', 'basic',
-                    'battle', 'conspiracy', 'phenomenon', 'plane', 'scheme'
-                }
-                
-                for sub in subtypes:
-                    sub_lower = sub.lower()
-                    if len(sub_lower) > 2 and sub_lower not in exclude_type_words:
-                        creature_type_pool.append(sub_lower)
-                        ck = clean_key(actual_name)
-                        if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
-                            card_creature_type_assignments[ck].append(sub_lower)
 
         # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
