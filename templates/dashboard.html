@@ -811,18 +811,16 @@ function updateExportText() {
         
         let matchedTags = [];
         
-        // Look up card in cardThemeMap
-        for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-            if (dbKey === cardKey || dbKey.includes(cardKey) || cardKey.includes(dbKey)) {
-                themes.forEach(t => {
-                    const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-                    if (checkedTags.includes(cleanTheme)) {
-                        if (!matchedTags.includes(t)) {
-                            matchedTags.push(t);
-                        }
+        // 🌟 Safe Exact Look up in cardThemeMap (prevents substring pollution)
+        if (cardThemeMap[cardKey]) {
+            cardThemeMap[cardKey].forEach(t => {
+                const cleanTheme = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
+                if (checkedTags.includes(cleanTheme)) {
+                    if (!matchedTags.includes(t)) {
+                        matchedTags.push(t);
                     }
-                });
-            }
+                }
+            });
         }
 
         let lineStr = `${qtyPrefix}${cleanCard}`;

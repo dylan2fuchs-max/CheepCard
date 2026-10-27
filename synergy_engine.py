@@ -125,32 +125,35 @@ def run_synergy_analysis(deck_list: list) -> dict:
             continue
 
         rules_text = matched_card_obj.oracle_text.lower() if matched_card_obj.oracle_text else ""
-        
-        # 🌟 Safely define current_card_type from raw_type
         current_card_type = str(matched_card_obj.raw_type).lower() if matched_card_obj.raw_type else ""
 
-        # 🌟 Bulletproof Creature Type Extraction
-        card_type_to_check = current_card_type
-        subtypes_source = card_type_to_check
-        if '—' in card_type_to_check:
-            subtypes_source = card_type_to_check.split('—')[-1]
-        elif '-' in card_type_to_check:
-            subtypes_source = card_type_to_check.split('-')[-1]
-
-        subtypes = re.findall(r'\b[a-zA-Z]+\b', subtypes_source)
+        # 🌟 Bulletproof Creature & Subtype Extraction (Checks type line AND oracle text for deep matches)
+        combined_text_for_types = f"{current_card_type} {rules_text}"
         
+        subtypes_source = current_card_type
+        if '—' in current_card_type:
+            subtypes_source = current_card_type.split('—')[-1]
+        elif '-' in current_card_type:
+            subtypes_source = current_card_type.split('-')[-1]
+
+        subtypes = set(re.findall(r'\b[a-zA-Z]+\b', subtypes_source))
+        
+        # Explicit check for major creature keywords like skeleton if present in text/type
+        if "skeleton" in combined_text_for_types:
+            subtypes.add("skeleton")
+
         exclude_type_words = {
             'legendary', 'world', 'ongoing', 'snow', 'artifact', 'creature', 
             'enchantment', 'land', 'planeswalker', 'instant', 'sorcery', 
             'token', 'equipment', 'aura', 'vehicle', 'tribal', 'kindred', 'basic',
-            'battle', 'conspiracy', 'phenomenon', 'plane', 'scheme'
+            'battle', 'conspiracy', 'phenomenon', 'plane', 'scheme', 'card'
         }
         
+        ck = get_clean_card_key(actual_name)
         for sub in subtypes:
             sub_lower = sub.lower()
             if len(sub_lower) > 2 and sub_lower not in exclude_type_words:
                 creature_type_pool.append(sub_lower)
-                ck = get_clean_card_key(actual_name)
                 if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
                     card_creature_type_assignments[ck].append(sub_lower)
         
@@ -257,14 +260,18 @@ def run_synergy_analysis(deck_list: list) -> dict:
             if k:
                 card_theme_mapping.setdefault(k, []).append(cat_name)
 
-    # 2. Map Top 2 Creature Subtypes / Types
-    for type_name, count in top_creature_types:
-        theme_display = f"👾 {type_name.capitalize()}"
-        for card in deck_list:
-            _, k = get_canonical_name_and_key(card)
-            if type_name in card_creature_type_assignments.get(k, []):
-                if theme_display not in card_theme_mapping.setdefault(k, []):
-                    card_theme_mapping[k].append(theme_display)
+    # 2. Map ALL Creature Subtypes to card_theme_mapping (fixes missing export tags!)
+    for type_name, subtypes_list in card_creature_type_assignments.items():
+        # find matching card in db map
+        pass
+
+    for card in deck_list:
+        _, k = get_canonical_name_and_key(card)
+        assigned_types = card_creature_type_assignments.get(k, [])
+        for t in assigned_types:
+            theme_display = f"👾 {t.capitalize()}"
+            if theme_display not in card_theme_mapping.setdefault(k, []):
+                card_theme_mapping[k].append(theme_display)
 
     # 3. Map Theme Engine Themes
     for theme, cards_set in theme_card_pools.items():
