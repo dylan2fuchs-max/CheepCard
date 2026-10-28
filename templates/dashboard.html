@@ -821,12 +821,13 @@
             let assignedThemes = cardThemeMap[lookupKey] || [];
             
             if (assignedThemes.length > 0) {
-                console.log(`Exact match found! Line: "${rawCardName}" (Key: "${lookupKey}")`);
+                console.log(`Exact match found! Line: "${rawCardName}" -> Themes:`, assignedThemes);
             } else {
                 // Safe Fallback
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
                     if (dbKey.length > 3 && lookupKey === dbKey) {
                         assignedThemes = themes;
+                        console.log(`Fallback match! Line: "${rawCardName}" -> Themes:`, assignedThemes);
                         break;
                     }
                 }
