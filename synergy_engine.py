@@ -262,13 +262,20 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 if theme_display not in card_theme_mapping.setdefault(k, []):
                     card_theme_mapping[k].append(theme_display)
 
-    # 2. Map Creature Subtypes (with 👾 prefix)
+    # 2. Map Creature Subtypes (with 👾 prefix) and Guarantee Baseline Mapping for Every Card
     for card in deck_list:
         _, k = get_canonical_name_and_key(card)
+        if not k:
+            continue
+            
+        # Guarantee that every card has at least an initialized entry in the map
+        card_theme_mapping.setdefault(k, [])
+        
+        # Assign creature subtypes if present
         assigned_types = card_creature_type_assignments.get(k, [])
         for t in assigned_types:
             theme_display = f"👾 {t.capitalize()}"
-            if theme_display not in card_theme_mapping.setdefault(k, []):
+            if theme_display not in card_theme_mapping[k]:
                 card_theme_mapping[k].append(theme_display)
 
     # 3. Map Theme Engine Themes (with 🔮 prefix)
@@ -280,7 +287,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 if k:
                     if theme_display not in card_theme_mapping.setdefault(k, []):
                         card_theme_mapping[k].append(theme_display)
-                        
+
     return {
         "deck_size": deck_size, 
         "themes": output,

@@ -818,19 +818,18 @@
             let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
             let lookupKey = normalizeName(rawCardName);
 
-            // 🔍 DEBUG: See what key we are looking for and if it exists
             let assignedThemes = cardThemeMap[lookupKey] || [];
-            if (assignedThemes.length === 0) {
-                // Try to find any partial match
+            
+            if (assignedThemes.length > 0) {
+                console.log(`Exact match found! Line: "${rawCardName}" (Key: "${lookupKey}")`);
+            } else {
+                // Safe Fallback
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-                    if (dbKey === lookupKey || dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
+                    if (dbKey.length > 3 && lookupKey === dbKey) {
                         assignedThemes = themes;
-                        console.log(`Matched via fallback! Line: "${rawCardName}" (Key: "${lookupKey}") matched dbKey: "${dbKey}"`);
                         break;
                     }
                 }
-            } else {
-                console.log(`Exact match found! Line: "${rawCardName}" (Key: "${lookupKey}")`);
             }
 
             let matchedTags = [];
