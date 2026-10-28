@@ -293,3 +293,48 @@ def run_synergy_analysis(deck_list: list) -> dict:
         "themes": output,
         "card_theme_mapping": card_theme_mapping
     }
+
+    def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str:
+    """
+    Directly builds the tagged export string on the backend using 
+    the completed analysis results, avoiding frontend JavaScript key mismatch issues.
+    """
+    card_theme_mapping = analysis_result.get("card_theme_mapping", {})
+    export_lines = []
+    
+    for card_str in deck_list:
+        if not card_str.strip():
+            continue
+            
+        # Extract quantity and card name
+        qty_match = re.match(r'^(\d+x?\s*)', str(card_str))
+        qty_prefix = qty_match.group(1) if qty_match else "1 "
+        
+        raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
+        card_key = clean_key(raw_name)
+        
+        # Get themes assigned to this card from the backend mapping
+        assigned_themes = card_theme_mapping.get(card_key, [])
+        
+        # Fallback partial key lookup if exact match fails
+        if not assigned_themes:
+            for db_k, themes_list in card_theme_mapping.items():
+                if card_key in db_k or db_k in card_key:
+                    assigned_themes = themes_list
+                    break
+                    
+        # Clean up theme names (strip emojis like 📊, 👾, 🔮)
+        clean_tags = []
+        for theme in assigned_themes:
+            tag_name = re.sub(r'^[📊👾🔮]\s*', '', str(theme)).strip()
+            if tag_name and tag_name not in clean_tags:
+                clean_tags.append(tag_name)
+                
+        # Build final line: e.g., "1 Sol Ring Ramp"
+        line = f"{qtyPrefix}{raw_name}"
+        if clean_tags:
+            line += " " + " ".join(clean_tags)
+            
+        export_lines.append(line)
+        
+    return "\n".join(export_lines)

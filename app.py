@@ -791,6 +791,10 @@ def synergy():
     
     # Run synergy analysis
     results = run_synergy_analysis(deck_lines) if deck_lines else {}
+    
+    # Generate the tagged export text string right on the backend
+    tagged_export_text = generate_tagged_export_string(deck_lines, results) if deck_lines else ""
+    results['tagged_export_text'] = tagged_export_text
 
     # 🌟 Build direct card-to-themes dictionary from report themes for the export feature
     card_to_themes = {}

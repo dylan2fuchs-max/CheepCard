@@ -740,7 +740,7 @@
                     </label>
                     {% endfor %}
                 </div>
-                <textarea id="export-deck-text" class="form-control" rows="8" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px; margin-bottom: 10px;"></textarea>
+                <textarea id="export-deck-text" class="form-control" rows="8" readonly style="width: 100%; font-family: monospace; padding: 8px; border-radius: 4px; margin-bottom: 10px;">{{ report.tagged_export_text if report is defined and report else '' }}</textarea>
                 <button type="button" id="copy-export-btn" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%;">Copy for Export</button>
             </div>
 
