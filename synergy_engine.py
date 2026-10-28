@@ -295,12 +295,17 @@ def run_synergy_analysis(deck_list: list) -> dict:
     }
 
     def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str:
-    """
-    Directly builds the tagged export string on the backend using 
-    the completed analysis results, avoiding frontend JavaScript key mismatch issues.
-    """
     card_theme_mapping = analysis_result.get("card_theme_mapping", {})
+    print(f"🔍 DEBUG: Full card_theme_mapping built -> {card_theme_mapping}") # <--- Add this
+    
     export_lines = []
+    for card_str in deck_list:
+        if not card_str.strip():
+            continue
+        raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
+        card_key = clean_key(raw_name)
+        print(f"🔍 DEBUG Card: '{raw_name}' | Key: '{card_key}' | Found Themes: {card_theme_mapping.get(card_key)}") # <--- Add this
+        # ... rest of function ...
     
     for card_str in deck_list:
         if not card_str.strip():
