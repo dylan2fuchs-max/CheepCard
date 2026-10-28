@@ -797,6 +797,8 @@
         if (!textArea || !exportBox) return;
 
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        console.log("📝 Total deck lines found in textarea:", lines.length);
+
         if (lines.length === 0) {
             exportBox.value = "No decklist found in input box.";
             return;
@@ -806,6 +808,8 @@
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         });
+
+        console.log("☑️ Checked tags count:", checkedTags.length);
 
         const newExportLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
@@ -824,6 +828,8 @@
                     }
                 }
             }
+
+            console.log(`Card: "${rawCardName}" | Key: "${lookupKey}" | Found Themes:`, assignedThemes);
 
             let matchedTags = [];
             assignedThemes.forEach(t => {
@@ -844,6 +850,7 @@
         });
 
         exportBox.value = newExportLines.join('\n');
+        console.log("✨ Export box populated with length:", exportBox.value.length);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
