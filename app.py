@@ -797,7 +797,6 @@ def synergy():
     for theme_item in results.get('themes', []):
         theme_name = theme_item.get('theme')
         cards_str = theme_item.get('cards', '')
-        # Split the comma-separated matching row items string
         card_list = [c.strip() for c in cards_str.split(',') if c.strip()]
         for card_name in card_list:
             card_key = ''.join(c.lower() for c in card_name if c.isalnum())
@@ -807,6 +806,7 @@ def synergy():
                 card_to_themes[card_key].append(theme_name)
 
     results['card_to_themes'] = card_to_themes
+    card_to_themes_json = json.dumps(card_to_themes)
 
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         pass
@@ -817,6 +817,7 @@ def synergy():
         deck_input=deck_input,
         themes=results.get('themes'),
         deck_size=results.get('deck_size'),
+        card_to_themes_json=card_to_themes_json,
         card_theme_mapping=results.get('card_theme_mapping', {}),
         card_to_themes=card_to_themes,
         search_reports=[], 

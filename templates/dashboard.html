@@ -768,20 +768,22 @@
         {% endif %}
 
 <!-- Safe JSON Script Tag for Card-to-Themes -->
-<script type="application/json" id="card-themes-json">
-    {{ card_to_themes | tojson | safe if card_to_themes is defined else "{}" }}
+<script type="application/json" id="card-to-themes-json">
+    {{ report.card_to_themes | tojson | safe if (report is defined and report and report.card_to_themes) else "{}" }}
 </script>
 
 <script>
     let cardToThemesMap = {};
     try {
-        const jsonEl = document.getElementById('card-themes-json');
-        if (jsonEl) {
-            cardToThemesMap = JSON.parse(jsonEl.textContent.trim() || '{}');
+        const jsonEl = document.getElementById('card-to-themes-json');
+        if (jsonEl && jsonEl.textContent.trim()) {
+            cardToThemesMap = JSON.parse(jsonEl.textContent.trim());
         }
     } catch (e) {
         console.error("Error parsing cardToThemesMap:", e);
     }
+
+    console.log("🔍 Loaded Card-to-Themes Map:", cardToThemesMap);
 
     function normalizeCardKey(name) {
         if (!name) return '';
@@ -800,7 +802,6 @@
             return;
         }
 
-        // Get checked tags from the UI filter checkboxes
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
@@ -813,10 +814,8 @@
             let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
             let lookupKey = normalizeCardKey(rawCardName);
 
-            // Fetch themes mapped directly from the synergy metrics table
             let assignedThemes = cardToThemesMap[lookupKey] || [];
             
-            // Fallback: substring search if exact key misses
             if (assignedThemes.length === 0) {
                 for (const [dbKey, themes] of Object.entries(cardToThemesMap)) {
                     if (dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
@@ -829,9 +828,7 @@
             let matchedTags = [];
             assignedThemes.forEach(t => {
                 let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-                // If no filters are checked or the tag is selected, include it
                 if (checkedTags.length === 0 || checkedTags.includes(cleanThemeName)) {
-                    // Strip emojis for clean Archidekt/tool export category tags if desired, or keep them
                     let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
                     if (!matchedTags.includes(exportTagStr)) {
                         matchedTags.push(exportTagStr);
@@ -841,7 +838,6 @@
 
             let outputLine = `${qtyPrefix}${rawCardName}`;
             if (matchedTags.length > 0) {
-                // Formatted with backticks for easy categorization parsing in tools like Archidekt
                 outputLine += ' ' + matchedTags.map(tag => `\`${tag}\``).join(' ');
             }
             return outputLine;
@@ -850,7 +846,6 @@
         exportBox.value = newExportLines.join('\n');
     }
 
-    // Bind initialization and events
     document.addEventListener('DOMContentLoaded', () => {
         const toggleBtn = document.getElementById('toggle-export-modal-btn');
         if (toggleBtn) {
