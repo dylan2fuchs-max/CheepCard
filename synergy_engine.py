@@ -198,7 +198,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
         for card in deck_list:
             clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
             db_obj = card_db_map.get(clean_c_input)
-            c_disp = db_obj.name.title() if db_obj else clean_input.title()
+            c_disp = db_obj.name.title() if db_obj else clean_c_input.title() # <--- Fixed!
             ck = get_clean_card_key(c_disp)
             if type_name in card_creature_type_assignments.get(ck, []):
                 if c_disp not in matching_cards:
