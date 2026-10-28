@@ -795,10 +795,7 @@
         const textArea = document.getElementById('deckTextArea');
         const exportBox = document.getElementById('export-deck-text');
         
-        if (!textArea || !exportBox) {
-            console.warn("Export elements not found in DOM.");
-            return;
-        }
+        if (!textArea || !exportBox) return;
 
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (lines.length === 0) {
@@ -806,40 +803,36 @@
             return;
         }
 
-        // Gather all currently checked tag names (lowercased, emoji-stripped)
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         });
 
         console.log("--- 📦 EXPORT DIAGNOSTIC ---");
-        console.log("Total cards in textarea:", lines.length);
-        console.log("Active checked tags:", checkedTags);
-        console.log("Total entries in cardThemeMap:", Object.keys(cardThemeMap).length);
+        console.log("Sample cardThemeMap Keys:", Object.keys(cardThemeMap).slice(0, 5));
 
         const newExportLines = lines.map(line => {
-            // Extract quantity (e.g., "1 ", "4x ")
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
             
-            // Clean card name for lookup
             let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
             let lookupKey = normalizeName(rawCardName);
 
-            // Find themes assigned to this card in our map
+            // 🔍 DEBUG: See what key we are looking for and if it exists
             let assignedThemes = cardThemeMap[lookupKey] || [];
-            
-            // Fallback: if exact normalized key misses, try a loose scan
             if (assignedThemes.length === 0) {
+                // Try to find any partial match
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-                    if (dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
+                    if (dbKey === lookupKey || dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
                         assignedThemes = themes;
+                        console.log(`Matched via fallback! Line: "${rawCardName}" (Key: "${lookupKey}") matched dbKey: "${dbKey}"`);
                         break;
                     }
                 }
+            } else {
+                console.log(`Exact match found! Line: "${rawCardName}" (Key: "${lookupKey}")`);
             }
 
-            // Filter down to only themes that are currently checked in the export panel
             let matchedTags = [];
             assignedThemes.forEach(t => {
                 let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
@@ -850,7 +843,6 @@
                 }
             });
 
-            // Rebuild the line with tags in backticks
             let outputLine = `${qtyPrefix}${rawCardName}`;
             if (matchedTags.length > 0) {
                 outputLine += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
