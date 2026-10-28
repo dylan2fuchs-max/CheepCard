@@ -792,6 +792,22 @@ def synergy():
     # Run synergy analysis
     results = run_synergy_analysis(deck_lines) if deck_lines else {}
 
+    # 🌟 Build direct card-to-themes dictionary from report themes for the export feature
+    card_to_themes = {}
+    for theme_item in results.get('themes', []):
+        theme_name = theme_item.get('theme')
+        cards_str = theme_item.get('cards', '')
+        # Split the comma-separated matching row items string
+        card_list = [c.strip() for c in cards_str.split(',') if c.strip()]
+        for card_name in card_list:
+            card_key = ''.join(c.lower() for c in card_name if c.isalnum())
+            if card_key not in card_to_themes:
+                card_to_themes[card_key] = []
+            if theme_name not in card_to_themes[card_key]:
+                card_to_themes[card_key].append(theme_name)
+
+    results['card_to_themes'] = card_to_themes
+
     if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
         pass
 
@@ -802,6 +818,7 @@ def synergy():
         themes=results.get('themes'),
         deck_size=results.get('deck_size'),
         card_theme_mapping=results.get('card_theme_mapping', {}),
+        card_to_themes=card_to_themes,
         search_reports=[], 
         selected_colors=[], 
         selected_classes=[], 

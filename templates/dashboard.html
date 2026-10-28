@@ -767,30 +767,27 @@
         </div>
         {% endif %}
 
-<!-- Safe JSON Script Tag for Card Themes -->
-<script type="application/json" id="card-theme-json">
-    {{ card_theme_mapping | tojson | safe if card_theme_mapping is defined else "{}" }}
+<!-- Safe JSON Script Tag for Card-to-Themes -->
+<script type="application/json" id="card-themes-json">
+    {{ card_to_themes | tojson | safe if card_to_themes is defined else "{}" }}
 </script>
 
 <script>
-    // 1. Safely load the theme map
-    let cardThemeMap = {};
+    let cardToThemesMap = {};
     try {
-        const jsonEl = document.getElementById('card-theme-json');
+        const jsonEl = document.getElementById('card-themes-json');
         if (jsonEl) {
-            cardThemeMap = JSON.parse(jsonEl.textContent.trim() || '{}');
+            cardToThemesMap = JSON.parse(jsonEl.textContent.trim() || '{}');
         }
     } catch (e) {
-        console.error("Error parsing cardThemeMap:", e);
+        console.error("Error parsing cardToThemesMap:", e);
     }
 
-    // 2. Simple, consistent key normalizer
-    function normalizeName(name) {
+    function normalizeCardKey(name) {
         if (!name) return '';
         return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
-    // 3. Brand New Dedicated Export Function with Bulletproof Matching
     function generateExportWithTags() {
         const textArea = document.getElementById('deckTextArea');
         const exportBox = document.getElementById('export-deck-text');
@@ -803,29 +800,26 @@
             return;
         }
 
-        // Gather all checked tags and lowercase them fully
+        // Get checked tags from the UI filter checkboxes
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         });
-
-        console.log("=========================================");
-        console.log("🔍 FULLY NORMALIZED CHECKED TAGS:", checkedTags);
-        console.log("=========================================");
 
         const newExportLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
             
             let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
-            let lookupKey = normalizeName(rawCardName);
+            let lookupKey = normalizeCardKey(rawCardName);
 
-            let assignedThemes = cardThemeMap[lookupKey] || [];
+            // Fetch themes mapped directly from the synergy metrics table
+            let assignedThemes = cardToThemesMap[lookupKey] || [];
             
-            // Fallback key lookup if exact match misses
+            // Fallback: substring search if exact key misses
             if (assignedThemes.length === 0) {
-                for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
-                    if (dbKey.length > 3 && lookupKey === dbKey) {
+                for (const [dbKey, themes] of Object.entries(cardToThemesMap)) {
+                    if (dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
                         assignedThemes = themes;
                         break;
                     }
@@ -834,30 +828,30 @@
 
             let matchedTags = [];
             assignedThemes.forEach(t => {
-                // Clean and lowercase both the theme name and ensure robust comparison
                 let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-                
-                // If checkboxes are empty or match the clean theme name, include it
+                // If no filters are checked or the tag is selected, include it
                 if (checkedTags.length === 0 || checkedTags.includes(cleanThemeName)) {
-                    if (!matchedTags.includes(t)) {
-                        matchedTags.push(t);
+                    // Strip emojis for clean Archidekt/tool export category tags if desired, or keep them
+                    let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
+                    if (!matchedTags.includes(exportTagStr)) {
+                        matchedTags.push(exportTagStr);
                     }
                 }
             });
 
             let outputLine = `${qtyPrefix}${rawCardName}`;
             if (matchedTags.length > 0) {
-                outputLine += ' ' + matchedTags.map(t => `\`${t}\``).join(' ');
+                // Formatted with backticks for easy categorization parsing in tools like Archidekt
+                outputLine += ' ' + matchedTags.map(tag => `\`${tag}\``).join(' ');
             }
             return outputLine;
         });
 
         exportBox.value = newExportLines.join('\n');
-        console.log("--- EXPORT COMPLETE ---");
     }
 
-    // 4. Bind events cleanly
-    function initExportSystem() {
+    // Bind initialization and events
+    document.addEventListener('DOMContentLoaded', () => {
         const toggleBtn = document.getElementById('toggle-export-modal-btn');
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
@@ -865,65 +859,22 @@
                 if (panel) {
                     const isHidden = panel.style.display === 'none' || panel.style.display === '';
                     panel.style.display = isHidden ? 'block' : 'none';
-                    
-                    if (isHidden) {
-                        generateExportWithTags();
-                    }
+                    if (isHidden) generateExportWithTags();
                 }
             });
         }
 
-        // Select All / Unselect All bindings
-        const selectAll = document.getElementById('select-all-tags');
-        if (selectAll) {
-            selectAll.addEventListener('click', () => {
-                document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
-                generateExportWithTags();
-            });
-        }
-
-        const deselectAll = document.getElementById('deselect-all-tags');
-        if (deselectAll) {
-            deselectAll.addEventListener('click', () => {
-                document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
-                generateExportWithTags();
-            });
-        }
-
-        // Checkbox change listener
         document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
             cb.addEventListener('change', generateExportWithTags);
         });
 
-        // Textarea input listener
         const deckTextArea = document.getElementById('deckTextArea');
         if (deckTextArea) {
             deckTextArea.addEventListener('input', generateExportWithTags);
         }
 
-        // Copy button binding
-        const copyBtn = document.getElementById('copy-export-btn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => {
-                const exportBox = document.getElementById('export-deck-text');
-                if (exportBox) {
-                    exportBox.select();
-                    navigator.clipboard.writeText(exportBox.value).then(() => {
-                        alert("📋 Export decklist copied to clipboard!");
-                    });
-                }
-            });
-        }
-
-        // Initial generation on load
         generateExportWithTags();
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initExportSystem);
-    } else {
-        initExportSystem();
-    }
+    });
 </script>
 
         <!-- 🌟 SEARCH RESULTS SECTION (Strictly Bounded to Grid) -->
