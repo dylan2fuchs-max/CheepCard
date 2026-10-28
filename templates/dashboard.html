@@ -790,7 +790,6 @@
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (lines.length === 0) return;
 
-        // Get currently checked tags
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
@@ -805,7 +804,6 @@
 
             let assignedThemes = cardThemeMap[cardKey] || [];
             
-            // Fallback key check
             if (assignedThemes.length === 0) {
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
                     if (cardKey.includes(dbKey) || dbKey.includes(cardKey)) {
@@ -820,7 +818,6 @@
                 let cleanThemeName = String(t).replace(/^[📊👾🔮]\s*/, '').trim();
                 let lowerTheme = cleanThemeName.toLowerCase();
                 
-                // Only include if checked (or if no checkboxes exist)
                 if (checkedTags.length === 0 || checkedTags.includes(lowerTheme)) {
                     let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
                     if (!matchedTags.includes(exportTagStr)) {
@@ -840,7 +837,40 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Attach listeners to checkboxes so toggling updates text live
+        // 1. Toggle Export Panel Open/Closed
+        const toggleBtn = document.getElementById('toggle-export-modal-btn');
+        const panel = document.getElementById('export-panel');
+        if (toggleBtn && panel) {
+            toggleBtn.addEventListener('click', () => {
+                const isHidden = panel.style.display === 'none' || panel.style.display === '';
+                panel.style.display = isHidden ? 'block' : 'none';
+            });
+        }
+
+        // 2. Copy Button Functionality
+        const copyBtn = document.getElementById('copy-export-btn');
+        const exportBox = document.getElementById('export-deck-text');
+        if (copyBtn && exportBox) {
+            copyBtn.addEventListener('click', () => {
+                if (!exportBox.value.trim()) {
+                    alert("Export text box is empty!");
+                    return;
+                }
+                navigator.clipboard.writeText(exportBox.value).then(() => {
+                    const originalText = copyBtn.innerText;
+                    copyBtn.innerText = '✔️ Copied to Clipboard!';
+                    copyBtn.style.background = '#155724';
+                    setTimeout(() => {
+                        copyBtn.innerText = originalText;
+                        copyBtn.style.background = '#27ae60';
+                    }, 1500);
+                }).catch(err => {
+                    alert("Failed to copy. Your browser might be blocking clipboard access.");
+                });
+            });
+        }
+
+        // 3. Live Checkbox Toggling & Select/Deselect All
         document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
             cb.addEventListener('change', updateExportText);
         });
