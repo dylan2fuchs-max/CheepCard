@@ -790,16 +790,17 @@
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (lines.length === 0) return;
 
+        // Get currently checked tags (normalized to lowercase, stripping any stray symbols/emojis)
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
-            return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
+            return cb.value.replace(/[^a-zA-Z0-9\s]/g, '').trim().toLowerCase();
         });
 
         const newExportLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '1 ';
             
-            let rawName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
+            let rawName = line.replace(/^\d+x?\s*/i, '').replace(/[^a-zA-Z0-9\s,\'-]/g, '').trim();
             let cardKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
             let assignedThemes = cardThemeMap[cardKey] || [];
@@ -815,10 +816,12 @@
 
             let matchedTags = [];
             assignedThemes.forEach(t => {
-                let cleanThemeName = String(t).replace(/^[📊👾🔮]\s*/, '').trim();
+                // Completely strip emojis and symbols from theme names to prevent  encoding bugs
+                let cleanThemeName = String(t).replace(/[^a-zA-Z0-9\s]/g, '').trim();
                 let lowerTheme = cleanThemeName.toLowerCase();
                 
-                if (checkedTags.length === 0 || checkedTags.includes(lowerTheme)) {
+                // STRICT RULE: Only include the tag if its checkbox is actively checked
+                if (checkedTags.includes(lowerTheme)) {
                     let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
                     if (!matchedTags.includes(exportTagStr)) {
                         matchedTags.push(exportTagStr);
