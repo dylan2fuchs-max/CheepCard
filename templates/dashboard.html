@@ -863,6 +863,11 @@
                 if (panel) {
                     const isHidden = panel.style.display === 'none' || panel.style.display === '';
                     panel.style.display = isHidden ? 'block' : 'none';
+                    
+                    // 🌟 THIS IS THE MISSING LINK: Refresh tags when opening the panel!
+                    if (isHidden) {
+                        generateExportWithTags();
+                    }
                 }
             });
         }
