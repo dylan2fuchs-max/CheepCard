@@ -767,40 +767,30 @@
         </div>
         {% endif %}
 <!-- Safe JSON Script Tag for Card-Theme Mapping -->
-<script type="application/json" id="card-to-themes-json">
+<script type="application/json" id="card-theme-mapping-json">
     {{ report.card_theme_mapping | tojson | safe if (report is defined and report and report.card_theme_mapping) else "{}" }}
 </script>
 
 <script>
-    let cardToThemesMap = {};
+    let cardThemeMap = {};
     try {
-        const jsonEl = document.getElementById('card-to-themes-json');
+        const jsonEl = document.getElementById('card-theme-mapping-json');
         if (jsonEl && jsonEl.textContent.trim()) {
-            cardToThemesMap = JSON.parse(jsonEl.textContent.trim());
+            cardThemeMap = JSON.parse(jsonEl.textContent.trim());
         }
     } catch (e) {
-        console.error("Error parsing cardToThemesMap:", e);
+        console.error("Error parsing cardThemeMap:", e);
     }
 
-    console.log("🔍 Loaded Card-to-Themes Map:", cardToThemesMap);
-
-    function normalizeCardKey(name) {
-        if (!name) return '';
-        return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
-
-    function generateExportWithTags() {
+    function updateExportText() {
         const textArea = document.getElementById('deckTextArea');
         const exportBox = document.getElementById('export-deck-text');
-        
         if (!textArea || !exportBox) return;
 
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        if (lines.length === 0) {
-            exportBox.value = "No decklist found in input box.";
-            return;
-        }
+        if (lines.length === 0) return;
 
+        // Get currently checked tags
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
         const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
@@ -810,16 +800,15 @@
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '1 ';
             
-            // Clean card name for lookup
-            let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').replace(/\[.*?\]/g, '').trim();
-            let lookupKey = normalizeCardKey(rawCardName);
+            let rawName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
+            let cardKey = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-            let assignedThemes = cardToThemesMap[lookupKey] || [];
+            let assignedThemes = cardThemeMap[cardKey] || [];
             
-            // Fallback fuzzy search if exact key isn't found
+            // Fallback key check
             if (assignedThemes.length === 0) {
-                for (const [dbKey, themes] of Object.entries(cardToThemesMap)) {
-                    if (dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
+                for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
+                    if (cardKey.includes(dbKey) || dbKey.includes(cardKey)) {
                         assignedThemes = themes;
                         break;
                     }
@@ -828,10 +817,10 @@
 
             let matchedTags = [];
             assignedThemes.forEach(t => {
-                // Strip emojis like 📊, 👾, 🔮 from the category name
                 let cleanThemeName = String(t).replace(/^[📊👾🔮]\s*/, '').trim();
                 let lowerTheme = cleanThemeName.toLowerCase();
                 
+                // Only include if checked (or if no checkboxes exist)
                 if (checkedTags.length === 0 || checkedTags.includes(lowerTheme)) {
                     let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
                     if (!matchedTags.includes(exportTagStr)) {
@@ -840,8 +829,7 @@
                 }
             });
 
-            // Rebuild line with tags attached: e.g., "1 Sol Ring Ramp"
-            let outputLine = `${qtyPrefix}${rawCardName}`;
+            let outputLine = `${qtyPrefix}${rawName}`;
             if (matchedTags.length > 0) {
                 outputLine += ' ' + matchedTags.join(' ');
             }
@@ -852,15 +840,25 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        const toggleBtn = document.getElementById('toggle-export-modal-btn');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const panel = document.getElementById('export-panel');
-                if (panel) {
-                    const isHidden = panel.style.display === 'none' || panel.style.display === '';
-                    panel.style.display = isHidden ? 'block' : 'none';
-                    // We removed the frontend JS re-calculation call here so it keeps the backend string safe!
-                }
+        // Attach listeners to checkboxes so toggling updates text live
+        document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateExportText);
+        });
+
+        const selectAllBtn = document.getElementById('select-all-tags');
+        const deselectAllBtn = document.getElementById('deselect-all-tags');
+
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = true);
+                updateExportText();
+            });
+        }
+
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', () => {
+                document.querySelectorAll('.tag-selector-checkbox').forEach(cb => cb.checked = false);
+                updateExportText();
             });
         }
     });
