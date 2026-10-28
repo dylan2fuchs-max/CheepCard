@@ -53,6 +53,9 @@ PROTECTED_TYPES = {
     'Symbiote',
 }
 
+def clean_key(name):
+    return re.sub(r'[^a-z0-9]', '', str(name).lower())
+
 def run_synergy_analysis(deck_list: list) -> dict:
     """
     POSTGRESQL-BACKED SYNERGY ENGINE.

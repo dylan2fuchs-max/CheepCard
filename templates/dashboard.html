@@ -859,21 +859,10 @@
                 if (panel) {
                     const isHidden = panel.style.display === 'none' || panel.style.display === '';
                     panel.style.display = isHidden ? 'block' : 'none';
-                    if (isHidden) generateExportWithTags();
+                    // We removed the frontend JS re-calculation call here so it keeps the backend string safe!
                 }
             });
         }
-
-        document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
-            cb.addEventListener('change', generateExportWithTags);
-        });
-
-        const deckTextArea = document.getElementById('deckTextArea');
-        if (deckTextArea) {
-            deckTextArea.addEventListener('input', generateExportWithTags);
-        }
-
-        generateExportWithTags();
     });
 </script>
 
