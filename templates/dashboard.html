@@ -804,12 +804,15 @@
         }
 
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
-        const checkedTags = Array.from(activeCheckboxes).map(cb => {
+        let checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         });
 
         console.log("--- 📦 EXPORT DIAGNOSTIC ---");
-        console.log("Sample cardThemeMap Keys:", Object.keys(cardThemeMap).slice(0, 5));
+        console.log("Found checked checkboxes count:", activeCheckboxes.length);
+
+        // 🌟 SAFETY FALLBACK: If no checkboxes are checked/found, default to allowing ALL tags so the box isn't empty!
+        const allowAll = checkedTags.length === 0;
 
         const newExportLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
@@ -820,14 +823,10 @@
 
             let assignedThemes = cardThemeMap[lookupKey] || [];
             
-            if (assignedThemes.length > 0) {
-                console.log(`Exact match found! Line: "${rawCardName}" -> Themes:`, assignedThemes);
-            } else {
-                // Safe Fallback
+            if (assignedThemes.length === 0) {
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
                     if (dbKey.length > 3 && lookupKey === dbKey) {
                         assignedThemes = themes;
-                        console.log(`Fallback match! Line: "${rawCardName}" -> Themes:`, assignedThemes);
                         break;
                     }
                 }
@@ -836,7 +835,8 @@
             let matchedTags = [];
             assignedThemes.forEach(t => {
                 let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-                if (checkedTags.includes(cleanThemeName)) {
+                
+                if (allowAll || checkedTags.includes(cleanThemeName)) {
                     if (!matchedTags.includes(t)) {
                         matchedTags.push(t);
                     }
