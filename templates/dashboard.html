@@ -766,10 +766,9 @@
             </div>
         </div>
         {% endif %}
-
-<!-- Safe JSON Script Tag for Card-to-Themes -->
+<!-- Safe JSON Script Tag for Card-Theme Mapping -->
 <script type="application/json" id="card-to-themes-json">
-    {{ report.card_to_themes | tojson | safe if (report is defined and report and report.card_to_themes) else "{}" }}
+    {{ report.card_theme_mapping | tojson | safe if (report is defined and report and report.card_theme_mapping) else "{}" }}
 </script>
 
 <script>
@@ -797,8 +796,6 @@
         if (!textArea || !exportBox) return;
 
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        console.log("📝 Total deck lines found in textarea:", lines.length);
-
         if (lines.length === 0) {
             exportBox.value = "No decklist found in input box.";
             return;
@@ -809,17 +806,17 @@
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         });
 
-        console.log("☑️ Checked tags count:", checkedTags.length);
-
         const newExportLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
-            const qtyPrefix = qtyMatch ? qtyMatch[1] : '';
+            const qtyPrefix = qtyMatch ? qtyMatch[1] : '1 ';
             
-            let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').trim();
+            // Clean card name for lookup
+            let rawCardName = line.replace(/^\d+x?\s*/i, '').replace(/^[📊👾🔮]\s*/, '').replace(/`.*?`/g, '').replace(/\[.*?\]/g, '').trim();
             let lookupKey = normalizeCardKey(rawCardName);
 
             let assignedThemes = cardToThemesMap[lookupKey] || [];
             
+            // Fallback fuzzy search if exact key isn't found
             if (assignedThemes.length === 0) {
                 for (const [dbKey, themes] of Object.entries(cardToThemesMap)) {
                     if (dbKey.includes(lookupKey) || lookupKey.includes(dbKey)) {
@@ -829,12 +826,13 @@
                 }
             }
 
-            console.log(`Card: "${rawCardName}" | Key: "${lookupKey}" | Found Themes:`, assignedThemes);
-
             let matchedTags = [];
             assignedThemes.forEach(t => {
-                let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
-                if (checkedTags.length === 0 || checkedTags.includes(cleanThemeName)) {
+                // Strip emojis like 📊, 👾, 🔮 from the category name
+                let cleanThemeName = String(t).replace(/^[📊👾🔮]\s*/, '').trim();
+                let lowerTheme = cleanThemeName.toLowerCase();
+                
+                if (checkedTags.length === 0 || checkedTags.includes(lowerTheme)) {
                     let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
                     if (!matchedTags.includes(exportTagStr)) {
                         matchedTags.push(exportTagStr);
@@ -842,15 +840,15 @@
                 }
             });
 
+            // Rebuild line with tags attached: e.g., "1 Sol Ring Ramp"
             let outputLine = `${qtyPrefix}${rawCardName}`;
             if (matchedTags.length > 0) {
-                outputLine += ' ' + matchedTags.map(tag => `\`${tag}\``).join(' ');
+                outputLine += ' ' + matchedTags.join(' ');
             }
             return outputLine;
         });
 
         exportBox.value = newExportLines.join('\n');
-        console.log("✨ Export box populated with length:", exportBox.value.length);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
