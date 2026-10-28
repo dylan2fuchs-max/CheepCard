@@ -57,10 +57,6 @@ def clean_key(name):
     return re.sub(r'[^a-z0-9]', '', str(name).lower())
 
 def run_synergy_analysis(deck_list: list) -> dict:
-    """
-    POSTGRESQL-BACKED SYNERGY ENGINE.
-    Evaluates card text loops in memory by querying SQLAlchemy and separating core categories.
-    """
     deck_size = len(deck_list)
     if deck_size == 0:
         return {}
@@ -94,9 +90,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
     theme_card_pools = {theme: set() for theme in theme_engine.theme_rules.keys()}
     raw_theme_pool = []
     
-    def clean_key(name):
-        return re.sub(r'[^a-z0-9]', '', str(name).lower())
-
     def get_clean_card_key(c_str):
         name_only = re.sub(r'^\d+x?\s*', '', str(c_str)).strip()
         return re.sub(r'[^a-z0-9]', '', name_only.lower())
@@ -105,7 +98,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
     creature_type_pool = []
     card_creature_type_assignments = {get_clean_card_key(card): [] for card in deck_list if card.strip()}
 
-    # ─── MAIN CARD ITERATION LOOP ───
     for card_name in deck_list:
         clean_input_name = re.sub(r'^\d+x?\s*', '', str(card_name)).strip().lower()
         if not clean_input_name:
@@ -130,7 +122,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
         rules_text = matched_card_obj.oracle_text.lower() if matched_card_obj.oracle_text else ""
         current_card_type = str(matched_card_obj.raw_type).lower() if matched_card_obj.raw_type else ""
 
-        # 🌟 Bulletproof Creature & Subtype Extraction (Checks type line AND oracle text for deep matches)
         combined_text_for_types = f"{current_card_type} {rules_text}"
         
         subtypes_source = current_card_type
@@ -141,7 +132,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
 
         subtypes = set(re.findall(r'\b[a-zA-Z]+\b', subtypes_source))
         
-        # Explicit check for major creature keywords like skeleton if present in text/type
         if "skeleton" in combined_text_for_types:
             subtypes.add("skeleton")
 
@@ -160,7 +150,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 if sub_lower not in card_creature_type_assignments.setdefault(ck, []):
                     card_creature_type_assignments[ck].append(sub_lower)
         
-        # 1. Check Card_Filter classes
         c1 = matched_card_obj.card_class_1.lower() if matched_card_obj.card_class_1 else ""
         c2 = matched_card_obj.card_class_2.lower() if matched_card_obj.card_class_2 else ""
         assigned_classes = [c1, c2]
@@ -176,12 +165,10 @@ def run_synergy_analysis(deck_list: list) -> dict:
         if "board wipe" in assigned_classes or matched_card_obj.serves_purpose("board wipe"):
             core_pools["Board Wipes"].add(actual_name)
 
-        # 3. Process ThemeEngine Rules
         for theme in theme_card_pools.keys():
             if theme_engine.evaluate_card_for_theme(theme, rules_text, current_card_type):
                 theme_card_pools[theme].add(actual_name)
 
-        # 4. Fallback dynamic word mining
         clean_text = re.sub(r'[^\w\s{}]', ' ', rules_text)
         words = [w for w in clean_text.split() if len(w) > 2]
         for word in set(words):
@@ -190,7 +177,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 ck = clean_key(actual_name)
                 card_assignments.setdefault(ck, []).append(word)
 
-    # ─── POST-PROCESSING & TALLYING ───
     output = []
     
     for cat_name, cards_set in core_pools.items():
@@ -204,7 +190,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 "cards": ", ".join(sorted(list(cards_set)))
             })
     
-    # Automatically grab the top 2 most frequent creature types across the deck
     creature_type_counts = Counter(creature_type_pool)
     top_creature_types = creature_type_counts.most_common(2)
 
@@ -213,7 +198,7 @@ def run_synergy_analysis(deck_list: list) -> dict:
         for card in deck_list:
             clean_c_input = re.sub(r'^\d+x?\s*', '', str(card)).strip().lower()
             db_obj = card_db_map.get(clean_c_input)
-            c_disp = db_obj.name.title() if db_obj else clean_c_input.title()
+            c_disp = db_obj.name.title() if db_obj else clean_input.title()
             ck = get_clean_card_key(c_disp)
             if type_name in card_creature_type_assignments.get(ck, []):
                 if c_disp not in matching_cards:
@@ -242,7 +227,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
     for theme_data in sorted(major_themes_formatted, key=lambda x: x["count"], reverse=True):
         output.append(theme_data)
 
-    # ─── BUILD CARD THEME MAPPING FOR INLINE EXPORT TAGS ───
     card_theme_mapping = {}
 
     def get_canonical_name_and_key(card_str):
@@ -256,7 +240,6 @@ def run_synergy_analysis(deck_list: list) -> dict:
         official_name = db_obj.name.title() if db_obj else clean_input.title()
         return official_name, clean_key(official_name)
 
-    # 1. Map Core Pools (with 📊 prefix)
     for cat_name, cards_set in core_pools.items():
         theme_display = f"📊 {cat_name}"
         for card in cards_set:
@@ -265,23 +248,17 @@ def run_synergy_analysis(deck_list: list) -> dict:
                 if theme_display not in card_theme_mapping.setdefault(k, []):
                     card_theme_mapping[k].append(theme_display)
 
-    # 2. Map Creature Subtypes (with 👾 prefix) and Guarantee Baseline Mapping for Every Card
     for card in deck_list:
         _, k = get_canonical_name_and_key(card)
         if not k:
             continue
-            
-        # Guarantee that every card has at least an initialized entry in the map
         card_theme_mapping.setdefault(k, [])
-        
-        # Assign creature subtypes if present
         assigned_types = card_creature_type_assignments.get(k, [])
         for t in assigned_types:
             theme_display = f"👾 {t.capitalize()}"
             if theme_display not in card_theme_mapping[k]:
                 card_theme_mapping[k].append(theme_display)
 
-    # 3. Map Theme Engine Themes (with 🔮 prefix)
     for theme, cards_set in theme_card_pools.items():
         if len(cards_set) >= 8:
             theme_display = f"🔮 {theme}" if not theme.startswith("🔮") else theme
@@ -297,48 +274,34 @@ def run_synergy_analysis(deck_list: list) -> dict:
         "card_theme_mapping": card_theme_mapping
     }
 
-    def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str:
+def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str:
     card_theme_mapping = analysis_result.get("card_theme_mapping", {})
-    print(f"🔍 DEBUG: Full card_theme_mapping built -> {card_theme_mapping}") # <--- Add this
-    
     export_lines = []
-    for card_str in deck_list:
-        if not card_str.strip():
-            continue
-        raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
-        card_key = clean_key(raw_name)
-        print(f"🔍 DEBUG Card: '{raw_name}' | Key: '{card_key}' | Found Themes: {card_theme_mapping.get(card_key)}") # <--- Add this
-        # ... rest of function ...
     
     for card_str in deck_list:
         if not card_str.strip():
             continue
             
-        # Extract quantity and card name
         qty_match = re.match(r'^(\d+x?\s*)', str(card_str))
         qty_prefix = qty_match.group(1) if qty_match else "1 "
         
         raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
         card_key = clean_key(raw_name)
         
-        # Get themes assigned to this card from the backend mapping
         assigned_themes = card_theme_mapping.get(card_key, [])
         
-        # Fallback partial key lookup if exact match fails
         if not assigned_themes:
             for db_k, themes_list in card_theme_mapping.items():
                 if card_key in db_k or db_k in card_key:
                     assigned_themes = themes_list
                     break
                     
-        # Clean up theme names (strip emojis like 📊, 👾, 🔮)
         clean_tags = []
         for theme in assigned_themes:
             tag_name = re.sub(r'^[📊👾🔮]\s*', '', str(theme)).strip()
             if tag_name and tag_name not in clean_tags:
                 clean_tags.append(tag_name)
                 
-        # Build final line: e.g., "1 Sol Ring Ramp"
         line = f"{qtyPrefix}{raw_name}"
         if clean_tags:
             line += " " + " ".join(clean_tags)
