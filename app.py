@@ -26,7 +26,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from news_blueprint import news_bp
 from Excel_Manager import ExcelManager
 from Card_Filter import db, Card
-from synergy_engine import run_synergy_analysis
+from synergy_engine import run_synergy_analysis, generate_tagged_export_string
 from webauthn import (
     generate_registration_options,
     verify_registration_response,
