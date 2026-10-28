@@ -863,9 +863,6 @@
                 if (panel) {
                     const isHidden = panel.style.display === 'none' || panel.style.display === '';
                     panel.style.display = isHidden ? 'block' : 'none';
-                    if (isHidden) {
-                        generateExportWithTags();
-                    }
                 }
             });
         }
@@ -910,6 +907,9 @@
                 }
             });
         }
+
+        // 🌟 FORCE RUN ON LOAD SO THE BOX POPS WITH TAGS IMMEDIATELY
+        generateExportWithTags();
     }
 
     if (document.readyState === 'loading') {
