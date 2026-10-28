@@ -790,7 +790,7 @@
         return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
     }
 
-    // 3. Brand New Dedicated Export Function
+    // 3. Brand New Dedicated Export Function with Bulletproof Matching
     function generateExportWithTags() {
         const textArea = document.getElementById('deckTextArea');
         const exportBox = document.getElementById('export-deck-text');
@@ -803,16 +803,15 @@
             return;
         }
 
+        // Gather all checked tags and lowercase them fully
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
-        let checkedTags = Array.from(activeCheckboxes).map(cb => {
+        const checkedTags = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
         });
 
-        console.log("--- 📦 EXPORT DIAGNOSTIC ---");
-        console.log("Found checked checkboxes count:", activeCheckboxes.length);
-
-        // 🌟 SAFETY FALLBACK: If no checkboxes are checked/found, default to allowing ALL tags so the box isn't empty!
-        const allowAll = checkedTags.length === 0;
+        console.log("=========================================");
+        console.log("🔍 FULLY NORMALIZED CHECKED TAGS:", checkedTags);
+        console.log("=========================================");
 
         const newExportLines = lines.map(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
@@ -823,6 +822,7 @@
 
             let assignedThemes = cardThemeMap[lookupKey] || [];
             
+            // Fallback key lookup if exact match misses
             if (assignedThemes.length === 0) {
                 for (const [dbKey, themes] of Object.entries(cardThemeMap)) {
                     if (dbKey.length > 3 && lookupKey === dbKey) {
@@ -834,9 +834,11 @@
 
             let matchedTags = [];
             assignedThemes.forEach(t => {
+                // Clean and lowercase both the theme name and ensure robust comparison
                 let cleanThemeName = t.replace(/^[📊👾🔮]\s*/, '').trim().toLowerCase();
                 
-                if (allowAll || checkedTags.includes(cleanThemeName)) {
+                // If checkboxes are empty or match the clean theme name, include it
+                if (checkedTags.length === 0 || checkedTags.includes(cleanThemeName)) {
                     if (!matchedTags.includes(t)) {
                         matchedTags.push(t);
                     }
@@ -864,7 +866,6 @@
                     const isHidden = panel.style.display === 'none' || panel.style.display === '';
                     panel.style.display = isHidden ? 'block' : 'none';
                     
-                    // 🌟 THIS IS THE MISSING LINK: Refresh tags when opening the panel!
                     if (isHidden) {
                         generateExportWithTags();
                     }
@@ -906,6 +907,7 @@
             copyBtn.addEventListener('click', () => {
                 const exportBox = document.getElementById('export-deck-text');
                 if (exportBox) {
+                    exportBox.select();
                     navigator.clipboard.writeText(exportBox.value).then(() => {
                         alert("📋 Export decklist copied to clipboard!");
                     });
@@ -913,7 +915,7 @@
             });
         }
 
-        // 🌟 FORCE RUN ON LOAD SO THE BOX POPS WITH TAGS IMMEDIATELY
+        // Initial generation on load
         generateExportWithTags();
     }
 
