@@ -302,7 +302,7 @@ def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str
             if tag_name and tag_name not in clean_tags:
                 clean_tags.append(tag_name)
                 
-        line = f"{qtyPrefix}{raw_name}"
+        line = f"{qty_prefix}{raw_name}"
         if clean_tags:
             line += " " + " ".join(clean_tags)
             
