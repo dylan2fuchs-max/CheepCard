@@ -790,13 +790,21 @@
         const lines = textArea.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (lines.length === 0) return;
 
-        // Get currently checked tags (normalized to lowercase, stripping any stray symbols/emojis)
+        // Get currently checked category/theme names
         const activeCheckboxes = document.querySelectorAll('.tag-selector-checkbox:checked');
-        const checkedTags = Array.from(activeCheckboxes).map(cb => {
+        const checkedCategories = Array.from(activeCheckboxes).map(cb => {
             return cb.value.replace(/[^a-zA-Z0-9\s]/g, '').trim().toLowerCase();
         });
 
-        const newExportLines = lines.map(line => {
+        // If nothing is checked, show nothing or empty export box
+        if (checkedCategories.length === 0) {
+            exportBox.value = "";
+            return;
+        }
+
+        const includedCards = new Set();
+
+        lines.forEach(line => {
             const qtyMatch = line.match(/^(\d+x?\s*)/i);
             const qtyPrefix = qtyMatch ? qtyMatch[1] : '1 ';
             
@@ -814,29 +822,22 @@
                 }
             }
 
-            let matchedTags = [];
+            // Check if this card belongs to ANY of the currently checked categories
+            let belongsToSelectedGroup = false;
             assignedThemes.forEach(t => {
-                // Completely strip emojis and symbols from theme names to prevent  encoding bugs
-                let cleanThemeName = String(t).replace(/[^a-zA-Z0-9\s]/g, '').trim();
-                let lowerTheme = cleanThemeName.toLowerCase();
-                
-                // STRICT RULE: Only include the tag if its checkbox is actively checked
-                if (checkedTags.includes(lowerTheme)) {
-                    let exportTagStr = cleanThemeName.charAt(0).toUpperCase() + cleanThemeName.slice(1);
-                    if (!matchedTags.includes(exportTagStr)) {
-                        matchedTags.push(exportTagStr);
-                    }
+                let cleanThemeName = String(t).replace(/[^a-zA-Z0-9\s]/g, '').trim().toLowerCase();
+                if (checkedCategories.includes(cleanThemeName)) {
+                    belongsToSelectedGroup = true;
                 }
             });
 
-            let outputLine = `${qtyPrefix}${rawName}`;
-            if (matchedTags.length > 0) {
-                outputLine += ' ' + matchedTags.join(' ');
+            // If it matches the selected group(s), keep it in the export list
+            if (belongsToSelectedGroup) {
+                includedCards.add(`${qtyPrefix}${rawName}`);
             }
-            return outputLine;
         });
 
-        exportBox.value = newExportLines.join('\n');
+        exportBox.value = Array.from(includedCards).join('\n');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -847,6 +848,7 @@
             toggleBtn.addEventListener('click', () => {
                 const isHidden = panel.style.display === 'none' || panel.style.display === '';
                 panel.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) updateExportText(); // Populate on open
             });
         }
 
@@ -856,12 +858,12 @@
         if (copyBtn && exportBox) {
             copyBtn.addEventListener('click', () => {
                 if (!exportBox.value.trim()) {
-                    alert("Export text box is empty!");
+                    alert("Export text box is empty! Select at least one category.");
                     return;
                 }
                 navigator.clipboard.writeText(exportBox.value).then(() => {
                     const originalText = copyBtn.innerText;
-                    copyBtn.innerText = '✔️ Copied to Clipboard!';
+                    copyBtn.innerText = '✔️ Copied Group to Clipboard!';
                     copyBtn.style.background = '#155724';
                     setTimeout(() => {
                         copyBtn.innerText = originalText;
@@ -873,7 +875,7 @@
             });
         }
 
-        // 3. Live Checkbox Toggling & Select/Deselect All
+        // 3. Live Checkbox Filtering & Select/Deselect All
         document.querySelectorAll('.tag-selector-checkbox').forEach(cb => {
             cb.addEventListener('change', updateExportText);
         });
