@@ -275,42 +275,17 @@ def run_synergy_analysis(deck_list: list) -> dict:
     }
 
 def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str:
-    themes = analysis_result.get("themes", [])
-    
-    # Map original deck lines to preserve quantities (e.g., "15 Island")
-    card_quantities = {}
+    export_lines = []
     for card_str in deck_list:
         if not card_str.strip():
             continue
+            
         qty_match = re.match(r'^(\d+x?\s*)', str(card_str))
         qty_prefix = qty_match.group(1) if qty_match else "1 "
-        raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
-        card_quantities[raw_name.lower()] = (qty_prefix, raw_name)
-
-    sections = []
-    
-    for theme_item in themes:
-        theme_title = re.sub(r'^[📊👾🔮]\s*', '', theme_item.get("theme", "")).strip()
-        cards_str = theme_item.get("cards", "")
-        if not cards_str:
-            continue
-            
-        card_names = [c.strip() for c in cards_str.split(',') if c.strip()]
-        if not card_names:
-            continue
-            
-        section_lines = [f"// {theme_title}"]
-        for c_name in card_names:
-            qty_prefix = "1 "
-            actual_name = c_name
-            # Match back to original deck entry for accurate quantities
-            for k, (q, orig_name) in card_quantities.items():
-                if k == c_name.lower() or c_name.lower() in k:
-                    qty_prefix = q
-                    actual_name = orig_name
-                    break
-            section_lines.append(f"{qty_prefix}{actual_name}")
-            
-        sections.append("\n".join(section_lines))
         
-    return "\n\n".join(sections)
+        raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
+        
+        # Clean card line for external deck builders
+        export_lines.append(f"{qty_prefix}{raw_name}")
+        
+    return "\n".join(export_lines)
