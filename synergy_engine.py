@@ -275,37 +275,42 @@ def run_synergy_analysis(deck_list: list) -> dict:
     }
 
 def generate_tagged_export_string(deck_list: list, analysis_result: dict) -> str:
-    card_theme_mapping = analysis_result.get("card_theme_mapping", {})
-    export_lines = []
+    themes = analysis_result.get("themes", [])
     
+    # Map original deck lines to preserve quantities (e.g., "15 Island")
+    card_quantities = {}
     for card_str in deck_list:
         if not card_str.strip():
             continue
-            
         qty_match = re.match(r'^(\d+x?\s*)', str(card_str))
         qty_prefix = qty_match.group(1) if qty_match else "1 "
-        
         raw_name = re.sub(r'^\d+x?\s*', '', str(card_str)).strip()
-        card_key = clean_key(raw_name)
-        
-        assigned_themes = card_theme_mapping.get(card_key, [])
-        
-        if not assigned_themes:
-            for db_k, themes_list in card_theme_mapping.items():
-                if card_key in db_k or db_k in card_key:
-                    assigned_themes = themes_list
-                    break
-                    
-        clean_tags = []
-        for theme in assigned_themes:
-            tag_name = re.sub(r'^[📊👾🔮]\s*', '', str(theme)).strip()
-            if tag_name and tag_name not in clean_tags:
-                clean_tags.append(tag_name)
-                
-        line = f"{qty_prefix}{raw_name}"
-        if clean_tags:
-            line += " " + " ".join(clean_tags)
+        card_quantities[raw_name.lower()] = (qty_prefix, raw_name)
+
+    sections = []
+    
+    for theme_item in themes:
+        theme_title = re.sub(r'^[📊👾🔮]\s*', '', theme_item.get("theme", "")).strip()
+        cards_str = theme_item.get("cards", "")
+        if not cards_str:
+            continue
             
-        export_lines.append(line)
+        card_names = [c.strip() for c in cards_str.split(',') if c.strip()]
+        if not card_names:
+            continue
+            
+        section_lines = [f"// {theme_title}"]
+        for c_name in card_names:
+            qty_prefix = "1 "
+            actual_name = c_name
+            # Match back to original deck entry for accurate quantities
+            for k, (q, orig_name) in card_quantities.items():
+                if k == c_name.lower() or c_name.lower() in k:
+                    qty_prefix = q
+                    actual_name = orig_name
+                    break
+            section_lines.append(f"{qty_prefix}{actual_name}")
+            
+        sections.append("\n".join(section_lines))
         
-    return "\n".join(export_lines)
+    return "\n\n".join(sections)
