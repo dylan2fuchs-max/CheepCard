@@ -9,7 +9,8 @@
 - Provides a interactive experience of operations for Magic the Gathering experience
 - Allows for deck list to be stored and extracted of cards you want
 
-## CheepCards Web Site: https://budgetcheepcards.com
+## Quick Start
+CheepCards Web Site: https://budgetcheepcards.com
 
 ## Usage of Web Site
 - Simply navigate to the home page
