@@ -21,3 +21,21 @@
 
 ## Contributing
 
+## Contributing
+
+### Clone the repo
+
+```bash
+git clone https://github.com/dylan2fuchs-max/CheepCard.git
+cd CheepCard
+
+pip install -r requirements.txt
+
+
+A few notes:
+
+1. Replace `app.py` in the run command with whatever your actual entry-point file is called.
+2. Since you said there's no test suite, I left out a "Run tests" section — if that's inaccurate, let me know and we can add it back.
+3. Consider adding a `.env.example` file to your repo (with placeholder values, no real secrets) so contributors know exactly which variables they need to set — this is a common best practice and makes your Contributing section even clearer.
+
+Does this match how you'd actually run the project, or do you need to tweak the run command?
