@@ -836,6 +836,16 @@ def synergy():
 @app.route("/search", methods=["POST"])
 def search():
     active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
+
+    def get_param(key, default=""):
+        if request.method == "POST":
+            return request.form.get(key, default)
+        return request.args.get(key, default)
+
+    def get_param_list(key):
+        if request.method == "POST":
+            return request.form.getlist(key)
+        return request.args.getlist(key)
     
     if current_user.is_authenticated and active_role == 'free':
         today_str = str(date.today())
