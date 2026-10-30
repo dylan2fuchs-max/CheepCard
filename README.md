@@ -1,4 +1,4 @@
-CheepCards Web Application
+# CheepCards Web Application
 
 CheepCards is a website that was created from an Excel Data Base of reviewing 33,000 cards over the span of 5 months and applying python filtration system to use that data and share it with users.
 
