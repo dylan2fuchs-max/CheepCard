@@ -2,7 +2,7 @@
 
 ## CheepCards is a website that was created from an Excel Data Base of reviewing 33,000 cards over the span of 5 months and applying python filtration system to use that data and share it with users.
 
-## CheepCards Does all the following for a User
+## Motivation
 + Wanted to create a tool that provide valuable experience for the budget build for Magic the Gathering.
 - Data extracts over 33,000 plus cards to get you budget friendly cards for your wallet in an instance
 - Deck Engine breakdown which take information from a deck list and breakdown its contents
