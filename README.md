@@ -19,6 +19,7 @@ CheepCards Web Site: https://budgetcheepcards.com
 - Once a profile is created you have access to the whole site besides the Synergy Engine and Side Decker. Search is limited as well for a free tier profile
 - To upgrade go to the profile tab at the top of the screen
 - If your account is upgraded you will have access to all the features
+- https://youtu.be/2FVWtMHxhEQ
 
 ## Contributing
 
