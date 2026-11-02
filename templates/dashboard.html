@@ -1485,23 +1485,30 @@
                 document.getElementById('active-deck-name').innerText = deckName;
             }
 
+            // Grab your CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-            // Send the entire rich array (currentDeck) instead of stripping it down to text!
             try {
                 const response = await fetch('/save_deck', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: deckName, cards: currentDeck }) // <--- The magic fix
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken  // <--- Crucial: Pass the CSRF token here!
+                    },
+                    body: JSON.stringify({ name: deckName, cards: currentDeck })
                 });
+                
                 const data = await response.json();
-                if (data.success) {
-                    alert("💾 Deck saved successfully to your account!");
+                
+                if (response.ok && data.success) {
+                    alert("💾 " + data.message);
                 } else {
-                    alert("Please log in to save decks.");
+                    // Show the actual error message coming from Flask (e.g., Pro upgrade notice)
+                    alert(data.message || "Failed to save deck.");
                 }
             } catch (err) {
-                alert("Error saving deck.");
+                console.error("Save deck error:", err);
+                alert("Error connecting to the server while saving deck.");
             }
         }
     </script> <!-- 1. Close the first script block here -->
