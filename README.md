@@ -13,6 +13,7 @@
 CheepCards Web Site: https://budgetcheepcards.com
 
 ## Usage of Web Site
+- YT Demo: https://youtu.be/HqosDfyex2Q
 - Simply navigate to the home page
 - Click the Workshop or Login in the top right corner
 - Create a profile
