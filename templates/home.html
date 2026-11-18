@@ -304,7 +304,8 @@
                 {% if budget_card %}
                 <div class="budget-display" style="margin-top: 15px;">
                     {% if budget_card.image_url %}
-                    <img src="{{ budget_card.image_url }}" alt="{{ budget_card.name }}" class="budget-card-img">
+                    {% set card_img = budget_card.image_url ~ ('&version=normal' if '?' in budget_card.image_url else '?version=normal') %}
+                    <img src="{{ card_img }}" alt="{{ budget_card.name }}" width="130" height="181" class="budget-card-img">
                     {% endif %}
                     <div>
                         <h3 style="color: #f1c40f; margin-top: 0; font-size: 1.1rem;">{{ budget_card.name }}</h3>
