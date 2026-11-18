@@ -239,7 +239,7 @@
     <header class="home-header">
         <div style="display: flex; align-items: center; gap: 10px;">
             <a href="{{ url_for('home') }}" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CheepCard Logo" style="height: 35px; width: auto;">
+                <img src="{{ url_for('static', filename='images/logo.webp') }}" alt="CheepCard Logo" width="35" height="35" style="height: 35px; width: auto;">
                 <h2 style="margin: 0; color: #f1c40f; text-shadow: 1px 1px 2px black; font-size: 1.1rem;">CheepCards</h2>
             </a>
         </div>
@@ -304,8 +304,7 @@
                 {% if budget_card %}
                 <div class="budget-display" style="margin-top: 15px;">
                     {% if budget_card.image_url %}
-                    {% set card_img = budget_card.image_url ~ ('&version=normal' if '?' in budget_card.image_url else '?version=normal') %}
-                    <img src="{{ card_img }}" alt="{{ budget_card.name }}" width="130" height="181" class="budget-card-img">
+                    <img src="{{ budget_card.image_url }}" alt="{{ budget_card.name }}" width="130" height="181" fetchpriority="high" class="budget-card-img">
                     {% endif %}
                     <div>
                         <h3 style="color: #f1c40f; margin-top: 0; font-size: 1.1rem;">{{ budget_card.name }}</h3>
