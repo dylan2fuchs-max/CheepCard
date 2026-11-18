@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheepCards - Home</title>
+    <title>CheepCards - Budget MTG Deck Builder, Card Search & Tier Rankings</title>
+    <meta name="description" content="Explore over 33,000 Magic: The Gathering cards on CheepCards. Build budget Commander decks, analyze card synergies, and play daily MTG puzzles.">
+    <link rel="canonical" href="https://budgetcheepcards.com/">
     <style>
         /* 🌟 NEW: Global box-sizing fix to prevent horizontal overflow */
         *, *::before, *::after {
@@ -24,7 +26,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            overflow-x: hidden; /* 🌟 NEW: Prevent side-scrolling on mobile */
+            overflow-x: hidden;
         }
 
         /* Light Mode Dynamic Overrides */
@@ -71,18 +73,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px; /* 🌟 CHANGED: Reduced padding slightly for mobile fit */
+            padding: 15px 20px;
             background: #1e1e24;
             border-bottom: 2px solid #f1c40f;
-            flex-wrap: wrap; /* 🌟 NEW: Allow header items to wrap on small screens */
-            gap: 10px; /* 🌟 NEW: Spacing when wrapped */
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 10px; /* 🌟 CHANGED: Tighter gap for mobile buttons */
-            flex-wrap: wrap; /* 🌟 NEW: Allow nav buttons to wrap cleanly */
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .hero-section {
@@ -93,7 +95,7 @@
         }
 
         .hero-section h1 {
-            font-size: 2.2rem; /* 🌟 CHANGED: Slightly smaller scale for mobile screens */
+            font-size: 2.2rem;
             color: #f1c40f;
             margin-bottom: 10px;
             text-shadow: 2px 2px #000;
@@ -104,13 +106,13 @@
             color: #bdc3c7;
             max-width: 600px;
             margin: 0 auto 20px auto;
-            padding: 0 10px; /* 🌟 NEW: Safety padding */
+            padding: 0 10px;
         }
 
         .cta-btn {
             background: #2980b9;
             color: white;
-            padding: 8px 16px; /* 🌟 CHANGED: Optimized for touch targets */
+            padding: 8px 16px;
             font-size: 0.95rem;
             font-weight: bold;
             border: 2px solid #f1c40f;
@@ -129,16 +131,15 @@
         /* 3-Column Layout */
         .main-container {
             max-width: 1400px;
-            margin: 20px auto; /* 🌟 CHANGED: Reduced outer margin for mobile */
-            padding: 0 15px; /* 🌟 CHANGED: Added side padding so cards never touch screen edges */
+            margin: 20px auto;
+            padding: 0 15px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px; /* 🌟 CHANGED: Slightly tighter gap */
+            gap: 20px;
             flex: 1;
-            width: 100%; /* 🌟 NEW: Force full width container bounds */
+            width: 100%;
         }
 
-        /* 🌟 CHANGED: Responsive breakpoint lowered to 900px for better tablet support */
         @media (max-width: 900px) {
             .main-container {
                 grid-template-columns: 1fr;
@@ -154,7 +155,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            width: 100%; /* 🌟 NEW: Ensure card spans full container width on mobile */
+            width: 100%;
         }
 
         .content-card h2 {
@@ -172,7 +173,6 @@
             flex-wrap: wrap;
         }
 
-        /* 🌟 NEW: Mobile centering and responsiveness for card of the day image */
         .budget-display img {
             max-width: 130px;
             width: 100%;
@@ -219,7 +219,7 @@
         .footer-links {
             display: flex;
             gap: 15px;
-            flex-wrap: wrap; /* 🌟 NEW: Allow footer links to wrap on narrow viewports */
+            flex-wrap: wrap;
             justify-content: center;
         }
 
