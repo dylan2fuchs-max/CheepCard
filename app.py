@@ -160,23 +160,15 @@ mail = Mail(app)
 # --- Maintenance Mode Guard with Developer Bypass ---
 @app.before_request
 def check_maintenance():
-    # If maintenance mode is OFF, let everyone through normally
     if not MAINTENANCE_MODE:
         return
-
-    # Allow static files (CSS/images/JS) so the maintenance page styles correctly
     if request.endpoint == 'static':
         return
-        
-    # Allow the secret unlock route itself so you can activate your session
     if request.endpoint == 'dev_unlock':
         return
-        
-    # If you have already used your secret token on this browser/device, let you pass
     if session.get('dev_bypass'):
         return
-        
-    # Block everyone else and show the Coming Soon page
+    
     return render_template('maintenance.html'), 503
 
 
