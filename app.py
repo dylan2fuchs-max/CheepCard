@@ -108,6 +108,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger('cheepcards')
 
+@app.route('/sitemap.xml')
+def sitemap():
+    """Generates an XML sitemap dynamically for Googlebot."""
+    # List your main public pages here
+    base_url = "https://budgetcheepcards.com"
+    pages = [
+        {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
+        # Add other core routes of your app here if public
+    ]
+    
+    xml_content = render_template('sitemap.xml', pages=pages)
+    response = make_response(xml_content)
+    response.headers["Content-Type"] = "application/xml"
+    return response
+
 @app.errorhandler(Exception)
 def handle_unexpected_error(error):
     # Logs the full traceback automatically when an unhandled exception occurs
