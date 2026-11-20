@@ -786,9 +786,12 @@ def toggle_theme():
 
 @app.route("/synergy", methods=["POST"])
 def synergy():
-    active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
+    if not current_user.is_authenticated:
+        flash("⚡ The Synergy Engine is a Member-exclusive feature! Log in or upgrade to unlock.")
+        return redirect(url_for('login'))
 
-    if not current_user.is_authenticated or active_role == 'free':
+    active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
+    if active_role == 'free':
         flash("⚡ The Synergy Engine is a Member-exclusive feature! Upgrade to unlock.")
         return redirect(url_for('home'))
         
