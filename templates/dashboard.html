@@ -578,6 +578,9 @@
                             👤 {{ current_user.username }}
                         </button>
                     </a>
+                    <a href="{{ url_for('decks_page') }}" style="text-decoration: none;">
+                        <button type="button" class="theme-btn" style="background-color: #2ecc71;">🎒 My Decks</button>
+                    </a>
                     <a href="{{ url_for('logout') }}" style="text-decoration: none;"><button class="theme-btn" style="background-color: #e74c3c;">Logout</button></a>
                 {% else %}
                     <a href="{{ url_for('login') }}" style="text-decoration: none;"><button class="theme-btn" style="background-color: #f39c12;">🔑 Login</button></a>
@@ -1020,6 +1023,12 @@
         <div style="display: flex; gap: 10px;">
             <button onclick="clearDeck()" style="flex: 1; padding: 8px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">🗑️ Clear</button>
             <button onclick="newDeck()" style="flex: 1; padding: 8px; background: #f39c12; color: white; border: none; border-radius: 5px; cursor: pointer;">✨ New Deck</button>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button type="button" onclick="sendSideDeckToStorage()" style="flex: 1; padding: 9px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                📦 Send to Decks →
+            </button>
         </div>
 
             {% else %}
@@ -1470,46 +1479,41 @@
             URL.revokeObjectURL(url);
         }
 
-        async function saveUserDeck() {
+        async function sendSideDeckToStorage() {
             if (currentDeck.length === 0) {
-                alert("Your deck is empty!");
+                alert("Your side-decker is empty! Add cards first.");
                 return;
             }
 
-            let deckName = document.getElementById('active-deck-name').innerText;
-            
-            if (!deckName || deckName.trim() === "") {
-                deckName = prompt("Please enter a name for your new deck:");
-                if (!deckName) return; 
-                
-                document.getElementById('active-deck-name').innerText = deckName;
+            let deckName = (document.getElementById('active-deck-name')?.innerText || '').trim();
+            if (!deckName) {
+                deckName = prompt("Name this deck before sending to Decks Storage:");
+                if (!deckName || !deckName.trim()) return;
+                deckName = deckName.trim();
+                const nameDisplay = document.getElementById('active-deck-name');
+                if (nameDisplay) nameDisplay.innerText = deckName;
             }
 
-            // Grab your CSRF token
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             try {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                const response = await fetch('/reroll', {
+                const response = await fetch('/save_deck', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({ category: categoryName, current_names: currentNames, rejected_card_name: rejectedName })
+                    body: JSON.stringify({ name: deckName, cards: currentDeck })
                 });
-                
                 const data = await response.json();
-                
                 if (response.ok && data.success) {
-                    alert("💾 " + data.message);
+                    window.location.href = "{{ url_for('decks_page') }}";
                 } else {
-                    // Show the actual error message coming from Flask (e.g., Pro upgrade notice)
-                    alert(data.message || "Failed to save deck.");
+                    alert(data.message || "Could not send deck to storage.");
                 }
             } catch (err) {
-                console.error("Save deck error:", err);
-                alert("Error connecting to the server while saving deck.");
+                console.error("Send to decks error:", err);
+                alert("Network error while saving deck.");
             }
         }
     </script> <!-- 1. Close the first script block here -->
