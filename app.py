@@ -11,7 +11,7 @@ import logging
 import sys
 import uuid
 import traceback
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from dotenv import load_dotenv  # <--- Load environment variables first!
 load_dotenv()
@@ -1760,8 +1760,6 @@ def check_pro_expiration():
         if current_user.pro_expires_at and current_user.pro_expires_at < datetime.utcnow():
             current_user.role = 'free'
             db.session.commit()
-
-from datetime import datetime, timedelta
 
 @app.route('/webhook', methods=['POST'])
 @csrf.exempt
