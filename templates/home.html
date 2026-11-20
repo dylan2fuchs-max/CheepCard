@@ -168,20 +168,32 @@
 
         .budget-display {
             display: flex;
-            gap: 15px;
+            flex-direction: row;
+            gap: 18px;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            margin-top: 15px;
         }
 
-        .budget-display img {
-            max-width: 130px;
-            width: 100%;
+        .budget-display img,
+        .budget-card-img {
+            width: 185px;
+            max-width: 52%;
             height: auto;
-            border-radius: 8px;
+            aspect-ratio: 63 / 88;
+            object-fit: cover;
+            flex-shrink: 0;
+            border-radius: 10px;
             border: 2px solid #f1c40f;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
             cursor: pointer;
             position: relative;
-            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+        }
+
+        .budget-card-details {
+            flex: 1;
+            min-width: 0;
         }
 
         @media (max-width: 500px) {
@@ -190,11 +202,18 @@
                 align-items: center;
                 text-align: center;
             }
+
+            .budget-display img,
+            .budget-card-img {
+                width: 200px;
+                max-width: 75%;
+            }
         }
 
         /* Snappy instant zoom matching arcade cards */
-        .budget-display img:hover {
-            transform: translateY(-8px) scale(1.6);
+        .budget-display img:hover,
+        .budget-card-img:hover {
+            transform: translateY(-8px) scale(1.45);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
             z-index: 100;
             transition-delay: 0s;
@@ -302,17 +321,17 @@
             <div>
                 <h2>🌟 Budget Card of the Day</h2>
                 {% if budget_card %}
-                <div class="budget-display" style="margin-top: 15px;">
+                <div class="budget-display">
                     {% if budget_card.image_url %}
-                    <img src="{{ budget_card.image_url }}" alt="{{ budget_card.name }}" width="130" height="181" fetchpriority="high" class="budget-card-img">
+                    <img src="{{ budget_card.image_url }}" alt="{{ budget_card.name }}" width="175" height="244" fetchpriority="high" class="budget-card-img">
                     {% endif %}
-                    <div>
-                        <h3 style="color: #f1c40f; margin-top: 0; font-size: 1.1rem;">{{ budget_card.name }}</h3>
-                        <p style="margin: 4px 0;"><strong>Cost:</strong> {{ budget_card.mana_cost if budget_card.mana_cost else 'N/A' }}</p>
-                        <p style="margin: 4px 0;"><strong>Price:</strong> ${{ "%.2f"|format(budget_card.price) if budget_card.price is defined and budget_card.price else '0.00' }}</p>
-                        <p style="margin: 4px 0;"><strong>Rank:</strong> {{ budget_card.active_rank_word if budget_card.active_rank_word else 'Average' }}</p>
-                        <p style="margin: 4px 0;">
-                            <strong>Class:</strong> 
+                    <div class="budget-card-details">
+                        <h3 style="color: #f1c40f; margin-top: 0; font-size: 1.15rem;">{{ budget_card.name }}</h3>
+                        <p style="margin: 5px 0;"><strong>Cost:</strong> {{ budget_card.mana_cost if budget_card.mana_cost else 'N/A' }}</p>
+                        <p style="margin: 5px 0;"><strong>Price:</strong> ${{ "%.2f"|format(budget_card.price) if budget_card.price is defined and budget_card.price else '0.00' }}</p>
+                        <p style="margin: 5px 0;"><strong>Rank:</strong> {{ budget_card.active_rank_word if budget_card.active_rank_word else 'Average' }}</p>
+                        <p style="margin: 5px 0;">
+                            <strong>Class:</strong>
                             {{ budget_card.display_class | capitalize if budget_card.display_class else 'N/A' }}
                         </p>
                     </div>
