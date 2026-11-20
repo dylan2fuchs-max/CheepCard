@@ -205,11 +205,11 @@
     <!-- Create New Deck -->
     <div class="panel">
         <h2>➕ Create or Import a Deck</h2>
-        <form action="{{ url_for('create_deck') }}" method="POST" class="create-grid">
+        <form id="createDeckForm" action="{{ url_for('create_deck') }}" method="POST" class="create-grid">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="text" name="name" placeholder="Deck name (e.g., Budget Aesi Landfall)" required>
-            <textarea name="card_data" placeholder="Optional starter list (one card per line, e.g. 1 Sol Ring)"></textarea>
-            <button type="submit" class="btn btn-green">Open in Builder →</button>
+            <input type="text" id="newDeckName" name="name" placeholder="Deck name (e.g., Budget Aesi Landfall)" required>
+            <textarea id="newDeckCards" name="card_data" placeholder="Optional starter list to import (one card per line, e.g. 1 Sol Ring)"></textarea>
+            <button type="submit" id="createOrImportBtn" class="btn btn-green" style="white-space: nowrap; height: 40px;">Create &amp; Open Builder →</button>
         </form>
     </div>
 
@@ -260,6 +260,18 @@
         localStorage.setItem('theme', isDark ? 'dark-mode' : 'light');
     }
 
+    function parseDeckText(btn) {
+        let raw = btn.getAttribute('data-deck') || '';
+        try {
+            if (raw.startsWith('"') && raw.endsWith('"')) {
+                raw = JSON.parse(raw);
+            }
+        } catch (err) {
+            console.warn('Could not parse deck data attribute:', err);
+        }
+        return raw || '';
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         const savedTheme = localStorage.getItem('theme') || 'dark-mode';
         if (savedTheme === 'light') {
@@ -268,31 +280,41 @@
             document.body.classList.add('dark-mode');
         }
 
+        const deckCardsInput = document.getElementById('newDeckCards');
+        const createOrImportBtn = document.getElementById('createOrImportBtn');
+
+        const syncCreateImportLabel = () => {
+            if (!deckCardsInput || !createOrImportBtn) return;
+            const hasCards = deckCardsInput.value.trim().length > 0;
+            createOrImportBtn.textContent = hasCards ? 'Import & Open Builder →' : 'Create & Open Builder →';
+        };
+
+        if (deckCardsInput) {
+            deckCardsInput.addEventListener('input', syncCreateImportLabel);
+            syncCreateImportLabel();
+        }
+
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                let raw = btn.getAttribute('data-deck');
-                try {
-                    if (raw.startsWith('"') && raw.endsWith('"')) raw = JSON.parse(raw);
-                } catch (e) {}
-                navigator.clipboard.writeText(raw || '').then(() => alert('Decklist copied to clipboard!'));
+                const text = parseDeckText(btn);
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Decklist copied to clipboard!');
+                });
             });
         });
 
         document.querySelectorAll('.export-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const name = btn.getAttribute('data-name') || 'deck';
-                let raw = btn.getAttribute('data-deck');
-                try {
-                    if (raw.startsWith('"') && raw.endsWith('"')) raw = JSON.parse(raw);
-                } catch (e) {}
-                const blob = new Blob([raw || ''], { type: 'text/plain' });
+                const deckName = btn.getAttribute('data-name') || 'deck';
+                const text = parseDeckText(btn);
+                const blob = new Blob([text], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${name.replace(/\s+/g, '_')}_deck.txt`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${deckName.replace(/\s+/g, '_')}_deck.txt`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             });
         });
