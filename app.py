@@ -845,7 +845,7 @@ def synergy():
 
 @app.route("/search", methods=["POST"])
 def search():
-    active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
+    active_role = get_active_role() if 'get_active_role' in globals() else (current_user.role if current_user.is_authenticated else 'free')
 
     def get_param(key, default=""):
         if request.method == "POST":
