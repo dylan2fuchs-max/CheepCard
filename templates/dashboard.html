@@ -1489,13 +1489,14 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             try {
-                const response = await fetch('/save_deck', {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const response = await fetch('/reroll', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken  // <--- Crucial: Pass the CSRF token here!
+                        'X-CSRFToken': csrfToken
                     },
-                    body: JSON.stringify({ name: deckName, cards: currentDeck })
+                    body: JSON.stringify({ category: categoryName, current_names: currentNames, rejected_card_name: rejectedName })
                 });
                 
                 const data = await response.json();

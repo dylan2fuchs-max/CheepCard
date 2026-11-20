@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Decks - CheepCards</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --box-bg: #ffffff;
+            --text-color: #333333;
+            --title-color: #2c3e50;
+            --border-color: #bdc3c7;
+            --accent-blue: #3498db;
+            --accent-green: #27ae60;
+            --accent-gold: #f39c12;
+            --accent-red: #e74c3c;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --title-color: #f1c40f;
+            --border-color: #3a3a3a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.25s, color 0.25s;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .top-bar h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--title-color);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            background-color: var(--accent-blue);
+        }
+
+        .btn-green { background-color: var(--accent-green); }
+        .btn-gold { background-color: var(--accent-gold); color: #1c1400; }
+        .btn-red { background-color: var(--accent-red); }
+        .btn-gray { background-color: #7f8c8d; }
+
+        .panel {
+            background-color: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 18px;
+            color: var(--title-color);
+        }
+
+        .create-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .create-grid {
+                grid-template-columns: 1fr 2fr auto;
+                align-items: start;
+            }
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            min-height: 78px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .deck-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .deck-card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .deck-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 6px;
+        }
+
+        .class-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+
+        .class-pill {
+            padding: 3px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background-color: var(--box-bg);
+        }
+
+        .deck-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .flash-banner {
+            padding: 10px 14px;
+            border-radius: 6px;
+            background-color: var(--accent-green);
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top-bar">
+        <h1>🎒 My Saved Decks</h1>
+        <div class="nav-actions">
+            <button type="button" class="btn btn-gray" onclick="toggleTheme()">🌓 Theme</button>
+            <a href="{{ url_for('account') }}" class="btn btn-gold">← Account</a>
+            <a href="{{ url_for('dashboard') }}" class="btn">Workspace</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-banner">
+                {% for msg in messages %}{{ msg }}{% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Create New Deck -->
+    <div class="panel">
+        <h2>➕ Create or Import a Deck</h2>
+        <form action="{{ url_for('create_deck') }}" method="POST" class="create-grid">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="text" name="name" placeholder="Deck name (e.g., Budget Aesi Landfall)" required>
+            <textarea name="card_data" placeholder="Optional starter list (one card per line, e.g. 1 Sol Ring)"></textarea>
+            <button type="submit" class="btn btn-green">Open in Builder →</button>
+        </form>
+    </div>
+
+    <!-- Saved Decks Browser -->
+    <div class="panel">
+        <h2>📚 Stored Decks ({{ deck_summaries|length }})</h2>
+        {% if deck_summaries %}
+            <div class="deck-grid">
+                {% for item in deck_summaries %}
+                {% set deck = item.deck %}
+                <div class="deck-card">
+                    <div>
+                        <strong style="font-size: 16px; color: var(--title-color);">{{ deck.name }}</strong>
+                        <div class="deck-meta">
+                            <span>Cards: <strong>{{ item.total_cards }}</strong></span>
+                            <span>Est. Cost: <strong>${{ "%.2f"|format(item.total_price) }}</strong></span>
+                        </div>
+                        <div class="class-pills">
+                            <span class="class-pill">Ramp: {{ item.class_counts.Ramp }}</span>
+                            <span class="class-pill">Draw: {{ item.class_counts.Draw }}</span>
+                            <span class="class-pill">Removal: {{ item.class_counts.Removal }}</span>
+                            <span class="class-pill">Wipes: {{ item.class_counts.Boardwipe }}</span>
+                            <span class="class-pill">Lands: {{ item.class_counts.Land }}</span>
+                        </div>
+                    </div>
+
+                    <div class="deck-actions">
+                        <a href="{{ url_for('deck_builder', deck_id=deck.id) }}" class="btn">🛠️ Deck Builder</a>
+                        <button type="button" class="btn btn-gray copy-btn" data-deck="{{ deck.card_data | tojson }}">Copy</button>
+                        <button type="button" class="btn btn-green export-btn" data-name="{{ deck.name }}" data-deck="{{ deck.card_data | tojson }}">Export</button>
+                        <form action="{{ url_for('delete_deck', deck_id=deck.id) }}" method="POST" style="margin: 0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-red">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="opacity: 0.8;">No decks stored yet. Use the form above to create your first deck and jump straight into the Deck Builder.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function toggleTheme() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark-mode' : 'light');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme') || 'dark-mode';
+        if (savedTheme === 'light') {
+            document.body.classList.remove('dark-mode');
+        } else {
+            document.body.classList.add('dark-mode');
+        }
+
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                let raw = btn.getAttribute('data-deck');
+                try {
+                    if (raw.startsWith('"') && raw.endsWith('"')) raw = JSON.parse(raw);
+                } catch (e) {}
+                navigator.clipboard.writeText(raw || '').then(() => alert('Decklist copied to clipboard!'));
+            });
+        });
+
+        document.querySelectorAll('.export-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const name = btn.getAttribute('data-name') || 'deck';
+                let raw = btn.getAttribute('data-deck');
+                try {
+                    if (raw.startsWith('"') && raw.endsWith('"')) raw = JSON.parse(raw);
+                } catch (e) {}
+                const blob = new Blob([raw || ''], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${name.replace(/\s+/g, '_')}_deck.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deck Builder - {{ deck.name }} | CheepCards</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --box-bg: #ffffff;
+            --text-color: #333333;
+            --title-color: #2c3e50;
+            --border-color: #bdc3c7;
+            --accent-blue: #3498db;
+            --accent-green: #27ae60;
+            --accent-gold: #f39c12;
+            --accent-red: #e74c3c;
+        }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --box-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --title-color: #f1c40f;
+            --border-color: #3a3a3a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .header-bar h1 {
+            margin: 0;
+            font-size: 22px;
+            color: var(--title-color);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+            background-color: var(--accent-blue);
+        }
+
+        .btn-green { background-color: var(--accent-green); }
+        .btn-gold { background-color: var(--accent-gold); color: #1c1400; }
+        .btn-red { background-color: var(--accent-red); }
+        .btn-gray { background-color: #7f8c8d; }
+
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .stat-box {
+            background-color: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-box .val {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--title-color);
+        }
+
+        .stat-box .lbl {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .builder-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        @media (min-width: 960px) {
+            .builder-grid {
+                grid-template-columns: 1.15fr 0.85fr;
+                align-items: start;
+            }
+        }
+
+        .panel {
+            background-color: var(--box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            font-size: 17px;
+            color: var(--title-color);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 13px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            min-height: 140px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 8px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+        .card-list-scroll {
+            max-height: 360px;
+            overflow-y: auto;
+        }
+
+        .theme-badge {
+            display: inline-block;
+            padding: 4px 9px;
+            margin: 3px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            font-size: 12px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+        }
+
+        .candidate-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background-color: var(--bg-color);
+            font-size: 12px;
+        }
+
+        .flash-banner {
+            padding: 10px;
+            border-radius: 6px;
+            background-color: var(--accent-green);
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-bar">
+        <h1>🛠️ Deck Builder: {{ deck.name }}</h1>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-gray" onclick="toggleTheme()">🌓 Theme</button>
+            <a href="{{ url_for('decks_page') }}" class="btn btn-gold">← All Saved Decks</a>
+            <a href="{{ url_for('account') }}" class="btn btn-gray">Account</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-banner">
+                {% for msg in messages %}{{ msg }}{% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Deck Budget & Functional Role Summary -->
+    <div class="stats-strip">
+        <div class="stat-box">
+            <div class="val">{{ analysis.total_cards }}</div>
+            <div class="lbl">Total Cards</div>
+        </div>
+        <div class="stat-box">
+            <div class="val">${{ "%.2f"|format(analysis.total_price) }}</div>
+            <div class="lbl">Est. Budget</div>
+        </div>
+        <div class="stat-box">
+            <div class="val">{{ analysis.class_counts.Ramp }}</div>
+            <div class="lbl">Ramp</div>
+        </div>
+        <div class="stat-box">
+            <div class="val">{{ analysis.class_counts.Draw }}</div>
+            <div class="lbl">Draw</div>
+        </div>
+        <div class="stat-box">
+            <div class="val">{{ analysis.class_counts.Removal }}</div>
+            <div class="lbl">Removal</div>
+        </div>
+        <div class="stat-box">
+            <div class="val">{{ analysis.class_counts.Boardwipe }}</div>
+            <div class="lbl">Board Wipes</div>
+        </div>
+        <div class="stat-box">
+            <div class="val">{{ analysis.class_counts.Land }}</div>
+            <div class="lbl">Lands</div>
+        </div>
+    </div>
+
+    <div class="builder-grid">
+        <!-- Left Column: Decklist & Editor -->
+        <div>
+            <div class="panel">
+                <h2>📋 Decklist & Bulk Edit</h2>
+                <form method="POST" action="{{ url_for('deck_builder', deck_id=deck.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="action" value="save_list"/>
+
+                    <label for="deck_name">Deck Name</label>
+                    <input id="deck_name" type="text" name="deck_name" value="{{ deck.name }}" required>
+
+                    <label for="card_data">Card List (One card per line, e.g., 1 Sol Ring)</label>
+                    <textarea id="card_data" name="card_data">{{ deck.card_data }}</textarea>
+
+                    <button type="submit" class="btn btn-green">💾 Save Decklist</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>🃏 Cards in Deck ({{ analysis.cards|length }} lines)</h2>
+                <div class="card-list-scroll">
+                    {% for c in analysis.cards %}
+                        <div class="card-row">
+                            <div>
+                                <strong>{{ c.qty }}x {{ c.name }}</strong>
+                                <span style="opacity: 0.75; font-size: 11px;">
+                                    | {{ c.class_label }} | {{ c.rank_word }} | ${{ "%.2f"|format(c.line_total) }}
+                                </span>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn btn-gold" onclick="selectSwapTarget('{{ c.name|e }}')">Swap</button>
+                                <form method="POST" action="{{ url_for('deck_builder', deck_id=deck.id) }}" style="margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" name="action" value="remove_line"/>
+                                    <input type="hidden" name="line_index" value="{{ loop.index0 }}"/>
+                                    <button type="submit" class="btn btn-red">✕</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p style="opacity: 0.75;">This deck is empty. Add cards from the Budget & Power Search panel on the right.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Synergy Engine + Budget/Rank Search -->
+        <div>
+            <div class="panel">
+                <h2>⚡ Synergy & Theme Breakdown</h2>
+                {% if synergy_summary.themes %}
+                    <div>
+                        {% for t in synergy_summary.themes %}
+                            <span class="theme-badge">{{ t.theme }} ({{ t.count }} · {{ t.percentage }})</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="font-size: 12px; opacity: 0.8; margin: 0;">Add cards to your deck to see Synergy Engine role and theme breakdowns.</p>
+                {% endif %}
+            </div>
+
+            <div class="panel">
+                <h2>🔎 Budget & Power Card Search</h2>
+
+                <div style="background: rgba(243, 156, 18, 0.12); border: 1px solid var(--accent-gold); border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px;">
+                    Selected card to swap: <strong id="swapTargetLabel">None (adds new card)</strong>
+                    <button type="button" class="btn btn-gray" style="padding: 3px 8px; font-size: 11px; margin-left: 6px;" onclick="clearSwapTarget()">Clear</button>
+                </div>
+
+                <form method="GET" action="{{ url_for('deck_builder', deck_id=deck.id) }}">
+                    <div class="filter-grid">
+                        <div>
+                            <label>Class</label>
+                            <select name="class_filter">
+                                <option value="">Any Class</option>
+                                {% for cls in ['ramp', 'draw', 'removal', 'board wipe', 'land'] %}
+                                    <option value="{{ cls }}" {% if filters.class_filter == cls %}selected{% endif %}>{{ cls.title() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Rank Tier</label>
+                            <select name="rank_filter">
+                                <option value="">Any Rank</option>
+                                {% for rnk in ['optimized', 'fast', 'average', 'passive', 'low'] %}
+                                    <option value="{{ rnk }}" {% if filters.rank_filter == rnk %}selected{% endif %}>{{ rnk.title() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Color</label>
+                            <select name="color_filter">
+                                <option value="">Any Color</option>
+                                {% for col in ['W', 'U', 'B', 'R', 'G', 'C'] %}
+                                    <option value="{{ col }}" {% if filters.color_filter == col %}selected{% endif %}>{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Max Price ($)</label>
+                            <input type="text" name="max_price" value="{{ filters.max_price }}" placeholder="e.g. 1.50">
+                        </div>
+                    </div>
+
+                    <label>Keyword / Card Name</label>
+                    <input type="text" name="keyword" value="{{ filters.keyword }}" placeholder="e.g. treasure, draw a card, sol ring">
+
+                    <button type="submit" class="btn" style="width: 100%; margin-bottom: 12px;">Search Budget & Ranked Cards</button>
+                </form>
+
+                <div>
+                    {% for cand in candidates %}
+                        <div class="candidate-item">
+                            <div>
+                                <strong>{{ cand.name }}</strong><br>
+                                <span style="opacity: 0.8;">{{ cand.class_label }} · {{ cand.rank_word }} · <strong>${{ "%.2f"|format(cand.price) }}</strong></span>
+                            </div>
+                            <form method="POST" action="{{ url_for('deck_builder', deck_id=deck.id) }}" class="candidate-action-form" style="margin: 0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="hidden" name="action" class="action-input" value="add_card"/>
+                                <input type="hidden" name="card_name" value="{{ cand.name }}"/>
+                                <input type="hidden" name="new_card_name" value="{{ cand.name }}"/>
+                                <input type="hidden" name="old_card_name" class="old-card-input" value=""/>
+                                <button type="submit" class="btn btn-green submit-cand-btn">+ Add</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p style="font-size: 12px; opacity: 0.75;">No matching cards shown. Try adjusting filters or clicking Search.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedOldCard = "";
+
+    function toggleTheme() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark-mode' : 'light');
+    }
+
+    function refreshCandidateButtons() {
+        document.querySelectorAll('.candidate-action-form').forEach(form => {
+            const actionInput = form.querySelector('.action-input');
+            const oldCardInput = form.querySelector('.old-card-input');
+            const btn = form.querySelector('.submit-cand-btn');
+            if (selectedOldCard) {
+                actionInput.value = 'swap_card';
+                oldCardInput.value = selectedOldCard;
+                btn.textContent = '⇄ Swap';
+                btn.className = 'btn btn-gold submit-cand-btn';
+            } else {
+                actionInput.value = 'add_card';
+                oldCardInput.value = '';
+                btn.textContent = '+ Add';
+                btn.className = 'btn btn-green submit-cand-btn';
+            }
+        });
+    }
+
+    function selectSwapTarget(cardName) {
+        selectedOldCard = cardName;
+        document.getElementById('swapTargetLabel').textContent = cardName;
+        refreshCandidateButtons();
+    }
+
+    function clearSwapTarget() {
+        selectedOldCard = "";
+        document.getElementById('swapTargetLabel').textContent = "None (adds new card)";
+        refreshCandidateButtons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme') || 'dark-mode';
+        if (savedTheme === 'light') {
+            document.body.classList.remove('dark-mode');
+        } else {
+            document.body.classList.add('dark-mode');
+        }
+    });
+</script>
+</body>
+</html>
