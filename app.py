@@ -1201,9 +1201,10 @@ def get_master_cards_for_category(category_name):
     return cards
 
 @app.route('/reroll', methods=['POST'])
-@csrf.exempt
+@login_required
 def reroll_card():
-    if current_user.is_authenticated and current_user.role == 'free':
+    active_role = get_active_role() if 'get_active_role' in globals() else (current_user.role if current_user.is_authenticated else 'free')
+    if current_user.is_authenticated and active_role == 'free':
         used_rerolls = session.get('current_rerolls', 0)
         if used_rerolls >= 3:
             return jsonify({'success': False, 'message': 'Free users are limited to 3 swaps per search!'})
