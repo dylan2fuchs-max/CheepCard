@@ -12,6 +12,7 @@ import sys
 import uuid
 import traceback
 from datetime import date, datetime, timedelta
+from deck_builder_service import build_deck_analysis, search_deck_candidates
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from dotenv import load_dotenv  # <--- Load environment variables first!
 load_dotenv()
@@ -1947,6 +1948,132 @@ def admin_dashboard():
         top_colors=top_colors,
         selected_year=selected_year,
         selected_month=selected_month
+    )
+
+@app.route('/decks', methods=['GET'])
+@login_required
+def decks_page():
+    user_decks = SavedDeck.query.filter_by(user_id=current_user.id).order_by(SavedDeck.id.desc()).all()
+    deck_summaries = []
+    for d in user_decks:
+        analysis = build_deck_analysis(d)
+        deck_summaries.append({
+            "deck": d,
+            "total_cards": analysis["total_cards"],
+            "total_price": analysis["total_price"],
+            "class_counts": analysis["class_counts"],
+        })
+    return render_template('decks.html', deck_summaries=deck_summaries)
+
+
+@app.route('/decks/create', methods=['POST'])
+@login_required
+def create_deck():
+    active_role = get_active_role() if 'get_active_role' in globals() else current_user.role
+    if active_role == 'free':
+        flash("Creating and saving decks is a Member/Pro feature. Upgrade to unlock.", "warning")
+        return redirect(url_for('decks_page'))
+
+    deck_name = (request.form.get('name') or 'New Commander Deck').strip()[:150]
+    starter_cards = (request.form.get('card_data') or '').strip()
+
+    new_deck = SavedDeck(
+        name=deck_name,
+        card_data=starter_cards,
+        user_id=current_user.id,
+    )
+    db.session.add(new_deck)
+    db.session.commit()
+    flash(f"Created '{new_deck.name}'.", "success")
+    return redirect(url_for('deck_builder', deck_id=new_deck.id))
+
+
+@app.route('/deck-builder/<int:deck_id>', methods=['GET', 'POST'])
+@login_required
+def deck_builder(deck_id):
+    deck = SavedDeck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+
+    if request.method == 'POST':
+        action = request.form.get('action', 'save_list')
+        updated_name = (request.form.get('deck_name') or deck.name).strip()[:150]
+        raw_list = request.form.get('card_data', '')
+        lines = [line.strip() for line in raw_list.splitlines() if line.strip()]
+
+        if action == 'add_card':
+            card_to_add = (request.form.get('card_name') or '').strip()
+            if card_to_add:
+                lines.append(f"1 {card_to_add}")
+        elif action == 'swap_card':
+            old_card = (request.form.get('old_card_name') or '').strip().lower()
+            new_card = (request.form.get('new_card_name') or '').strip()
+            if old_card and new_card:
+                replaced = False
+                new_lines = []
+                for line in lines:
+                    if not replaced and old_card in line.lower():
+                        new_lines.append(f"1 {new_card}")
+                        replaced = True
+                    else:
+                        new_lines.append(line)
+                if not replaced:
+                    new_lines.append(f"1 {new_card}")
+                lines = new_lines
+        elif action == 'remove_line':
+            try:
+                idx_to_remove = int(request.form.get('line_index', -1))
+                if 0 <= idx_to_remove < len(lines):
+                    lines.pop(idx_to_remove)
+            except ValueError:
+                pass
+
+        deck.name = updated_name
+        deck.card_data = "\n".join(lines)
+        db.session.commit()
+        flash("Deck updated.", "success")
+        return redirect(url_for('deck_builder', deck_id=deck.id))
+
+    target_class = request.args.get('class_filter', '').strip()
+    color_filter = request.args.get('color_filter', '').strip()
+    rank_filter = request.args.get('rank_filter', '').strip()
+    keyword_filter = request.args.get('keyword', '').strip()
+    max_price_raw = request.args.get('max_price', '').strip()
+    max_price = None
+    if max_price_raw:
+        try:
+            max_price = float(max_price_raw)
+        except ValueError:
+            max_price = None
+
+    analysis = build_deck_analysis(deck)
+    synergy_summary = {}
+    deck_lines = [line.strip() for line in (deck.card_data or '').splitlines() if line.strip()]
+    if deck_lines:
+        try:
+            synergy_summary = run_synergy_analysis(deck_lines)
+        except Exception:
+            synergy_summary = {}
+
+    candidates = search_deck_candidates(
+        target_class=target_class,
+        color=color_filter,
+        max_price=max_price,
+        rank_filter=rank_filter,
+        keyword=keyword_filter,
+    )
+
+    return render_template(
+        'deck_builder.html',
+        deck=deck,
+        analysis=analysis,
+        synergy_summary=synergy_summary,
+        candidates=candidates,
+        filters={
+            "class_filter": target_class,
+            "color_filter": color_filter,
+            "rank_filter": rank_filter,
+            "keyword": keyword_filter,
+            "max_price": max_price_raw,
+        },
     )
 
 @app.route('/admin/set-role/<int:user_id>/<new_role>')
