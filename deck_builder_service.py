@@ -3,6 +3,14 @@ from sqlalchemy import func
 from Card_Filter import db, Card
 
 
+def _get_name_col():
+    return getattr(Card, "_name", None) or getattr(Card, "name")
+
+
+def _get_oracle_col():
+    return getattr(Card, "_oracle_text", None) or getattr(Card, "oracle_text")
+
+
 def parse_deck_lines(card_data: str) -> list[dict]:
     """Parse lines like '1 Sol Ring' or 'Sol Ring' into {'qty': int, 'name': str}."""
     entries = []
@@ -30,7 +38,8 @@ def build_deck_analysis(saved_deck) -> dict:
 
     card_lookup = {}
     if unique_names:
-        matched_cards = Card.query.filter(func.lower(Card.name).in_(unique_names)).all()
+        name_col = _get_name_col()
+        matched_cards = Card.query.filter(func.lower(name_col).in_(unique_names)).all()
         for card in matched_cards:
             card_lookup[str(getattr(card, "name", "")).strip().lower()] = card
 
@@ -64,7 +73,7 @@ def build_deck_analysis(saved_deck) -> dict:
         rank_word = r1_word if r1_word and r1_word.lower() != "none" else (r2_word if r2_word and r2_word.lower() != "none" else "Unranked")
 
         matched_bucket = "Other"
-        combined_classes = f"{c1} {c2}".lower()
+        combined_classes = f"{c1} {c2}".lower().replace("board wipe", "boardwipe")
         for bucket in ("Ramp", "Draw", "Removal", "Boardwipe", "Land"):
             if bucket.lower() in combined_classes:
                 matched_bucket = bucket
@@ -106,19 +115,23 @@ def search_deck_candidates(
 
     if target_class and target_class.lower() != "all":
         clean_cls = target_class.strip().lower()
+        c1_col = getattr(Card, "_card_class_1", None) or getattr(Card, "card_class_1")
+        c2_col = getattr(Card, "_card_class_2", None) or getattr(Card, "card_class_2")
         query = query.filter(
             db.or_(
-                func.lower(Card._card_class_1).contains(clean_cls),
-                func.lower(Card._card_class_2).contains(clean_cls),
+                func.lower(c1_col).contains(clean_cls),
+                func.lower(c2_col).contains(clean_cls),
             )
         )
 
     if keyword:
         kw = keyword.strip().lower()
+        name_col = _get_name_col()
+        oracle_col = _get_oracle_col()
         query = query.filter(
             db.or_(
-                func.lower(Card.name).contains(kw),
-                func.lower(Card.oracle_text).contains(kw),
+                func.lower(name_col).contains(kw),
+                func.lower(oracle_col).contains(kw),
             )
         )
 
