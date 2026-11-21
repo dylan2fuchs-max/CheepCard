@@ -285,11 +285,15 @@
                             </div>
                             <div style="display: flex; gap: 6px;">
                                 <button type="button" class="btn btn-gold" onclick="selectSwapTarget('{{ c.name|e }}')">Swap</button>
-                                <form method="POST" action="{{ url_for('deck_builder', deck_id=deck.id) }}" style="margin: 0;">
+                                <form method="POST" action="{{ url_for('deck_builder', deck_id=deck.id) }}" class="candidate-action-form" style="margin: 0;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="hidden" name="action" value="remove_line"/>
-                                    <input type="hidden" name="line_index" value="{{ loop.index0 }}"/>
-                                    <button type="submit" class="btn btn-red">✕</button>
+                                    <input type="hidden" name="action" class="action-input" value="add_card"/>
+                                    <input type="hidden" name="deck_name" value="{{ deck.name }}"/>
+                                    <input type="hidden" name="card_data" value="{{ deck.card_data or '' }}"/>
+                                    <input type="hidden" name="card_name" value="{{ cand.name }}"/>
+                                    <input type="hidden" name="new_card_name" value="{{ cand.name }}"/>
+                                    <input type="hidden" name="old_card_name" class="old-card-input" value=""/>
+                                    <button type="submit" class="btn btn-green submit-cand-btn">+ Add</button>
                                 </form>
                             </div>
                         </div>

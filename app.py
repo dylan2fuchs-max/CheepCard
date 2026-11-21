@@ -1996,7 +1996,7 @@ def deck_builder(deck_id):
     if request.method == 'POST':
         action = request.form.get('action', 'save_list')
         updated_name = (request.form.get('deck_name') or deck.name).strip()[:150]
-        raw_list = request.form.get('card_data', '')
+        raw_list = request.form.get('card_data') if 'card_data' in request.form else (deck.card_data or '')
         lines = [line.strip() for line in raw_list.splitlines() if line.strip()]
 
         if action == 'add_card':
